@@ -1,4 +1,4 @@
-# Generated from /home/biggenerals/PycharmProjects/cubepackimg/cubepackimg/printingtree/pt_grammar.g4 by ANTLR 4.7
+# Generated from /home/biggenerals/PycharmProjects/magiccube/magiccube/laps/traps/tree/pt_grammar.g4 by ANTLR 4.7
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .pt_grammarParser import pt_grammarParser
@@ -39,8 +39,13 @@ class pt_grammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by pt_grammarParser#printing.
-    def visitPrinting(self, ctx:pt_grammarParser.PrintingContext):
+    # Visit a parse tree produced by pt_grammarParser#CardboardExpansion.
+    def visitCardboardExpansion(self, ctx:pt_grammarParser.CardboardExpansionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by pt_grammarParser#CardboardPrintingId.
+    def visitCardboardPrintingId(self, ctx:pt_grammarParser.CardboardPrintingIdContext):
         return self.visitChildren(ctx)
 
 

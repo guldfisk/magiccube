@@ -19,8 +19,8 @@ from magiccube.laps import imageutils
 
 class PrintingNode(Serializeable):
 
-	def __init__(self, printings: t.Iterable[t.Union[Printing, 'PrintingNode']]):
-		self._options = printings if isinstance(printings, HashableMultiset) else HashableMultiset(printings)
+	def __init__(self, options: t.Iterable[t.Union[Printing, 'PrintingNode']]):
+		self._options = options if isinstance(options, HashableMultiset) else HashableMultiset(options)
 		self._persistent_hash = None
 
 	@LazyProperty
@@ -112,9 +112,18 @@ class PrintingNode(Serializeable):
 
 	def __eq__(self, other):
 		return (
-			self.__class__ == other.__class__
-			and self._options == other.options
+			isinstance(other, self.__class__)
+			and self._options == other._options
 		)
+
+	def __iter__(self) -> t.Iterable[Printing]:
+		for option in self._options:
+			if isinstance(option, Printing):
+				yield option
+			else:
+				for item in option:
+					yield item
+
 
 	def __repr__(self):
 		return f'{self.__class__.__name__}({self._options})'

@@ -18,6 +18,6 @@ setup(
 		'promise',
 		'numpy',
 		'requests',
-		'aggdraw',
+		'aggdraw', 'appdirs'
 	],
 )

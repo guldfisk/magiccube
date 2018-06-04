@@ -5,6 +5,7 @@ import os
 from PIL import Image
 
 from mtgorp.models.collections.serilization.serializeable import model_tree
+from mtgorp.models.persistent.printing import Printing
 from mtgimg.interface import ImageLoader
 
 from magiccube import paths
@@ -75,6 +76,9 @@ class Trap(Lap):
 			isinstance(other, self.__class__)
 			and self._node == other._node
 		)
+
+	def __iter__(self) -> t.Iterable[Printing]:
+		return self._node.__iter__()
 
 	def __repr__(self) -> str:
 		return f'{self.__class__.__name__}({self._node})'

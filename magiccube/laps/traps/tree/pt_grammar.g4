@@ -16,11 +16,12 @@ printings :
 ;
 
 printing :
-    CARDBOARD '|' EXPANSION
-    | CARDBOARD
+    CARDBOARD '|' EXPANSION #CardboardExpansion
+    | CARDBOARD '|' PRINTING_ID #CardboardPrintingId
 ;
 
 MULTIPLICITY : [0-9];
+PRINTING_ID : [0-9]+;
 EXPANSION : [A-Z0-9]+;
 CARDBOARD : ~[();|# \n\t\r](~[();|#])*~[();|# \n\t\r];
 

@@ -1,4 +1,4 @@
-# Generated from /home/biggenerals/PycharmProjects/cubepackimg/cubepackimg/printingtree/pt_grammar.g4 by ANTLR 4.7
+# Generated from /home/biggenerals/PycharmProjects/magiccube/magiccube/laps/traps/tree/pt_grammar.g4 by ANTLR 4.7
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -7,22 +7,22 @@ import sys
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\f")
-        buf.write("-\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\3\2\3\2\3\2\3\3\3\3")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\r")
+        buf.write("/\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\3\2\3\2\3\2\3\3\3\3")
         buf.write("\3\3\3\3\3\3\3\3\5\3\24\n\3\3\3\3\3\3\3\3\3\3\3\3\3\7")
         buf.write("\3\34\n\3\f\3\16\3\37\13\3\3\4\3\4\3\4\3\4\5\4%\n\4\3")
-        buf.write("\5\3\5\3\5\3\5\5\5+\n\5\3\5\2\3\4\6\2\4\6\b\2\2\2-\2\n")
-        buf.write("\3\2\2\2\4\23\3\2\2\2\6$\3\2\2\2\b*\3\2\2\2\n\13\5\4\3")
-        buf.write("\2\13\f\7\2\2\3\f\3\3\2\2\2\r\16\b\3\1\2\16\24\5\6\4\2")
-        buf.write("\17\20\7\3\2\2\20\21\5\4\3\2\21\22\7\4\2\2\22\24\3\2\2")
-        buf.write("\2\23\r\3\2\2\2\23\17\3\2\2\2\24\35\3\2\2\2\25\26\f\4")
-        buf.write("\2\2\26\27\7\5\2\2\27\34\5\4\3\5\30\31\f\3\2\2\31\32\7")
-        buf.write("\6\2\2\32\34\5\4\3\4\33\25\3\2\2\2\33\30\3\2\2\2\34\37")
-        buf.write("\3\2\2\2\35\33\3\2\2\2\35\36\3\2\2\2\36\5\3\2\2\2\37\35")
-        buf.write("\3\2\2\2 %\5\b\5\2!\"\7\t\2\2\"#\7\7\2\2#%\5\b\5\2$ \3")
-        buf.write("\2\2\2$!\3\2\2\2%\7\3\2\2\2&\'\7\13\2\2\'(\7\b\2\2(+\7")
-        buf.write("\n\2\2)+\7\13\2\2*&\3\2\2\2*)\3\2\2\2+\t\3\2\2\2\7\23")
-        buf.write("\33\35$*")
+        buf.write("\5\3\5\3\5\3\5\3\5\3\5\5\5-\n\5\3\5\2\3\4\6\2\4\6\b\2")
+        buf.write("\2\2/\2\n\3\2\2\2\4\23\3\2\2\2\6$\3\2\2\2\b,\3\2\2\2\n")
+        buf.write("\13\5\4\3\2\13\f\7\2\2\3\f\3\3\2\2\2\r\16\b\3\1\2\16\24")
+        buf.write("\5\6\4\2\17\20\7\3\2\2\20\21\5\4\3\2\21\22\7\4\2\2\22")
+        buf.write("\24\3\2\2\2\23\r\3\2\2\2\23\17\3\2\2\2\24\35\3\2\2\2\25")
+        buf.write("\26\f\4\2\2\26\27\7\5\2\2\27\34\5\4\3\5\30\31\f\3\2\2")
+        buf.write("\31\32\7\6\2\2\32\34\5\4\3\4\33\25\3\2\2\2\33\30\3\2\2")
+        buf.write("\2\34\37\3\2\2\2\35\33\3\2\2\2\35\36\3\2\2\2\36\5\3\2")
+        buf.write("\2\2\37\35\3\2\2\2 %\5\b\5\2!\"\7\t\2\2\"#\7\7\2\2#%\5")
+        buf.write("\b\5\2$ \3\2\2\2$!\3\2\2\2%\7\3\2\2\2&\'\7\f\2\2\'(\7")
+        buf.write("\b\2\2(-\7\13\2\2)*\7\f\2\2*+\7\b\2\2+-\7\n\2\2,&\3\2")
+        buf.write("\2\2,)\3\2\2\2-\t\3\2\2\2\7\23\33\35$,")
         return buf.getvalue()
 
 
@@ -40,7 +40,7 @@ class pt_grammarParser ( Parser ):
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "MULTIPLICITY", 
-                      "EXPANSION", "CARDBOARD", "WHITESPACE" ]
+                      "PRINTING_ID", "EXPANSION", "CARDBOARD", "WHITESPACE" ]
 
     RULE_start = 0
     RULE_operation = 1
@@ -57,9 +57,10 @@ class pt_grammarParser ( Parser ):
     T__4=5
     T__5=6
     MULTIPLICITY=7
-    EXPANSION=8
-    CARDBOARD=9
-    WHITESPACE=10
+    PRINTING_ID=8
+    EXPANSION=9
+    CARDBOARD=10
+    WHITESPACE=11
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -399,29 +400,66 @@ class pt_grammarParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def CARDBOARD(self):
-            return self.getToken(pt_grammarParser.CARDBOARD, 0)
-
-        def EXPANSION(self):
-            return self.getToken(pt_grammarParser.EXPANSION, 0)
 
         def getRuleIndex(self):
             return pt_grammarParser.RULE_printing
 
+     
+        def copyFrom(self, ctx:ParserRuleContext):
+            super().copyFrom(ctx)
+
+
+
+    class CardboardPrintingIdContext(PrintingContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a pt_grammarParser.PrintingContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def CARDBOARD(self):
+            return self.getToken(pt_grammarParser.CARDBOARD, 0)
+        def PRINTING_ID(self):
+            return self.getToken(pt_grammarParser.PRINTING_ID, 0)
+
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPrinting" ):
-                listener.enterPrinting(self)
+            if hasattr( listener, "enterCardboardPrintingId" ):
+                listener.enterCardboardPrintingId(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPrinting" ):
-                listener.exitPrinting(self)
+            if hasattr( listener, "exitCardboardPrintingId" ):
+                listener.exitCardboardPrintingId(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPrinting" ):
-                return visitor.visitPrinting(self)
+            if hasattr( visitor, "visitCardboardPrintingId" ):
+                return visitor.visitCardboardPrintingId(self)
             else:
                 return visitor.visitChildren(self)
 
+
+    class CardboardExpansionContext(PrintingContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a pt_grammarParser.PrintingContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def CARDBOARD(self):
+            return self.getToken(pt_grammarParser.CARDBOARD, 0)
+        def EXPANSION(self):
+            return self.getToken(pt_grammarParser.EXPANSION, 0)
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCardboardExpansion" ):
+                listener.enterCardboardExpansion(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCardboardExpansion" ):
+                listener.exitCardboardExpansion(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCardboardExpansion" ):
+                return visitor.visitCardboardExpansion(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -430,10 +468,11 @@ class pt_grammarParser ( Parser ):
         localctx = pt_grammarParser.PrintingContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_printing)
         try:
-            self.state = 40
+            self.state = 42
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,4,self._ctx)
             if la_ == 1:
+                localctx = pt_grammarParser.CardboardExpansionContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 36
                 self.match(pt_grammarParser.CARDBOARD)
@@ -444,9 +483,14 @@ class pt_grammarParser ( Parser ):
                 pass
 
             elif la_ == 2:
+                localctx = pt_grammarParser.CardboardPrintingIdContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 39
                 self.match(pt_grammarParser.CARDBOARD)
+                self.state = 40
+                self.match(pt_grammarParser.T__5)
+                self.state = 41
+                self.match(pt_grammarParser.PRINTING_ID)
                 pass
 
 

@@ -124,3 +124,8 @@ class Ticket(Lap):
 			and self._name == other.name
 		)
 
+	def __iter__(self) -> t.Iterable[Printing]:
+		return self._options.__iter__()
+
+	def __repr__(self) -> str:
+		return f'{self.__class__.__name__}({self._options})'

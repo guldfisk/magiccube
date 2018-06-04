@@ -33,6 +33,7 @@ class PTVisitor(pt_grammarVisitor):
 		self._db = db
 
 	def _get_printing(self, name: str, code: str = None) -> Printing:
+
 		try:
 			cardboard = self._db.cardboards[name]
 		except KeyError:
@@ -105,7 +106,7 @@ class PTVisitor(pt_grammarVisitor):
 		printing = self.visit(ctx.printing())
 		return printing if not ctx.MULTIPLICITY() else All((printing,) * int(str(ctx.MULTIPLICITY())))
 
-	def visitPrinting(self, ctx: pt_grammarParser.PrintingContext):
+	def visitCardboardExpansion(self, ctx: pt_grammarParser.CardboardExpansionContext):
 		return self._get_printing(
 			str(ctx.CARDBOARD()),
 			(
@@ -114,3 +115,9 @@ class PTVisitor(pt_grammarVisitor):
 				None
 			)
 		)
+
+	def visitCardboardPrintingId(self, ctx: pt_grammarParser.CardboardPrintingIdContext):
+		try:
+			return self._db.printings[int(ctx.PRINTING_ID())]
+		except KeyError:
+			raise CardboardParseException(f'bad printing id: "{ctx.PRINTING_ID()}"')
