@@ -18,11 +18,11 @@ class Cube(Serializeable):
 
 	def __init__(
 		self,
-		printings: t.Iterable[Printing],
+		printings: t.Optional[t.Iterable[Printing]] = None,
 		traps: t.Optional[t.Iterable[Trap]] = None,
 		tickets: t.Optional[t.Iterable[Ticket]] = None,
 	):
-		self._printings = HashableMultiset(printings)
+		self._printings = HashableMultiset() if printings is None else HashableMultiset(printings)
 		self._traps = HashableMultiset() if traps is None else HashableMultiset(traps)
 		self._tickets = HashableMultiset() if tickets is None else HashableMultiset(tickets)
 
@@ -46,6 +46,11 @@ class Cube(Serializeable):
 	def all_printings(self) -> t.Iterator[Printing]:
 		for printing in self._printings:
 			yield printing
+		for printing in self.garbage_printings:
+			yield printing
+
+	@property
+	def garbage_printings(self) -> t.Iterator[Printing]:
 		for trap in self._traps:
 			for printing in trap:
 				yield printing
@@ -88,4 +93,16 @@ class Cube(Serializeable):
 			and self._tickets == other._tickets
 		)
 
+	def __add__(self, other):
+		return self.__class__(
+			self._printings + other.printings,
+			self._traps + other.traps,
+			self._tickets + other.tickets,
+		)
 
+	def __sub__(self, other):
+		return self.__class__(
+			self._printings - other.printings,
+			self._traps - other.traps,
+			self._tickets - other.tickets,
+		)

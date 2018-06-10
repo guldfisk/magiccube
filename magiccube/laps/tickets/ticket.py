@@ -56,7 +56,7 @@ class Ticket(Lap):
 		crop: bool = False,
 	) -> Image.Image:
 
-		width, height = size
+		width, height = (560, 784)
 
 		images = Promise.all(
 			tuple(
@@ -87,10 +87,19 @@ class Ticket(Lap):
 			name = self._name,
 			box = (0, 0, width, height),
 			font_path = self.FONT_PATH,
-			font_size = 40,
+			font_size = 60,
 		)
 
-		return background
+		return Image.composite(
+			background,
+			Image.new('RGBA', (560, 784), (0, 0, 0, 0)),
+			Image.open(
+				os.path.join(
+					paths.IMAGES_PATH,
+					'mask.png',
+				)
+			)
+		)
 
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:
 		if self._persistent_hash is not None:

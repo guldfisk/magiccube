@@ -177,7 +177,7 @@ class BorderedNode(PrintingNode):
 			y = 0,
 			w = width,
 			h = height,
-			shrink = self.BORDER_WIDTH-1,
+			shrink = self.BORDER_WIDTH - 1,
 			sides = bordered_sides,
 		)
 
@@ -202,6 +202,7 @@ class BorderedNode(PrintingNode):
 						stop - start,
 					),
 					font_path = self.FONT_PATH,
+					font_size = 40,
 				)
 			else:
 				background.paste(
@@ -211,7 +212,7 @@ class BorderedNode(PrintingNode):
 						height = stop - start,
 						bordered_sides = imageutils.LEFT_SIDE
 					),
-					(cx, start + cy)
+					(cx, start + cy),
 				)
 
 		imageutils.inline_box(
