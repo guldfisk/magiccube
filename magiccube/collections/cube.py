@@ -106,3 +106,7 @@ class Cube(Serializeable):
 			self._traps - other.traps,
 			self._tickets - other.tickets,
 		)
+
+	def __str__(self) -> str:
+		return f'{self.__class__.__name__}({self.printings}, {self.traps}, {self.tickets})'
+
