@@ -1,7 +1,7 @@
 
 from abc import abstractmethod
 
-from mtgorp.models.collections.serilization.serializeable import Serializeable
+from mtgorp.models.serilization.serializeable import Serializeable
 
 from mtgimg.interface import Imageable
 

@@ -4,7 +4,7 @@ import os
 
 from PIL import Image
 
-from mtgorp.models.collections.serilization.serializeable import model_tree
+from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
 from mtgimg.interface import ImageLoader
 
@@ -19,14 +19,15 @@ class Trap(Lap):
 	def __init__(self, node: BorderedNode):
 		self._node = node
 
-	def to_model_tree(self) -> model_tree:
-		return self._node.to_model_tree()
+	def serialize(self) -> serialization_model:
+		return self._node.serialize()
 
 	@classmethod
-	def from_model_tree(cls, tree: model_tree) -> 'Trap':
+	def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Trap':
 		return cls(
-			BorderedNode.from_model_tree(
-				tree
+			BorderedNode.deserialize(
+				value,
+				inflator,
 			)
 		)
 

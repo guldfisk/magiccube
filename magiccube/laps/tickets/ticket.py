@@ -9,7 +9,7 @@ from lazy_property import LazyProperty
 
 from mtgorp.models.persistent.printing import Printing
 
-from mtgorp.models.collections.serilization.serializeable import model_tree
+from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 
 from mtgimg.interface import ImageLoader
 
@@ -19,6 +19,7 @@ from magiccube import paths
 
 
 class Ticket(Lap):
+
 	FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
 
 	def __init__(self, printings: t.Iterable[Printing], name: str):
@@ -38,15 +39,18 @@ class Ticket(Lap):
 	def sorted_options(self) -> t.List[Printing]:
 		return sorted(self._options, key=lambda p: p.cardboard.name)
 
-	def to_model_tree(self) -> model_tree:
+	def serialize(self) -> serialization_model:
 		return {
 			'options': self._options,
 			'name': self._name,
 		}
 
 	@classmethod
-	def from_model_tree(cls, tree: model_tree) -> 'Ticket':
-		return cls(tree['options'], tree['name'])
+	def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Ticket':
+		return cls(
+			inflator.inflate_all(Printing, value['options']),
+			value['name'],
+		)
 
 	def get_image(
 		self,

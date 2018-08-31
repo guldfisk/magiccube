@@ -2,7 +2,7 @@ import typing as t
 
 from lazy_property import LazyProperty
 
-from mtgorp.models.collections.serilization.serializeable import Serializeable, model_tree
+from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.utilities.containers import HashableMultiset
 
@@ -64,19 +64,27 @@ class Cube(Serializeable):
 	def __len__(self) -> int:
 		return len(self._printings) + len(self._traps) + len(self._tickets)
 
-	def to_model_tree(self) -> model_tree:
+	def serialize(self) -> serialization_model:
 		return {
 			'printings': self._printings,
-			'traps': (trap.to_model_tree() for trap in self._traps),
-			'tickets': (ticket.to_model_tree() for ticket in self._tickets),
+			'traps': self._traps,
+			'tickets': self._tickets,
 		}
 
 	@classmethod
-	def from_model_tree(cls, tree: model_tree) -> 'Cube':
+	def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Cube':
 		return cls(
-			tree['printings'],
-			(Trap.from_model_tree(trap) for trap in tree.get('traps', ())),
-			(Ticket.from_model_tree(ticket) for ticket in tree.get('tickets', ())),
+			inflator.inflate_all(Printing, value['printings']),
+			(
+				Trap.deserialize(trap, inflator)
+				for trap in
+				value.get('traps', ())
+			),
+			(
+				Ticket.deserialize(ticket, inflator)
+				for ticket in
+				value.get('tickets', ())
+			),
 		)
 
 	def __repr__(self) -> str:

@@ -10,7 +10,7 @@ from promise import Promise
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.utilities.containers import HashableMultiset
-from mtgorp.models.collections.serilization.serializeable import Serializeable, model_tree
+from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 from mtgimg.interface import ImageLoader
 
 from magiccube import paths
@@ -81,31 +81,51 @@ class PrintingNode(Serializeable):
 	def get_image(self, loader: ImageLoader, width: int, height: int, **kwargs) -> Image.Image:
 		pass
 
-	def to_model_tree(self) -> model_tree:
+	def serialize(self) -> serialization_model:
 		return {
-			'options': [
-				option
-				if isinstance(option, Printing) else
-				option.to_model_tree()
-				for option in
-				self._options
-			],
-			'type': self.__class__.__name__,
-		}
+				'options': self._options,
+				'type': self.__class__.__name__,
+			}
 
 	@classmethod
-	def from_model_tree(cls, tree: model_tree) -> 'PrintingNode':
+	def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'PrintingNode':
 		return (
-			AnyNode
-			if tree['type'] == AnyNode.__name__ else
-			AllNode
-		)(
-			option
-			if isinstance(option, Printing) else
-			cls.from_model_tree(option)
-			for option in
-			tree['options']
-		)
+				AnyNode
+				if value['type'] == AnyNode.__name__ else
+				AllNode
+			)(
+				inflator.inflate(Printing, option)
+				if isinstance(option, int) else
+				cls.deserialize(option, inflator)
+				for option in
+				value['options']
+			)
+
+	# def to_model_tree(self) -> model_tree:
+	# 	return {
+	# 		'options': [
+	# 			option
+	# 			if isinstance(option, Printing) else
+	# 			option.to_model_tree()
+	# 			for option in
+	# 			self._options
+	# 		],
+	# 		'type': self.__class__.__name__,
+	# 	}
+	# 
+	# @classmethod
+	# def from_model_tree(cls, tree: model_tree) -> 'PrintingNode':
+	# 	return (
+	# 		AnyNode
+	# 		if tree['type'] == AnyNode.__name__ else
+	# 		AllNode
+	# 	)(
+	# 		option
+	# 		if isinstance(option, Printing) else
+	# 		cls.from_model_tree(option)
+	# 		for option in
+	# 		tree['options']
+	# 	)
 
 	def __hash__(self):
 		return hash((self.__class__, self._options))
