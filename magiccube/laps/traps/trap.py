@@ -44,6 +44,7 @@ class Trap(Lap):
 			width = 560,
 			height = 435 if crop else 784,
 			bordered_sides = imageutils.HORIZONTAL_SIDES,
+			triangled = False,
 		)
 
 		if crop:

@@ -99,25 +99,142 @@ HORIZONTAL_SIDES = TOP_SIDE + BOTTOM_SIDE
 ALL_SIDES = VERTICAL_SIDES + HORIZONTAL_SIDES
 
 
-def line_box(
-	draw: ImageDraw.Draw,
+def inline_box(
+	draw, #aggdraw draw
 	box: t.Tuple[int, int, int, int],
 	width: int = 5,
 	color: t.Tuple[int, int, int] = (0, 0, 0),
-	sides: int = ALL_SIDES
+	sides: int = ALL_SIDES,
+) -> None:
+	x, y, w, h = box
+	x_1, y_1, x_2, y_2 = x, y, x + w, y + h
+	brush = aggdraw.Brush(color=color)
+
+	if sides & 1:
+		draw.rectangle(
+			(x_1, y_1, x_1 + width, y_2),
+			brush,
+		)
+	if sides >> 1 & 1:
+		draw.rectangle(
+			(x_1, y_1, x_2, y_1 + width),
+			brush,
+		)
+	if sides >> 2 & 1:
+		draw.rectangle(
+			(x_2 - width, y_1, x_2, y_2),
+			brush,
+		)
+	if sides >> 3 & 1:
+		draw.rectangle(
+			(x_1, y_2 - width, x_2, y_2),
+			brush,
+		)
+
+	draw.flush()
+
+
+def triangled_inlined_box(
+	draw, #aggdraw draw
+	box: t.Tuple[int, int, int, int],
+	width: int = 5,
+	color: t.Tuple[int, int, int] = (0, 0, 0),
+	bar_color: t.Tuple[int, int, int] = (255, 255, 255),
+	triangle_length: int = 2,
+	sides: int = ALL_SIDES,
 ) -> None:
 	hw = width // 2
 	x, y, w, h = box
 	x_1, y_1, x_2, y_2 = x, y, x + w, y + h
 
+	triangle_brush = aggdraw.Brush(color=bar_color)
+	
+	inline_box(
+		draw = draw,
+		box = box,
+		width = width,
+		color = color,
+		sides = sides,
+	)
+	
 	if sides & 1:
-		draw.line(((x_1, y_2 + hw), (x_1, y_1 - hw)), color, width)
+		draw.polygon(
+			(
+				x_1, y_2,
+				x_1 + width, y_2,
+				x_1 + hw, y_2 - triangle_length,
+			),
+			None,
+			triangle_brush,
+		)
+		draw.polygon(
+			(
+				x_1, y_1,
+				x_1 + width, y_1,
+				x_1 + hw, y_1 + triangle_length,
+			),
+			None,
+			triangle_brush,
+		)
 	if sides >> 1 & 1:
-		draw.line(((x_1 - hw, y_1), (x_2 + hw, y_1)), color, width)
+		draw.polygon(
+			(
+				x_1, y_1,
+				x_1, y_1 + width,
+				x_1 + triangle_length, y_1 + hw,
+			),
+			None,
+			triangle_brush,
+		)
+		draw.polygon(
+			(
+				x_2, y_1,
+				x_2, y_1 + width,
+				x_2 - triangle_length, y_1 + hw,
+			),
+			None,
+			triangle_brush,
+		)
 	if sides >> 2 & 1:
-		draw.line(((x_2, y_1 - hw), (x_2, y_2 + hw)), color, width)
+		draw.polygon(
+			(
+				x_2, y_1,
+				x_2 - width, y_1,
+				x_2 - hw, y_1 + triangle_length,
+			),
+			None,
+			triangle_brush,
+		)
+		draw.polygon(
+			(
+				x_2, y_2,
+				x_2 - width, y_2,
+				x_2 - hw, y_2 - triangle_length,
+			),
+			None,
+			triangle_brush,
+		)
 	if sides >> 3 & 1:
-		draw.line(((x_2 + hw, y_2), (x_1 - hw, y_2)), color, width)
+		draw.polygon(
+			(
+				x_2, y_2,
+				x_2, y_2 - width,
+				x_2 - triangle_length, y_2 - hw,
+			),
+			None,
+			triangle_brush,
+		)
+		draw.polygon(
+			(
+				x_1, y_2,
+				x_1, y_2 - width,
+				x_1 + triangle_length, y_2 - hw,
+			),
+			None,
+			triangle_brush,
+		)
+
+	draw.flush()
 
 
 def shrunk_box(
@@ -137,20 +254,20 @@ def shrunk_box(
 	)
 
 
-def inline_box(
-	draw: ImageDraw.Draw,
-	box: t.Tuple[int, int, int, int],
-	width: int = 10,
-	color: t.Tuple[int, int, int] = (0, 0, 0),
-	sides: int = ALL_SIDES,
-) -> None:
-	line_box(
-		draw = draw,
-		box = shrunk_box(*box, width // 2),
-		width = width,
-		color = color,
-		sides = sides,
-	)
+# def inline_box(
+# 	draw: ImageDraw.Draw,
+# 	box: t.Tuple[int, int, int, int],
+# 	width: int = 10,
+# 	color: t.Tuple[int, int, int] = (0, 0, 0),
+# 	sides: int = ALL_SIDES,
+# ) -> None:
+# 	line_box(
+# 		draw = draw,
+# 		box = shrunk_box(*box, width // 2),
+# 		width = width,
+# 		color = color,
+# 		sides = sides,
+# 	)
 
 
 def rounded_corner_box(

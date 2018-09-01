@@ -7,6 +7,7 @@ import os
 from lazy_property import LazyProperty
 from PIL import Image, ImageDraw
 from promise import Promise
+import aggdraw
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.utilities.containers import HashableMultiset
@@ -19,9 +20,13 @@ from magiccube.laps import imageutils
 
 class PrintingNode(Serializeable):
 
-	def __init__(self, options: t.Iterable[t.Union[Printing, 'PrintingNode']]):
-		self._options = options if isinstance(options, HashableMultiset) else HashableMultiset(options)
+	def __init__(self, children: t.Iterable[t.Union[Printing, 'PrintingNode']]):
+		self._children = None #type: HashableMultiset[t.Union[Printing, PrintingNode]]
 		self._persistent_hash = None
+
+	@property
+	def children(self) -> HashableMultiset[t.Union[Printing, 'PrintingNode']]:
+		return self._children
 
 	@LazyProperty
 	def name(self):
@@ -47,7 +52,7 @@ class PrintingNode(Serializeable):
 		hasher = hashlib.sha512()
 		hasher.update(self.__class__.__name__.encode('UTF-8'))
 
-		for option in self._options:
+		for option in self._children:
 			if isinstance(option, Printing):
 				hasher.update(str(option.id).encode('ASCII'))
 			else:
@@ -60,7 +65,7 @@ class PrintingNode(Serializeable):
 	@LazyProperty
 	def sorted_items(self) -> t.List[t.Tuple[t.Union[Printing, 'PrintingNode'], int]]:
 		return sorted(
-			self._options.items(),
+			self._children.items(),
 			key = lambda p:
 				p[0].cardboard.name
 				if isinstance(p[0], Printing) else
@@ -70,7 +75,7 @@ class PrintingNode(Serializeable):
 	@LazyProperty
 	def sorted_uniques(self) -> t.List[t.Tuple[t.Union[Printing, 'PrintingNode'], int]]:
 		return sorted(
-			self._options.distinct_elements(),
+			self._children.distinct_elements(),
 			key=lambda p:
 			p.cardboard.name
 			if isinstance(p, Printing) else
@@ -83,7 +88,7 @@ class PrintingNode(Serializeable):
 
 	def serialize(self) -> serialization_model:
 		return {
-				'options': self._options,
+				'options': self._children,
 				'type': self.__class__.__name__,
 			}
 
@@ -101,43 +106,17 @@ class PrintingNode(Serializeable):
 				value['options']
 			)
 
-	# def to_model_tree(self) -> model_tree:
-	# 	return {
-	# 		'options': [
-	# 			option
-	# 			if isinstance(option, Printing) else
-	# 			option.to_model_tree()
-	# 			for option in
-	# 			self._options
-	# 		],
-	# 		'type': self.__class__.__name__,
-	# 	}
-	# 
-	# @classmethod
-	# def from_model_tree(cls, tree: model_tree) -> 'PrintingNode':
-	# 	return (
-	# 		AnyNode
-	# 		if tree['type'] == AnyNode.__name__ else
-	# 		AllNode
-	# 	)(
-	# 		option
-	# 		if isinstance(option, Printing) else
-	# 		cls.from_model_tree(option)
-	# 		for option in
-	# 		tree['options']
-	# 	)
-
 	def __hash__(self):
-		return hash((self.__class__, self._options))
+		return hash((self.__class__, self._children))
 
 	def __eq__(self, other):
 		return (
 			isinstance(other, self.__class__)
-			and self._options == other._options
+			and self._children == other._children
 		)
 
 	def __iter__(self) -> t.Iterable[Printing]:
-		for option in self._options:
+		for option in self._children:
 			if isinstance(option, Printing):
 				yield option
 			else:
@@ -146,19 +125,20 @@ class PrintingNode(Serializeable):
 
 
 	def __repr__(self):
-		return f'{self.__class__.__name__}({self._options})'
+		return f'{self.__class__.__name__}({self._children})'
 
 
 class BorderedNode(PrintingNode):
-	BORDER_COLOR = (0, 0, 0)
-	BORDER_WIDTH = 12
-	FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
+	_BORDER_COLOR = (0, 0, 0)
+	_BORDER_BAR_COLOR = (255, 255, 255)
+	_BORDER_WIDTH = 12
+	_FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
 
 	def _name_printing(self, printing: Printing) -> str:
 		return (
 			(
-				str(self._options[printing]) + 'x '
-				if self._options[printing] > 1 and len(self._options.distinct_elements()) > 1 else
+				str(self._children[printing]) + 'x '
+				if self._children[printing] > 1 and len(self._children.distinct_elements()) > 1 else
 				''
 			)
 			+ printing.cardboard.name
@@ -169,12 +149,13 @@ class BorderedNode(PrintingNode):
 		loader: ImageLoader,
 		width: int,
 		height: int,
-		bordered_sides: int = imageutils.ALL_SIDES
+		bordered_sides: int = imageutils.ALL_SIDES,
+		triangled = True,
 	) -> Image.Image:
 
 		pictured_printings = (
-			self._options
-			if len(self._options.distinct_elements()) == 1 and isinstance(self.sorted_uniques[0], Printing) else
+			self._children
+			if len(self._children.distinct_elements()) == 1 and isinstance(self.sorted_uniques[0], Printing) else
 			self.sorted_uniques
 		)
 
@@ -197,14 +178,14 @@ class BorderedNode(PrintingNode):
 			y = 0,
 			w = width,
 			h = height,
-			shrink = self.BORDER_WIDTH - 1,
+			shrink =self._BORDER_WIDTH - 1,
 			sides = bordered_sides,
 		)
 
 		for span, option, image, in zip(
 			imageutils.section(content_height, len(pictured_printings)),
 			pictured_printings,
-			images
+			images,
 		):
 			start, stop = span
 			if isinstance(option, Printing):
@@ -221,7 +202,7 @@ class BorderedNode(PrintingNode):
 						content_width,
 						stop - start,
 					),
-					font_path = self.FONT_PATH,
+					font_path = self._FONT_PATH,
 					font_size = 40,
 				)
 			else:
@@ -230,25 +211,81 @@ class BorderedNode(PrintingNode):
 						loader = loader,
 						width = content_width,
 						height = stop - start,
-						bordered_sides = imageutils.LEFT_SIDE
+						bordered_sides = imageutils.LEFT_SIDE,
+						triangled = True,
 					),
 					(cx, start + cy),
 				)
 
-		imageutils.inline_box(
-			draw = draw,
-			box = (0, 0, width, height),
-			color = self.BORDER_COLOR,
-			width = self.BORDER_WIDTH + 1,
-			sides = bordered_sides,
-		)
+		agg_draw = aggdraw.Draw(background)
+
+		if triangled:
+			imageutils.triangled_inlined_box(
+				draw = agg_draw,
+				box = (0, 0, width, height),
+				color = self._BORDER_COLOR,
+				bar_color = self._BORDER_BAR_COLOR,
+				width = self._BORDER_WIDTH,
+				triangle_length = self._BORDER_WIDTH,
+				sides = bordered_sides,
+			)
+
+		else:
+			imageutils.inline_box(
+				draw = agg_draw,
+				box = (0, 0, width, height),
+				color = self._BORDER_COLOR,
+				width = self._BORDER_WIDTH,
+				sides = bordered_sides,
+			)
 
 		return background
 
 
-class AllNode(BorderedNode):
-	BORDER_COLOR = (50, 50, 50)
+_ALL_COLOR = (50, 50 ,50)
+_ANY_COLOR = (170, 170, 170)
 
+
+class AllNode(BorderedNode):
+
+	_BORDER_COLOR = _ALL_COLOR
+	_BORDER_BAR_COLOR = _ANY_COLOR
+
+	def __init__(self, children: t.Iterable[t.Union[Printing, PrintingNode]]):
+		super().__init__(children)
+
+		_children = []
+
+		for child in children:
+			if (
+				isinstance(child, AllNode)
+				or isinstance(child, AnyNode) and len(child.children) <= 1
+			):
+				_children.extend(child.children)
+
+			else:
+				_children.append(child)
+
+		self._children = HashableMultiset(_children)
 
 class AnyNode(BorderedNode):
-	BORDER_COLOR = (170, 170, 170)
+
+	_BORDER_COLOR = _ANY_COLOR
+	_BORDER_BAR_COLOR = _ALL_COLOR
+
+	def __init__(self, children: t.Iterable[t.Union[Printing, 'PrintingNode']]):
+		super().__init__(children)
+
+		_children = set()
+
+		for child in children:
+			if (
+				isinstance(child, AnyNode)
+				or isinstance(child, AllNode) and len(child.children) <= 1
+			):
+				_children.update(child.children)
+
+			else:
+				_children.add(child)
+
+		self._children = HashableMultiset(_children)
