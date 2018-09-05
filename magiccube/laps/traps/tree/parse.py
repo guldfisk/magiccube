@@ -18,11 +18,11 @@ class PrintingTreeParserException(Exception):
 
 class PrintingTreeListener(ErrorListener):
 
-	def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+	def syntaxError(self, recognizer, offending_symbol, line, column, msg, e):
 		raise PrintingTreeParserException('Syntax error')
 
-	def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
-		raise PrintingTreeParserException('Conetext sensitivity')
+	def reportContextSensitivity(self, recognizer, dfa, start_index, stop_index, prediction, configs):
+		raise PrintingTreeParserException('Context sensitivity')
 
 
 

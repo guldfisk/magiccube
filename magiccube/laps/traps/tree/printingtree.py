@@ -21,7 +21,7 @@ from magiccube.laps import imageutils
 class PrintingNode(Serializeable):
 
 	def __init__(self, children: t.Iterable[t.Union[Printing, 'PrintingNode']]):
-		self._children = None #type: HashableMultiset[t.Union[Printing, PrintingNode]]
+		self._children = HashableMultiset(children)
 		self._persistent_hash = None
 
 	@property
@@ -130,7 +130,7 @@ class PrintingNode(Serializeable):
 
 class BorderedNode(PrintingNode):
 	_BORDER_COLOR = (0, 0, 0)
-	_BORDER_BAR_COLOR = (255, 255, 255)
+	_BORDER_TRIANGLE_COLOR = (255, 255, 255)
 	_BORDER_WIDTH = 12
 	_FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
 
@@ -224,7 +224,7 @@ class BorderedNode(PrintingNode):
 				draw = agg_draw,
 				box = (0, 0, width, height),
 				color = self._BORDER_COLOR,
-				bar_color = self._BORDER_BAR_COLOR,
+				bar_color = self._BORDER_TRIANGLE_COLOR,
 				width = self._BORDER_WIDTH,
 				triangle_length = self._BORDER_WIDTH,
 				sides = bordered_sides,
@@ -249,43 +249,10 @@ _ANY_COLOR = (170, 170, 170)
 class AllNode(BorderedNode):
 
 	_BORDER_COLOR = _ALL_COLOR
-	_BORDER_BAR_COLOR = _ANY_COLOR
+	_BORDER_TRIANGLE_COLOR = _ANY_COLOR
 
-	def __init__(self, children: t.Iterable[t.Union[Printing, PrintingNode]]):
-		super().__init__(children)
-
-		_children = []
-
-		for child in children:
-			if (
-				isinstance(child, AllNode)
-				or isinstance(child, AnyNode) and len(child.children) <= 1
-			):
-				_children.extend(child.children)
-
-			else:
-				_children.append(child)
-
-		self._children = HashableMultiset(_children)
 
 class AnyNode(BorderedNode):
 
 	_BORDER_COLOR = _ANY_COLOR
-	_BORDER_BAR_COLOR = _ALL_COLOR
-
-	def __init__(self, children: t.Iterable[t.Union[Printing, 'PrintingNode']]):
-		super().__init__(children)
-
-		_children = set()
-
-		for child in children:
-			if (
-				isinstance(child, AnyNode)
-				or isinstance(child, AllNode) and len(child.children) <= 1
-			):
-				_children.update(child.children)
-
-			else:
-				_children.add(child)
-
-		self._children = HashableMultiset(_children)
+	_BORDER_TRIANGLE_COLOR = _ALL_COLOR
