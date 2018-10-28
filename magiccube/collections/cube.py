@@ -9,6 +9,7 @@ from mtgorp.utilities.containers import HashableMultiset
 from magiccube.laps.lap import Lap
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.tickets.ticket import Ticket
+from magiccube.laps.purples.purple import Purple
 
 
 cubeable = t.Union[Lap, Printing]
@@ -21,10 +22,12 @@ class Cube(Serializeable):
 		printings: t.Optional[t.Iterable[Printing]] = None,
 		traps: t.Optional[t.Iterable[Trap]] = None,
 		tickets: t.Optional[t.Iterable[Ticket]] = None,
+		purples: t.Optional[t.Iterable[Purple]] = None,
 	):
 		self._printings = HashableMultiset() if printings is None else HashableMultiset(printings)
 		self._traps = HashableMultiset() if traps is None else HashableMultiset(traps)
 		self._tickets = HashableMultiset() if tickets is None else HashableMultiset(tickets)
+		self._purples = HashableMultiset() if purples is None else HashableMultiset(purples)
 
 	@property
 	def printings(self) -> HashableMultiset[Printing]:
@@ -38,9 +41,17 @@ class Cube(Serializeable):
 	def tickets(self) -> HashableMultiset[Ticket]:
 		return self._tickets
 
+	@property
+	def purples(self) -> HashableMultiset[Purple]:
+		return self._purples
+
+	@LazyProperty
+	def laps(self) -> HashableMultiset[Lap]:
+		return self._traps + self._tickets + self._purples
+
 	@LazyProperty
 	def cubeables(self) -> HashableMultiset[cubeable]:
-		return self._printings + self._traps + self._tickets
+		return self._printings + self.laps
 
 	@property
 	def all_printings(self) -> t.Iterator[Printing]:
@@ -69,6 +80,7 @@ class Cube(Serializeable):
 			'printings': self._printings,
 			'traps': self._traps,
 			'tickets': self._tickets,
+			'purples': self._purples,
 		}
 
 	@classmethod
@@ -85,13 +97,18 @@ class Cube(Serializeable):
 				for ticket in
 				value.get('tickets', ())
 			),
+			(
+				Purple.deserialize(purple, inflator)
+				for purple in
+				value.get('purples', ())
+			),
 		)
 
 	def __repr__(self) -> str:
 		return f'{self.__class__.__name__}({len(self)})'
 
 	def __hash__(self) -> int:
-		return hash((self._printings, self._traps, self._tickets))
+		return hash((self._printings, self._traps, self._tickets, self._purples))
 
 	def __eq__(self, other: object) -> bool:
 		return (
@@ -99,6 +116,7 @@ class Cube(Serializeable):
 			and self._printings == other._printings
 			and self._traps == other._traps
 			and self._tickets == other._tickets
+			and self._purples == other._purples
 		)
 
 	def __add__(self, other):
@@ -106,6 +124,7 @@ class Cube(Serializeable):
 			self._printings + other.printings,
 			self._traps + other.traps,
 			self._tickets + other.tickets,
+			self._purples + other.purples,
 		)
 
 	def __sub__(self, other):
@@ -113,8 +132,9 @@ class Cube(Serializeable):
 			self._printings - other.printings,
 			self._traps - other.traps,
 			self._tickets - other.tickets,
+			self._purples - other.purples,
 		)
 
 	def __str__(self) -> str:
-		return f'{self.__class__.__name__}({self.printings}, {self.traps}, {self.tickets})'
+		return f'{self.__class__.__name__}({self.printings}, {self.traps}, {self.tickets}, {self.purples})'
 

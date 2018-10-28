@@ -271,19 +271,19 @@ def shrunk_box(
 
 
 def rounded_corner_box(
-	image: Image.Image,
+	draw, #aggdraw draw
+	dimensions: t.Tuple[int, int],
 	corner_radius: int,
 	line_width: int = 1,
 	line_color: t.Tuple[int, int, int] = (0, 0, 0),
 ) -> None:
-	draw = aggdraw.Draw(image)
 
 	pen = aggdraw.Pen(line_color, line_width, 255)
 
 	path = aggdraw.Path()
 
 	cr = corner_radius
-	w, h = image.size
+	w, h = dimensions
 
 	path.moveto(cr, 0)
 

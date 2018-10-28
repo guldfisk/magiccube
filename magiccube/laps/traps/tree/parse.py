@@ -9,7 +9,7 @@ from mtgorp.models.persistent.printing import Printing
 from magiccube.laps.traps.tree.printingtree import AllNode, AnyNode, BorderedNode
 from magiccube.laps.traps.tree.gen.pt_grammarLexer import pt_grammarLexer
 from magiccube.laps.traps.tree.gen.pt_grammarParser import pt_grammarParser
-from magiccube.laps.traps.tree.visitor import PTVisitor, All, PrintingCollection
+from magiccube.laps.traps.tree.visitor import PTVisitor, All, PrintingCollection, CardboardParseException
 
 
 class PrintingTreeParserException(Exception):
@@ -19,7 +19,7 @@ class PrintingTreeParserException(Exception):
 class PrintingTreeListener(ErrorListener):
 
 	def syntaxError(self, recognizer, offending_symbol, line, column, msg, e):
-		raise PrintingTreeParserException('Syntax error')
+		raise PrintingTreeParserException(f'Syntax error {[offending_symbol, line, column, msg, e]}')
 
 	def reportContextSensitivity(self, recognizer, dfa, start_index, stop_index, prediction, configs):
 		raise PrintingTreeParserException('Context sensitivity')
@@ -61,9 +61,12 @@ class PrintingTreeParser(object):
 
 		parser._listeners = [PrintingTreeListener()]
 
-		return self._convert_to_printing_node(
-			self._visitor.visit(
-				parser.start()
+		try:
+			return self._convert_to_printing_node(
+				self._visitor.visit(
+					parser.start()
+				)
 			)
-		)
+		except CardboardParseException as e:
+			raise PrintingTreeParserException(e)
 

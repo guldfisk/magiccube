@@ -43,7 +43,7 @@ class PTVisitor(pt_grammarVisitor):
 			try:
 				printing = cardboard.from_expansion(code)
 			except KeyError:
-				raise  CardboardParseException('bad expansion for cardboard: "{}", "{}"'.format(code, cardboard))
+				raise CardboardParseException('bad expansion for cardboard: "{}", "{}"'.format(code, cardboard))
 		else:
 			try:
 				printing = cardboard.printing

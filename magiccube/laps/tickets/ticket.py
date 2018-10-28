@@ -9,7 +9,7 @@ from lazy_property import LazyProperty
 
 from mtgorp.models.persistent.printing import Printing
 
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 
 from mtgimg.interface import ImageLoader
 
@@ -60,7 +60,7 @@ class Ticket(Lap):
 		crop: bool = False,
 	) -> Image.Image:
 
-		width, height = (560, 784)
+		width, height = 560, 435 if crop else 784
 
 		images = Promise.all(
 			tuple(
@@ -94,9 +94,12 @@ class Ticket(Lap):
 			font_size = 60,
 		)
 
+		if crop:
+			return background
+
 		return Image.composite(
 			background,
-			Image.new('RGBA', (560, 784), (0, 0, 0, 0)),
+			Image.new('RGBA', (width, height), (0, 0, 0, 0)),
 			Image.open(
 				os.path.join(
 					paths.IMAGES_PATH,
