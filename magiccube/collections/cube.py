@@ -29,6 +29,9 @@ class Cube(Serializeable):
 		self._tickets = HashableMultiset() if tickets is None else HashableMultiset(tickets)
 		self._purples = HashableMultiset() if purples is None else HashableMultiset(purples)
 
+		self._laps = None #type: HashableMultiset[Lap]
+		self._cubeables = None #type: HashableMultiset[cubeable]
+
 	@property
 	def printings(self) -> HashableMultiset[Printing]:
 		return self._printings
@@ -45,13 +48,19 @@ class Cube(Serializeable):
 	def purples(self) -> HashableMultiset[Purple]:
 		return self._purples
 
-	@LazyProperty
+	@property
 	def laps(self) -> HashableMultiset[Lap]:
-		return self._traps + self._tickets + self._purples
+		if self._laps is None:
+			self._laps = self._traps + self._tickets + self._purples
 
-	@LazyProperty
+		return self._laps
+
+	@property
 	def cubeables(self) -> HashableMultiset[cubeable]:
-		return self._printings + self.laps
+		if self._cubeables is None:
+			self._cubeables = self._printings + self.laps
+
+		return self._cubeables
 
 	@property
 	def all_printings(self) -> t.Iterator[Printing]:
@@ -73,7 +82,7 @@ class Cube(Serializeable):
 		return self.all_printings
 
 	def __len__(self) -> int:
-		return len(self._printings) + len(self._traps) + len(self._tickets)
+		return len(self._printings) + len(self._traps) + len(self._tickets) + len(self._purples)
 
 	def serialize(self) -> serialization_model:
 		return {

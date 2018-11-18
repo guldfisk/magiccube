@@ -30,6 +30,6 @@ setup(
 		'numpy',
 		'requests',
 		'aggdraw',
-		'appdirs',
+		'appdirs', 'deap'
 	],
 )
