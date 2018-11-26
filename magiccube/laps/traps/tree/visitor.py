@@ -91,14 +91,14 @@ class PTVisitor(pt_grammarVisitor):
 		first, second = self.visit(ctx.operation(0)), self.visit(ctx.operation(1))
 
 		if isinstance(first, All) and not first.locked:
-			if isinstance(second, All):
+			if isinstance(second, All) and not second.locked:
 				first.extend(second)
 				return first
 			first.append(second)
 			return first
 
-		if isinstance(second, All) and not first.locked:
-			if isinstance(first, All):
+		if isinstance(second, All) and not second.locked:
+			if isinstance(first, All) and not first.locked:
 				second.extend(first)
 				return second
 			second.append(first)
