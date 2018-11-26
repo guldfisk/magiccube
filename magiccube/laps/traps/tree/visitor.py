@@ -8,6 +8,10 @@ from magiccube.laps.traps.tree.gen.pt_grammarVisitor import pt_grammarVisitor
 
 class PrintingCollection(list):
 
+	def __init__(self, *args, **kwargs) -> None:
+		super().__init__(*args, **kwargs)
+		self.locked = False
+
 	def __repr__(self):
 		return '{}({})'.format(
 			self.__class__.__name__,
@@ -59,7 +63,10 @@ class PTVisitor(pt_grammarVisitor):
 		return All((result,))
 
 	def visitParenthesis(self, ctx: pt_grammarParser.ParenthesisContext):
-		return self.visit(ctx.operation())
+		contains = self.visit(ctx.operation())
+		if isinstance(contains, PrintingCollection):
+			contains.locked = True
+		return contains
 
 	def visitOr(self, ctx: pt_grammarParser.OrContext):
 		first, second = self.visit(ctx.operation(0)), self.visit(ctx.operation(1))
@@ -83,14 +90,14 @@ class PTVisitor(pt_grammarVisitor):
 	def visitAnd(self, ctx: pt_grammarParser.AndContext):
 		first, second = self.visit(ctx.operation(0)), self.visit(ctx.operation(1))
 
-		if isinstance(first, All):
+		if isinstance(first, All) and not first.locked:
 			if isinstance(second, All):
 				first.extend(second)
 				return first
 			first.append(second)
 			return first
 
-		if isinstance(second, All):
+		if isinstance(second, All) and not first.locked:
 			if isinstance(first, All):
 				second.extend(first)
 				return second
