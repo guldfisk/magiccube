@@ -20,11 +20,12 @@ class IntentionType(Enum):
 	OR = 'or'
 	GARBAGE = 'garbage'
 	LAND_GARBAGE = 'land_garbage'
+	NO_INTENTION = 'no_intention'
 
 
 class Trap(Lap):
 
-	def __init__(self, node: BorderedNode, intention_type: t.Optional[IntentionType] = None):
+	def __init__(self, node: BorderedNode, intention_type: IntentionType = IntentionType.NO_INTENTION):
 		self._node = node
 		self._intention_type = intention_type
 
