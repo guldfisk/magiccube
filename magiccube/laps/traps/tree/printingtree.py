@@ -19,6 +19,7 @@ from magiccube.laps import imageutils
 
 
 class PrintingNode(Serializeable):
+	_MINIMAL_STRING_CONNECTOR = None #type: str
 
 	def __init__(self, children: t.Iterable[t.Union[Printing, 'PrintingNode']]):
 		self._children = HashableMultiset(children)
@@ -28,20 +29,34 @@ class PrintingNode(Serializeable):
 	def children(self) -> HashableMultiset[t.Union[Printing, 'PrintingNode']]:
 		return self._children
 
+	@property
+	def minimal_string(self) -> str:
+		return self._MINIMAL_STRING_CONNECTOR.join(
+			(f'{multiplicity}# ' if multiplicity > 1 else '')
+			+ f'{child.cardboard.name}|{child.expansion.code}'
+			if isinstance(child, Printing) else
+			f'({child.minimal_string})'
+			for child, multiplicity in
+			self._children.items()
+		)
+
 	@LazyProperty
 	def name(self):
 		return ''.join(
 			(
-				str(option[1]) + 'x'
-				if option[1] > 1 else
+				str(multiplicity) + 'x'
+				if multiplicity > 1 else
 				''
 			)
 			+ (
-				option[0].cardboard.name
-				if isinstance(option[0], Printing) else
-				'({}({}))'.format(option[0].__class__.__name__, option[0].name)
+				option.cardboard.name
+				if isinstance(option, Printing) else
+				'{} {}'.format(
+					option.name,
+					option.__class__.__name__,
+				)
 			)
-			for option in
+			for option, multiplicity in
 			self.sorted_items
 		)
 
@@ -76,10 +91,10 @@ class PrintingNode(Serializeable):
 	def sorted_uniques(self) -> t.List[t.Tuple[t.Union[Printing, 'PrintingNode'], int]]:
 		return sorted(
 			self._children.distinct_elements(),
-			key=lambda p:
-			p.cardboard.name
-			if isinstance(p, Printing) else
-			p.name
+			key = lambda p:
+				p.cardboard.name
+				if isinstance(p, Printing) else
+				p.name
 		)
 
 	@abstractmethod
@@ -138,7 +153,7 @@ class BorderedNode(PrintingNode):
 		return (
 			(
 				str(self._children[printing]) + 'x '
-				if self._children[printing] > 1 and len(self._children.distinct_elements()) > 1 else
+				if self._children[printing] > 1 else
 				''
 			)
 			+ printing.cardboard.name
@@ -153,11 +168,13 @@ class BorderedNode(PrintingNode):
 		triangled = True,
 	) -> Image.Image:
 
-		pictured_printings = (
-			self._children
-			if len(self._children.distinct_elements()) == 1 and isinstance(self.sorted_uniques[0], Printing) else
-			self.sorted_uniques
-		)
+		# pictured_printings = (
+		# 	self._children
+		# 	if len(self._children.distinct_elements()) == 1 and isinstance(self.sorted_uniques[0], Printing) else
+		# 	self.sorted_uniques
+		# )
+
+		pictured_printings = self.sorted_uniques
 
 		images = Promise.all(
 			tuple(
@@ -247,12 +264,14 @@ _ANY_COLOR = (170, 170, 170)
 
 
 class AllNode(BorderedNode):
+	_MINIMAL_STRING_CONNECTOR = '; '
 
 	_BORDER_COLOR = _ALL_COLOR
 	_BORDER_TRIANGLE_COLOR = _ANY_COLOR
 
 
 class AnyNode(BorderedNode):
+	_MINIMAL_STRING_CONNECTOR = ' || '
 
 	_BORDER_COLOR = _ANY_COLOR
 	_BORDER_TRIANGLE_COLOR = _ALL_COLOR
