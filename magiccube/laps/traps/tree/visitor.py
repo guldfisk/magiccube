@@ -125,6 +125,7 @@ class PTVisitor(pt_grammarVisitor):
 
 	def visitCardboardPrintingId(self, ctx: pt_grammarParser.CardboardPrintingIdContext):
 		try:
-			return self._db.printings[int(ctx.PRINTING_ID())]
+			return self._db.printings[int(ctx.PRINTING_ID().getText())]
+
 		except KeyError:
 			raise CardboardParseException(f'bad printing id: "{ctx.PRINTING_ID()}"')
