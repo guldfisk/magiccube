@@ -112,4 +112,4 @@ class Trap(Lap):
 		return self._node.__iter__()
 
 	def __repr__(self) -> str:
-		return f'{self.__class__.__name__}({self._node})'
+		return f'{self.__class__.__name__}({self._intention_type.value}, {self._node})'

@@ -1,6 +1,7 @@
 
 from mtgorp.db.create import CardDatabase
 from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.persistent.cardboard import Cardboard
 
 from magiccube.laps.traps.tree.gen.pt_grammarParser import pt_grammarParser
 from magiccube.laps.traps.tree.gen.pt_grammarVisitor import pt_grammarVisitor
@@ -36,25 +37,22 @@ class PTVisitor(pt_grammarVisitor):
 	def __init__(self, db: CardDatabase) -> None:
 		self._db = db
 
-	def _get_printing(self, name: str, code: str = None) -> Printing:
-
+	def _get_cardboard(self, name: str) -> Cardboard:
 		try:
-			cardboard = self._db.cardboards[name]
+			return self._db.cardboards[name]
 		except KeyError:
 			raise CardboardParseException('bad cardboard: "{}"'.format(name))
 
-		if code is not None:
-			try:
-				printing = cardboard.from_expansion(code)
-			except KeyError:
-				raise CardboardParseException('bad expansion for cardboard: "{}", "{}"'.format(code, cardboard))
-		else:
-			try:
-				printing = cardboard.printing
-			except StopIteration:
-				raise CardboardParseException('bad cardboard: has no printings: "{}"'.format(cardboard))
+	def _get_printing(self, name: str, code: str) -> Printing:
+		cardboard = self._get_cardboard(name=name)
 
-		return printing
+		try:
+			return cardboard.from_expansion(code)
+		except KeyError:
+			raise CardboardParseException('bad expansion for cardboard: "{}", "{}"'.format(code, cardboard))
+		except RuntimeError as e:
+			raise CardboardParseException(e)
+
 
 	def visitStart(self, ctx: pt_grammarParser.StartContext):
 		result = self.visit(ctx.operation())
@@ -115,17 +113,19 @@ class PTVisitor(pt_grammarVisitor):
 
 	def visitCardboardExpansion(self, ctx: pt_grammarParser.CardboardExpansionContext):
 		return self._get_printing(
-			str(ctx.CARDBOARD()),
-			(
-				str(ctx.EXPANSION())
-				if ctx.EXPANSION() is not None else
-				None
-			)
+			ctx.CARDBOARD().getText(),
+			ctx.EXPANSION().getText(),
 		)
 
 	def visitCardboardPrintingId(self, ctx: pt_grammarParser.CardboardPrintingIdContext):
+		cardboard = self._get_cardboard(ctx.CARDBOARD().getText())
+		
 		try:
-			return self._db.printings[int(ctx.PRINTING_ID().getText())]
-
+			printing = self._db.printings[int(ctx.PRINTING_ID().getText())]
 		except KeyError:
 			raise CardboardParseException(f'bad printing id: "{ctx.PRINTING_ID()}"')
+
+		if cardboard != printing.cardboard:
+			raise CardboardParseException(f'ID does not match cardboard in "{ctx.getText()}""')
+		
+		return printing

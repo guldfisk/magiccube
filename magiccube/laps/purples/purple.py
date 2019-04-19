@@ -6,7 +6,6 @@ import hashlib
 from PIL import Image, ImageDraw
 import aggdraw
 
-from mtgorp.models.serilization.serializeable import Serializeable
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 
 from mtgimg.interface import ImageLoader
@@ -88,18 +87,6 @@ class Purple(Lap):
 			font_size = 70,
 			name = self._name,
 		)
-
-		# imageutils.inline_box(
-		# 	draw = agg_draw,
-		# 	box = (
-		# 		0,
-		# 		0,
-		# 		width,
-		# 		height,
-		# 	),
-		# 	width = 10,
-		# 	color = (50, 50, 50),
-		# )
 
 		if crop:
 			return background

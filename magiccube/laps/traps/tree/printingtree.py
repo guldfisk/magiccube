@@ -33,11 +33,14 @@ class PrintingNode(Serializeable):
 	def minimal_string(self) -> str:
 		return self._MINIMAL_STRING_CONNECTOR.join(
 			(f'{multiplicity}# ' if multiplicity > 1 else '')
-			+ f'{child.cardboard.name}|{child.expansion.code}'
+			+ f'{child.cardboard.name}|{child.id}'
 			if isinstance(child, Printing) else
 			f'({child.minimal_string})'
 			for child, multiplicity in
-			self._children.items()
+			sorted(
+				self._children.items(),
+				key = lambda item: str(item[0]),
+			)
 		)
 
 	@LazyProperty

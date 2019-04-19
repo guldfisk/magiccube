@@ -1,6 +1,6 @@
 import typing as t
 
-from lazy_property import LazyProperty
+from collections import OrderedDict
 
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
@@ -47,6 +47,30 @@ class Cube(Serializeable):
 	@property
 	def purples(self) -> HashableMultiset[Purple]:
 		return self._purples
+
+	@staticmethod
+	def _multiset_to_indented_string(ms: HashableMultiset[Printing]) -> str:
+		return '\n'.join(
+			f'\t{multiplicity}x {printing}'
+			for printing, multiplicity in
+			sorted(
+				ms.items(),
+				key = lambda item: str(item[0])
+			)
+		)
+
+	@property
+	def pp_string(self) -> str:
+		return '\n'.join(
+			f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
+			for pickable_type, pickables in
+			OrderedDict(
+				printings = self._printings,
+				traps = self._traps,
+				tickets = self._tickets,
+				purples = self._purples,
+			).items()
+		)
 
 	@property
 	def laps(self) -> HashableMultiset[Lap]:
@@ -145,5 +169,5 @@ class Cube(Serializeable):
 		)
 
 	def __str__(self) -> str:
-		return f'{self.__class__.__name__}({self.printings}, {self.traps}, {self.tickets}, {self.purples})'
+		return f'{self.__class__.__name__}({self.__hash__()})'
 
