@@ -102,6 +102,9 @@ class Trap(Lap):
 	def __hash__(self):
 		return hash(self._node)
 
+	def persistent_hash(self) -> str:
+		return self._node.persistent_hash()
+
 	def __eq__(self, other):
 		return (
 			isinstance(other, self.__class__)

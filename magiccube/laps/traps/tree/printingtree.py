@@ -171,12 +171,6 @@ class BorderedNode(PrintingNode):
 		triangled = True,
 	) -> Image.Image:
 
-		# pictured_printings = (
-		# 	self._children
-		# 	if len(self._children.distinct_elements()) == 1 and isinstance(self.sorted_uniques[0], Printing) else
-		# 	self.sorted_uniques
-		# )
-
 		pictured_printings = self.sorted_uniques
 
 		images = Promise.all(

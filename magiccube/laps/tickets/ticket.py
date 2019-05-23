@@ -109,6 +109,18 @@ class Ticket(Lap):
 		)
 
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:
+		return self.persistent_hash()
+
+	def get_image_dir_name(self) -> str:
+		return 'tickets'
+
+	def has_back(self) -> bool:
+		return False
+
+	def __hash__(self) -> int:
+		return hash((self._options, self._name))
+
+	def persistent_hash(self) -> str:
 		if self._persistent_hash is not None:
 			return self._persistent_hash
 
@@ -123,15 +135,6 @@ class Ticket(Lap):
 		self._persistent_hash = hasher.hexdigest()
 
 		return self._persistent_hash
-
-	def get_image_dir_name(self) -> str:
-		return 'tickets'
-
-	def has_back(self) -> bool:
-		return False
-
-	def __hash__(self) -> int:
-		return hash((self._options, self._name))
 
 	def __eq__(self, other: object) -> bool:
 		return (

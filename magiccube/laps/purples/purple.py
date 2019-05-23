@@ -103,6 +103,9 @@ class Purple(Lap):
 		)
 
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:
+		return self.persistent_hash()
+		
+	def persistent_hash(self) -> str:
 		if self._persistent_hash is not None:
 			return self._persistent_hash
 

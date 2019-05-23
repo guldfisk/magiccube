@@ -1,4 +1,3 @@
-
 from abc import abstractmethod
 
 from mtgorp.models.serilization.serializeable import Serializeable
@@ -14,4 +13,8 @@ class Lap(Serializeable, Imageable):
 
 	@abstractmethod
 	def __eq__(self, other: object) -> bool:
+		pass
+
+	@abstractmethod
+	def persistent_hash(self) -> str:
 		pass

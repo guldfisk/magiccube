@@ -1,5 +1,8 @@
 import typing as t
 
+import hashlib
+import itertools
+
 from collections import OrderedDict
 
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
@@ -31,6 +34,8 @@ class Cube(Serializeable):
 
 		self._laps = None #type: HashableMultiset[Lap]
 		self._cubeables = None #type: HashableMultiset[cubeable]
+
+		self._persistent_hash = None #type: str
 
 	@property
 	def printings(self) -> HashableMultiset[Printing]:
@@ -142,6 +147,32 @@ class Cube(Serializeable):
 
 	def __hash__(self) -> int:
 		return hash((self._printings, self._traps, self._tickets, self._purples))
+	
+	def persistent_hash(self) -> str:
+		if self._persistent_hash is not None:
+			return self._persistent_hash
+
+		hasher = hashlib.sha512()
+
+		for printing in self._printings:
+			hasher.update(str(printing.id).encode('ASCII'))
+
+		for persistent_hash in itertools.chain(
+			sorted(
+				trap.persistent_hash() for trap in self._traps
+			),
+			sorted(
+				ticket.persistent_hash() for ticket in self._tickets
+			),
+			sorted(
+				purple.persistent_hash() for purple in self._purples
+			),
+		):
+			hasher.update(persistent_hash.encode('UTF-8'))
+
+		self._persistent_hash = hasher.hexdigest()
+
+		return self._persistent_hash
 
 	def __eq__(self, other: object) -> bool:
 		return (
