@@ -154,7 +154,7 @@ class Cube(Serializeable):
 
 		hasher = hashlib.sha512()
 
-		for printing in self._printings:
+		for printing in sorted(self._printings, key=lambda _printing: _printing.id):
 			hasher.update(str(printing.id).encode('ASCII'))
 
 		for persistent_hash in itertools.chain(

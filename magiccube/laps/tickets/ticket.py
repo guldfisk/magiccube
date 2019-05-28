@@ -129,8 +129,12 @@ class Ticket(Lap):
 		hasher.update(self.__class__.__name__.encode('UTF-8'))
 		hasher.update(self._name.encode('UTF-8'))
 
-		for option in self._options:
-			hasher.update(str(option.id).encode('ASCII'))
+		for s in sorted(
+			str(option.id)
+			for option in
+			self._options
+		):
+			hasher.update(s.encode('ASCII'))
 
 		self._persistent_hash = hasher.hexdigest()
 

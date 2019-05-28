@@ -70,11 +70,20 @@ class PrintingNode(Serializeable):
 		hasher = hashlib.sha512()
 		hasher.update(self.__class__.__name__.encode('UTF-8'))
 
-		for option in self._children:
-			if isinstance(option, Printing):
-				hasher.update(str(option.id).encode('ASCII'))
-			else:
-				hasher.update(option.persistent_hash().encode('UTF-8'))
+		for s in sorted(
+			str(child.id)
+			if isinstance(child, Printing)
+			else child.persistent_hash()
+			for child in
+			self._children
+		):
+			hasher.update(s.encode('ASCII'))
+
+		# for option in self._children:
+		# 	if isinstance(option, Printing):
+		# 		hasher.update(str(option.id).encode('ASCII'))
+		# 	else:
+		# 		hasher.update(option.persistent_hash().encode('UTF-8'))
 
 		self._persistent_hash = hasher.hexdigest()
 
