@@ -79,12 +79,6 @@ class PrintingNode(Serializeable):
 		):
 			hasher.update(s.encode('ASCII'))
 
-		# for option in self._children:
-		# 	if isinstance(option, Printing):
-		# 		hasher.update(str(option.id).encode('ASCII'))
-		# 	else:
-		# 		hasher.update(option.persistent_hash().encode('UTF-8'))
-
 		self._persistent_hash = hasher.hexdigest()
 
 		return self._persistent_hash

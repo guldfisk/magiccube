@@ -93,7 +93,8 @@ class Trap(Lap):
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:
 		return self._node.persistent_hash()
 
-	def get_image_dir_name(self) -> str:
+	@classmethod
+	def get_image_dir_name(cls) -> str:
 		return 'cube_traps'
 
 	def has_back(self) -> bool:
@@ -113,6 +114,9 @@ class Trap(Lap):
 
 	def __iter__(self) -> t.Iterable[Printing]:
 		return self._node.__iter__()
+
+	def __contains__(self, item):
+		return item in self.__iter__()
 
 	def __repr__(self) -> str:
 		return f'{self.__class__.__name__}({self._intention_type.value}, {self._node})'

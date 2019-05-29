@@ -111,7 +111,8 @@ class Ticket(Lap):
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:
 		return self.persistent_hash()
 
-	def get_image_dir_name(self) -> str:
+	@classmethod
+	def get_image_dir_name(cls) -> str:
 		return 'tickets'
 
 	def has_back(self) -> bool:

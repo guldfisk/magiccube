@@ -117,7 +117,8 @@ class Purple(Lap):
 
 		return self._persistent_hash
 
-	def get_image_dir_name(self) -> str:
+	@classmethod
+	def get_image_dir_name(cls) -> str:
 		return 'purples'
 
 	def has_back(self) -> bool:
