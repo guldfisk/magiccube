@@ -29,13 +29,12 @@ class PrintingNode(Serializeable):
 	def children(self) -> HashableMultiset[t.Union[Printing, 'PrintingNode']]:
 		return self._children
 
-	@property
-	def minimal_string(self) -> str:
+	def get_minimal_string(self, identified_by_id: bool = True) -> str:
 		return self._MINIMAL_STRING_CONNECTOR.join(
 			(f'{multiplicity}# ' if multiplicity > 1 else '')
-			+ f'{child.cardboard.name}|{child.id}'
+			+ f'{child.cardboard.name}|{child.id if identified_by_id else child.expansion.code}'
 			if isinstance(child, Printing) else
-			f'({child.minimal_string})'
+			f'({child.get_minimal_string(identified_by_id)})'
 			for child, multiplicity in
 			sorted(
 				self._children.items(),
