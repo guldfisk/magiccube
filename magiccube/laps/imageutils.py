@@ -5,7 +5,21 @@ import numpy as np
 import aggdraw
 
 
-def center_box(parent_width: int, parent_height: int, child_width: int, child_height: int):
+def center_box(
+	parent_width: int,
+	parent_height: int,
+	child_width: int,
+	child_height: int,
+) -> t.Tuple[int, int, int, int]:
+	"""
+	Get absolute coordinates for box centered inside box
+
+	:param parent_width: Width of parent box
+	:param parent_height: Height of parent box
+	:param child_width: Width of child box
+	:param child_height: Height of child box
+	:return: tuple: upper corner x, upper corner y, lower corner x, lower corner y
+	"""
 	parent_center_x, parent_center_y = parent_width // 2, parent_height // 2
 	child_center_x, child_center_y = child_width // 2, child_height // 2
 
@@ -24,17 +38,25 @@ def draw_text_with_outline(
 	font,
 	color: t.Tuple[int, int, int],
 	background_color: t.Tuple[int, int, int],
-):
+) -> None:
+	"""
+	Draw outlined text
+
+	:param draw: target
+	:param xy: location
+	:param text: content
+	:param font: font
+	:param color: text color
+	:param background_color: outline color
+	:return: None
+	"""
 	_xy = np.asarray(xy)
+	offset_range = (-1, 0, 1)
+
 	for offset in (
-		(-1, -1),
-		(-1, 1),
-		(-1, 0),
-		(0, -1),
-		(0, 1),
-		(1, -1),
-		(1, 0),
-		(1, 1),
+		(x, y)
+		for x in offset_range
+		for y in offset_range
 	):
 		draw.multiline_text(
 			xy = _xy+np.asarray(offset),
@@ -59,32 +81,42 @@ def draw_name(
 	box: t.Tuple[int, int, int, int],
 	font_path: str,
 	font_size: int = 40
-):
+) -> None:
+	"""
+	Draw outlined text on image centered in box, downscaling font if necessary to fit.
+	:param draw: target
+	:param name: content
+	:param box: location
+	:param font_path: path to truetype font
+	:param font_size: max font size
+	:return:
+	"""
 
 	if not name:
 		return
 
-	x, y, width, height = box
+	x, y, w, h = box
 
 	font = ImageFont.truetype(font_path, font_size)
 	text_width, text_height = draw.multiline_textsize(name, font)
 
-	if text_width>width:
-		font = ImageFont.truetype(font_path, font_size * width // text_width )
-		text_width, text_height = draw.multiline_textsize(name, font)
-	if 	text_height>height:
-		font = ImageFont.truetype(font_path, font_size * height // text_height )
+	downsize_factor = min(
+		w / text_width,
+		h / text_height,
+	)
+	if downsize_factor < 1.:
+		font = ImageFont.truetype(font_path, int(font_size * downsize_factor))
 		text_width, text_height = draw.multiline_textsize(name, font)
 
-	x_1, y_1, x_2, y_2 = center_box(width, height, text_width, text_height)
+	x_1, y_1, x_2, y_2 = center_box(w, h, text_width, text_height)
 
 	draw_text_with_outline(
 		draw = draw,
 		xy = (x_1+x, y_1+y),
 		text = name,
 		font = font,
-		color = (255, 255, 255),
-		background_color = (0, 0, 0),
+		color = (255,) * 3,
+		background_color = (0,) * 3,
 	)
 
 
@@ -106,6 +138,15 @@ def inline_box(
 	color: t.Tuple[int, int, int] = (0, 0, 0),
 	sides: int = ALL_SIDES,
 ) -> None:
+	"""
+	Draw border inside box
+	:param draw: Target
+	:param box: Location
+	:param width: Border width
+	:param color: Border color
+	:param sides: Sides to draw border on
+	:return: None
+	"""
 	x, y, w, h = box
 	x_1, y_1, x_2, y_2 = x, y, x + w, y + h
 	brush = aggdraw.Brush(color=color)
@@ -143,6 +184,17 @@ def triangled_inlined_box(
 	triangle_length: int = 2,
 	sides: int = ALL_SIDES,
 ) -> None:
+	"""
+	Draw border inside box with triangles in both ends of each bar
+	:param draw: Target
+	:param box: Location
+	:param width: Border width
+	:param color: Border color
+	:param bar_color: Triangle color
+	:param triangle_length: In pixels
+	:param sides: Sides to draw border and triangles
+	:return: None
+	"""
 	hw = width // 2
 	x, y, w, h = box
 	x_1, y_1, x_2, y_2 = x, y, x + w, y + h
@@ -245,66 +297,125 @@ def shrunk_box(
 	shrink: int,
 	sides: int = ALL_SIDES,
 ) -> t.Tuple[int, int, int, int]:
-	offset = shrink
+	"""
+	Returns box shrunk on select sides. Operates on x, y, w, h box.
+	:param x: Box x position
+	:param y: Box y position
+	:param w: Box width
+	:param h: box height
+	:param shrink: Amount to shrink box by
+	:param sides: Sides to shrink box on
+	:return: Tuple shrunk box x, y, w, h
+	"""
 	return (
-		x + offset if sides & 1 else x,
-		y + offset if sides >> 1 & 1 else y,
-		w - (offset if sides >> 2 & 1 else 0) - (offset if sides & 1 else 0),
-		h - (offset if sides >> 3 & 1 else 0) - (offset if sides >> 1 & 1 else 0),
+		x + shrink if sides & 1 else x,
+		y + shrink if sides >> 1 & 1 else y,
+		w - (shrink if sides >> 2 & 1 else 0) - (shrink if sides & 1 else 0),
+		h - (shrink if sides >> 3 & 1 else 0) - (shrink if sides >> 1 & 1 else 0),
 	)
 
 
-# def inline_box(
-# 	draw: ImageDraw.Draw,
-# 	box: t.Tuple[int, int, int, int],
-# 	width: int = 10,
-# 	color: t.Tuple[int, int, int] = (0, 0, 0),
-# 	sides: int = ALL_SIDES,
-# ) -> None:
-# 	line_box(
-# 		draw = draw,
-# 		box = shrunk_box(*box, width // 2),
-# 		width = width,
-# 		color = color,
-# 		sides = sides,
-# 	)
+def _rounded_corner_path(
+	box: t.Tuple[int, int, int, int],
+	corner_radius: int,
+):
+	path = aggdraw.Path()
+
+	cr = corner_radius
+	x, y, w, h = box
+
+	path.moveto(x + cr, y)
+
+	path.lineto(x + w - cr, y)
+	path.curveto(
+		x + w - cr / 2,
+		y,
+		x + w,
+		y + cr / 2,
+		x + w,
+		y + cr,
+	)
+
+	path.lineto(x + w, y + h - cr)
+	path.curveto(
+		x + w,
+		y + h - cr / 2,
+		x + w - cr / 2,
+		y + h,
+		x + w - cr,
+		y + h,
+	)
+
+	path.lineto(x + cr, y + h)
+	path.curveto(
+		x + cr / 2,
+		y + h,
+		x,
+		y + h - cr / 2,
+		x,
+		y + h - cr,
+	)
+
+	path.lineto(x, y + cr)
+	path.curveto(
+		x,
+		y + cr / 2,
+		x + cr / 2,
+		y,
+		x + cr,
+		y,
+	)
+
+	return path
 
 
 def rounded_corner_box(
 	draw, #aggdraw draw
-	dimensions: t.Tuple[int, int],
+	box: t.Tuple[int, int, int, int],
 	corner_radius: int,
 	line_width: int = 1,
 	line_color: t.Tuple[int, int, int] = (0, 0, 0),
 ) -> None:
+	"""
+
+	:param draw:
+	:param box:
+	:param corner_radius:
+	:param line_width:
+	:param line_color:
+	:return:
+	"""
 
 	pen = aggdraw.Pen(line_color, line_width, 255)
-
-	path = aggdraw.Path()
-
-	cr = corner_radius
-	w, h = dimensions
-
-	path.moveto(cr, 0)
-
-	path.lineto(w - cr, 0)
-	path.curveto(w - cr / 2, 0, w, cr / 2, w, cr)
-
-	path.lineto(w, h - cr)
-	path.curveto(w, h - cr / 2, w - cr / 2, h, w - cr, h)
-
-	path.lineto(cr, h)
-	path.curveto(cr / 2, h, 0, h - cr / 2, 0, h - cr)
-
-	path.lineto(0, cr)
-	path.curveto(0, cr / 2, cr / 2, 0, cr, 0)
-
+	path = _rounded_corner_path(box, corner_radius)
 	draw.path(path, pen)
-
 	draw.flush()
 
 
+def filled_rounded_box(
+	draw,  # aggdraw draw
+	box: t.Tuple[int, int, int, int],
+	corner_radius: int,
+	color: t.Tuple[int, int, int] = (0, 0, 0),
+) -> None:
+	path = _rounded_corner_path(
+		box,
+		corner_radius,
+	)
+	brush = aggdraw.Brush(color, 255)
+	draw.path(path, brush)
+	draw.flush()
+
+
+
 def section(value: int, partitions: int) -> t.Iterable[t.Tuple[int, int]]:
+	"""
+	Divide length into n int partitions. The total length of the partitions
+	correspond to the divided length, with any leftover given to the last partition
+	:param value: length to divide
+	:param partitions: Number of partitions
+	:return: iterable of start_offset, end_offset
+	"""
 	offset, leftover = value // partitions, value % partitions
 
 	if partitions > 1:
@@ -315,10 +426,23 @@ def section(value: int, partitions: int) -> t.Iterable[t.Tuple[int, int]]:
 
 
 def fit_image(image: Image.Image, width: int, height: int) -> Image.Image:
+	"""
+	Fit image to given size, scaling up if to small, cropping if to big.
+	:param image: Image to fit
+	:param width: Target width
+	:param height: Target height
+	:return: Rescaled image
+	"""
 	if width > image.width:
-		_image = image.resize((width, image.height * width // image.width))
+		_image = image.resize(
+			(width, image.height * width // image.width),
+			resample=Image.LANCZOS,
+		)
 	elif height > image.height:
-		_image = image.resize((image.width * height // image.height, height))
+		_image = image.resize(
+			(image.width * height // image.height, height),
+			resample=Image.LANCZOS,
+		)
 	else:
 		_image = image
 
@@ -327,343 +451,3 @@ def fit_image(image: Image.Image, width: int, height: int) -> Image.Image:
 
 	return _image.crop(center_box(_image.width, _image.height, width, height))
 
-
-# def space_images_vertical(images: t.Tuple[Image.Image, ...], height: int) -> t.Iterable[Image.Image]:
-# 	try:
-# 		offset = (height - images[0].height) // (len(images) - 1)
-# 	except ZeroDivisionError:
-# 		offset = 0
-#
-# 	image_width, images_height = images[0].width, images[0].height
-#
-# 	for i in range(len(images)-1):
-# 		background_image = Image.new('RGBA', (image_width, height), (0, 0, 0, 0))
-# 		background_image.paste(
-# 			images[i],
-# 			(
-# 				0,
-# 				i*offset,
-# 			),
-# 		)
-# 		yield background_image
-#
-# 	background_image = Image.new('RGBA', (image_width, height), (0, 0, 0, 0))
-# 	background_image.paste(
-# 		images[-1],
-# 		(
-# 			0,
-# 			height-images_height,
-# 			image_width,
-# 			height,
-# 		),
-# 	)
-# 	yield background_image
-#
-#
-# def space_images_horizontal(images: t.Tuple[Image.Image, ...], width: int) -> t.Iterable[Image.Image]:
-# 	try:
-# 		offset = (width - images[0].width) // (len(images) - 1)
-# 	except ZeroDivisionError:
-# 		offset = 0
-#
-# 	image_width, image_height = images[0].width, images[0].height
-#
-# 	for i in range(len(images)-1):
-# 		background_image = Image.new('RGBA', (width, image_height), (0, 0, 0, 0))
-# 		background_image.paste(
-# 			images[i],
-# 			(
-# 				i*offset,
-# 				0,
-# 			)
-# 		)
-# 		yield background_image
-#
-# 	background_image = Image.new('RGBA', (width, image_height), (0, 0, 0, 0))
-# 	background_image.paste(
-# 		images[-1],
-# 		(
-# 			width - image_width,
-# 			0,
-# 			width,
-# 			image_height,
-# 		)
-# 	)
-# 	yield background_image
-#
-#
-# def split_images_vertical(
-# 	printings: t.Iterable[t.Tuple[Image.Image, str]],
-# 	width: int,
-# 	height: int,
-# ) -> Image.Image:
-#
-# 	images, names = zip(*printings)
-#
-# 	_printings = tuple(
-# 		zip(
-# 			space_images_vertical(
-# 				tuple(
-# 					image
-# 					if image.width == width else
-# 					image.resize((width, image.height*width//image.width))
-# 					for image in images
-# 				),
-# 				height,
-# 			),
-# 			names,
-# 		)
-# 	)
-#
-# 	_printings_iter = _printings.__iter__()
-#
-# 	background_original, background_name = copy.copy(_printings_iter.__next__())
-#
-# 	background = Image.alpha_composite(
-# 		Image.new('RGBA', (width, height), (0, 0, 0, 0)),
-# 		background_original,
-# 	)
-#
-# 	offset = height // len(_printings)
-# 	current_position = offset + height % len(_printings)
-#
-# 	draw = ImageDraw.Draw(background)
-#
-# 	draw_name(
-# 		draw = draw,
-# 		name = background_name,
-# 		box = (
-# 			0,
-# 			0,
-# 			width,
-# 			current_position,
-# 		),
-# 		font_path = FONT_PATH,
-# 	)
-#
-# 	for image, name in _printings_iter:
-# 		box = (
-# 			0,
-# 			current_position,
-# 			width,
-# 			current_position + offset,
-# 		)
-#
-# 		sub_section = image.crop(box)
-# 		background.paste(
-# 			sub_section,
-# 			box
-# 		)
-#
-# 		draw_name(
-# 			draw = draw,
-# 			name = name,
-# 			box = (
-# 				0,
-# 				current_position,
-# 				width,
-# 				offset,
-# 			),
-# 			font_path = FONT_PATH,
-# 		)
-# 		current_position += offset
-#
-# 	return background
-#
-#
-# def split_image_vertical_boxed(
-# 	printings: t.Iterable[t.Tuple[Image.Image, str]],
-# 	width: int,
-# 	height: int,
-# 	line_width: int = 10,
-# 	line_color: t.Tuple[int, int, int] = (0, 0, 0),
-# ) -> Image.Image:
-#
-# 	images, names = zip(*printings)
-#
-# 	_printings = tuple(
-# 		zip(
-# 			space_images_vertical(
-# 				tuple(
-# 					image
-# 					if image.width == width else
-# 					image.resize((width, image.height*width//image.width))
-# 					for image in images
-# 				),
-# 				height,
-# 			),
-# 			names,
-# 		)
-# 	)
-#
-# 	_printings_iter = _printings.__iter__()
-#
-# 	background_original, background_name = copy.copy(_printings_iter.__next__())
-#
-# 	background = Image.alpha_composite(
-# 		Image.new('RGBA', (width, height), (0, 0, 0, 0)),
-# 		background_original,
-# 	)
-#
-# 	offset = height // len(_printings)
-# 	current_position = offset + height % len(_printings)
-#
-# 	draw = ImageDraw.Draw(background)
-#
-# 	draw_name(
-# 		draw = draw,
-# 		name = background_name,
-# 		box = (
-# 			0,
-# 			0,
-# 			width,
-# 			current_position,
-# 		),
-# 		font_path = FONT_PATH,
-# 	)
-#
-# 	for image, name in _printings_iter:
-# 		box = (
-# 			0,
-# 			current_position,
-# 			width,
-# 			current_position + offset,
-# 		)
-#
-# 		sub_section = image.crop(box)
-# 		background.paste(
-# 			sub_section,
-# 			box
-# 		)
-#
-# 		draw_name(
-# 			draw = draw,
-# 			name = name,
-# 			box = (
-# 				0,
-# 				current_position,
-# 				width,
-# 				offset,
-# 			),
-# 			font_path = FONT_PATH,
-# 		)
-# 		current_position += offset
-#
-# 	inline_box(
-# 		draw = draw,
-# 		box = (
-# 			0,
-# 			0,
-# 			width,
-# 			height,
-# 		),
-# 		width = line_width,
-# 		color = line_color,
-# 	)
-#
-# 	return background
-#
-#
-# def split_images_horizontal(
-# 	printings: t.Iterable[t.Tuple[Image.Image, str]],
-# 	width: int,
-# 	height: int,
-# ) -> Image.Image:
-#
-# 	font_path = os.path.join(
-# 		locator.FONTS_PATH,
-# 		'Beleren-Bold.ttf'
-# 	)
-#
-# 	images, names = zip(*printings)
-#
-# 	_printings = tuple(
-# 		zip(
-# 			space_images_horizontal(
-# 				tuple(
-# 					image
-# 					if image.height == height else
-# 					image.resize((image.width*height//image.height, height))
-# 					for image in images
-# 				),
-# 				width,
-# 			),
-# 			names,
-# 		)
-# 	)
-#
-#
-# 	_printings_iter = _printings.__iter__()
-#
-# 	background_original, background_name = copy.copy(_printings_iter.__next__())
-#
-# 	background = Image.alpha_composite(
-# 		Image.new('RGBA', (width, height), (0, 0, 0, 0)),
-# 		background_original,
-# 	)
-#
-# 	offset = width // len(_printings)
-# 	current_position = offset + width % len(_printings)
-#
-# 	draw = ImageDraw.Draw(background)
-#
-# 	draw_name(
-# 		draw = draw,
-# 		name = ' {} '.format(background_name),
-# 		box = (
-# 			0,
-# 			0,
-# 			current_position,
-# 			height,
-# 		),
-# 		font_path = font_path,
-# 	)
-#
-# 	for image, name in _printings_iter:
-# 		box = (
-# 			current_position,
-# 			0,
-# 			current_position + offset,
-# 			height,
-# 		)
-#
-# 		sub_section = image.crop(box)
-# 		background.paste(
-# 			sub_section,
-# 			box
-# 		)
-#
-# 		draw_name(
-# 			draw = draw,
-# 			name = ' {} '.format(name),
-# 			box = (
-# 				current_position,
-# 				0,
-# 				offset,
-# 				height,
-# 			),
-# 			font_path = font_path,
-# 		)
-#
-# 		current_position += offset
-#
-# 	return background
-
-
-# def polygon_crop(image: Image, polygon: t.Iterable[t.Tuple[int, int]]):
-# 	image_array = np.asarray(
-# 		image if image.format=='RGBA' else image.convert('RGBA')
-# 	)
-#
-# 	mask_image = Image.new(
-# 		'L',
-# 		(image_array.shape[1], image_array.shape[0]),
-# 		0,
-# 	)
-# 	ImageDraw.Draw(mask_image).polygon(polygon, outline=1, fill=1)
-#
-# 	cropped_image_array = np.empty(image_array.shape, dtype='uint8')
-# 	cropped_image_array[:,:,:3] = image_array[:,:,:3]
-# 	cropped_image_array[:,:,3] = np.asarray(mask_image)*255
-#
-# 	return Image.fromarray(cropped_image_array, 'RGBA')

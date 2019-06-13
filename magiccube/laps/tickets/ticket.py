@@ -4,6 +4,7 @@ import hashlib
 import os
 
 from PIL import Image, ImageDraw
+import aggdraw
 from promise import Promise
 from lazy_property import LazyProperty
 
@@ -60,15 +61,32 @@ class Ticket(Lap):
 		crop: bool = False,
 	) -> Image.Image:
 
-		width, height = 560, 435 if crop else 784
+		width, height = size
+		corner_radius = max(2, height // 23)
+		print(corner_radius)
 
-		images = Promise.all(
-			tuple(
-				loader.get_image(option, crop=True)
-				for option in
-				self.sorted_options
-			)
-		).get()
+		# TODO run then in parallel
+		images = [
+			image
+			if image.width == width else
+			# image.resize(
+			# 	(
+			# 		width,
+			# 		image.height * image.width // width,
+			# 	),
+			# 	Image.LANCZOS,
+			# )
+			image
+			for image in
+			Promise.all(
+				tuple(
+					loader.get_image(option, crop=True)
+					for option in
+					self.sorted_options
+				)
+			).get()
+		]
+		print(width, [image.width for image in images])
 
 		background = Image.new('RGBA', (width, height), (0, 0, 0, 255))
 
@@ -97,15 +115,19 @@ class Ticket(Lap):
 		if crop:
 			return background
 
+		mask = Image.new('RGBA', (width, height), (0,) * 4)
+		mask_agg_draw = aggdraw.Draw(mask)
+		imageutils.filled_rounded_box(
+			draw=mask_agg_draw,
+			box=(0, 0, width, height),
+			corner_radius=corner_radius,
+			color=(255,) * 3,
+		)
+
 		return Image.composite(
 			background,
 			Image.new('RGBA', (width, height), (0, 0, 0, 0)),
-			Image.open(
-				os.path.join(
-					paths.IMAGES_PATH,
-					'mask.png',
-				)
-			)
+			mask,
 		)
 
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:

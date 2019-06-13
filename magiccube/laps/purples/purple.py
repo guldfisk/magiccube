@@ -60,28 +60,32 @@ class Purple(Lap):
 		crop: bool = False,
 	) -> Image.Image:
 
-		width, height = 560, 435 if crop else 784
+		# width, height = 560, 435 if crop else 784
+		width, height = size
 
 		background = Image.new('RGBA', (width, height), (71, 57, 74, 255))
 
 		agg_draw = aggdraw.Draw(background)
 		draw = ImageDraw.Draw(background)
 
+		border_line_width = max(2, height // 28)
+		corner_radius = max(2, height // 23)
+
 		imageutils.rounded_corner_box(
 			draw = agg_draw,
-			dimensions = (width, height),
-			corner_radius = 30,
-			line_width = 25,
+			box= (0, 0, width, height),
+			corner_radius = corner_radius,
+			line_width = border_line_width,
 			line_color = (30, 30, 30),
 		)
 
 		imageutils.draw_name(
 			draw = draw,
 			box = (
-				0,
-				0,
-				width,
-				height,
+				0 + border_line_width,
+				0 + border_line_width,
+				width - border_line_width * 2,
+				height - border_line_width * 2,
 			),
 			font_path = self._FONT_PATH,
 			font_size = 70,
@@ -91,15 +95,19 @@ class Purple(Lap):
 		if crop:
 			return background
 
+		mask = Image.new('RGBA', (width, height), (0,) * 4)
+		mask_agg_draw = aggdraw.Draw(mask)
+		imageutils.filled_rounded_box(
+			draw = mask_agg_draw,
+			box = (0, 0, width, height),
+			corner_radius = corner_radius,
+			color = (255,) * 3,
+		)
+
 		return Image.composite(
 			background,
 			Image.new('RGBA', (width, height), (0, 0, 0, 0)),
-			Image.open(
-				os.path.join(
-					paths.IMAGES_PATH,
-					'mask.png',
-				)
-			)
+			mask,
 		)
 
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:
