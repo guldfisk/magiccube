@@ -1,15 +1,14 @@
 import typing as t
 
-import os
 from enum import Enum
 
 from PIL import Image
+import aggdraw
 
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
 from mtgimg.interface import ImageLoader
 
-from magiccube import paths
 from magiccube.laps.lap import Lap
 from magiccube.laps.traps.tree.printingtree import BorderedNode
 from magiccube.laps import imageutils
@@ -68,10 +67,13 @@ class Trap(Lap):
 		crop: bool = False,
 	) -> Image.Image:
 
+		width, height = size
+		corner_radius = max(2, height // 23)
+
 		image = self._node.get_image(
 			loader = loader,
-			width = 560,
-			height = 435 if crop else 784,
+			width = width,
+			height = height,
 			bordered_sides = imageutils.HORIZONTAL_SIDES,
 			triangled = False,
 		)
@@ -79,15 +81,19 @@ class Trap(Lap):
 		if crop:
 			return image
 
+		mask = Image.new('RGBA', (width, height), (0,) * 4)
+		mask_agg_draw = aggdraw.Draw(mask)
+		imageutils.filled_rounded_box(
+			draw=mask_agg_draw,
+			box=(0, 0, width, height),
+			corner_radius=corner_radius,
+			color=(255,) * 3,
+		)
+
 		return Image.composite(
 			image,
-			Image.new('RGBA', (560, 784), (0, 0, 0, 0)),
-			Image.open(
-				os.path.join(
-					paths.IMAGES_PATH,
-					'mask.png',
-				)
-			)
+			Image.new('RGBA', (width, height), (0, 0, 0, 0)),
+			mask,
 		)
 
 	def get_image_name(self, back: bool = False, crop: bool = False) -> str:

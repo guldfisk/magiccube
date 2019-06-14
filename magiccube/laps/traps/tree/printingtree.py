@@ -175,15 +175,27 @@ class BorderedNode(PrintingNode):
 
 		pictured_printings = self.sorted_uniques
 
-		images = Promise.all(
-			tuple(
-				loader.get_image(option, crop=True)
-				if isinstance(option, Printing) else
-				Promise.resolve(option)
-				for option in
-				pictured_printings
+		images = [
+			image.resize(
+				(
+					width,
+					image.height * width // image.width,
+				),
+				Image.LANCZOS,
 			)
-		).get()
+			if isinstance(image, Image.Image) and image.width == width else
+			image
+			for image in
+			Promise.all(
+				tuple(
+					loader.get_image(option, crop=True)
+					if isinstance(option, Printing) else
+					Promise.resolve(option)
+					for option in
+					pictured_printings
+				)
+			).get()
+		]
 
 		background = Image.new('RGBA', (width, height), (0, 0, 0, 255))
 

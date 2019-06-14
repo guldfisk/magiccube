@@ -63,20 +63,17 @@ class Ticket(Lap):
 
 		width, height = size
 		corner_radius = max(2, height // 23)
-		print(corner_radius)
 
-		# TODO run then in parallel
 		images = [
 			image
 			if image.width == width else
-			# image.resize(
-			# 	(
-			# 		width,
-			# 		image.height * image.width // width,
-			# 	),
-			# 	Image.LANCZOS,
-			# )
-			image
+			image.resize(
+				(
+					width,
+					image.height * width // image.width,
+				),
+				Image.LANCZOS,
+			)
 			for image in
 			Promise.all(
 				tuple(
@@ -86,7 +83,6 @@ class Ticket(Lap):
 				)
 			).get()
 		]
-		print(width, [image.width for image in images])
 
 		background = Image.new('RGBA', (width, height), (0, 0, 0, 255))
 
