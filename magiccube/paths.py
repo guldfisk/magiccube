@@ -10,8 +10,3 @@ FONTS_DIRECTORY = os.path.join(
 	RESOURCE_DIRECTORY,
 	'fonts',
 )
-
-IMAGES_PATH = os.path.join(
-	RESOURCE_DIRECTORY,
-	'images',
-)
