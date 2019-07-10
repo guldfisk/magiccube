@@ -8,6 +8,7 @@ from collections import OrderedDict
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.utilities.containers import HashableMultiset
+from mtgorp.tools.search.pattern import Pattern
 
 from magiccube.laps.lap import Lap
 from magiccube.laps.traps.trap import Trap
@@ -106,6 +107,24 @@ class Cube(Serializeable):
 		for ticket in self._tickets:
 			for printing in ticket:
 				yield printing
+
+	def filter(self, pattern: Pattern[Printing]) -> 'Cube':
+		return self.__class__(
+			printings = pattern.matches(self._printings),
+			traps = (
+				trap
+				for trap in
+				self._traps
+				if any(pattern.matches(trap))
+			),
+			tickets = (
+				ticket
+				for ticket in
+				self._tickets
+				if any(pattern.matches(ticket))
+			),
+			purples=self._purples,
+		)
 
 	def __iter__(self) -> t.Iterator[Printing]:
 		return self.all_printings

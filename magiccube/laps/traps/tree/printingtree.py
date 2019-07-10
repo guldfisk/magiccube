@@ -108,23 +108,23 @@ class PrintingNode(Serializeable):
 
 	def serialize(self) -> serialization_model:
 		return {
-				'options': self._children,
-				'type': self.__class__.__name__,
-			}
+			'options': self._children,
+			'type': self.__class__.__name__,
+		}
 
 	@classmethod
 	def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'PrintingNode':
 		return (
-				AnyNode
-				if value['type'] == AnyNode.__name__ else
-				AllNode
-			)(
-				inflator.inflate(Printing, option)
-				if isinstance(option, int) else
-				cls.deserialize(option, inflator)
-				for option in
-				value['options']
-			)
+			AnyNode
+			if value['type'] == AnyNode.__name__ else
+			AllNode
+		)(
+			inflator.inflate(Printing, option)
+			if isinstance(option, int) else
+			cls.deserialize(option, inflator)
+			for option in
+			value['options']
+		)
 
 	def __hash__(self):
 		return hash((self.__class__, self._children))
@@ -136,13 +136,11 @@ class PrintingNode(Serializeable):
 		)
 
 	def __iter__(self) -> t.Iterable[Printing]:
-		for option in self._children:
-			if isinstance(option, Printing):
-				yield option
+		for child in self._children:
+			if isinstance(child, Printing):
+				yield child
 			else:
-				for item in option:
-					yield item
-
+				yield from child
 
 	def __repr__(self):
 		return f'{self.__class__.__name__}({self._children})'
