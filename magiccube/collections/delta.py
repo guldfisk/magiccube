@@ -129,22 +129,22 @@ class CubeDeltaOperation(Serializeable):
             printings = {
                 inflator.inflate(Printing, printing): multiplicity
                 for printing, multiplicity in
-                value['printings']
+                value['printings'].items()
             },
             traps = {
                 Trap.deserialize(trap, inflator): multiplicity
                 for trap, multiplicity in
-                value.get('traps', ())
+                value.get('traps', {}).items()
             },
             tickets = {
                 Ticket.deserialize(ticket, inflator): multiplicity
                 for ticket, multiplicity in
-                value.get('tickets', ())
+                value.get('tickets', {}).items()
             },
             purples = {
                 Purple.deserialize(purple, inflator): multiplicity
                 for purple, multiplicity in
-                value.get('purples', ())
+                value.get('purples', {}).items()
             }
         )
 
