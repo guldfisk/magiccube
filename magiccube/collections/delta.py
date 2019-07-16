@@ -1,11 +1,11 @@
 import typing as t
-from collections import Counter
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
-from mtgorp.utilities.containers import HashableMultiset
+from mtgorp.utilities.containers import HashableMultiset, Counter
 
-from magiccube.collections.cube import Cube
+from magiccube.collections.cube import Cube, cubeable
+from magiccube.laps.lap import Lap
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
@@ -23,14 +23,14 @@ class CubeDelta(object):
         self._removed_printings = None
 
     @property
-    def new_pickables(self) -> Cube:
+    def new_cubeables(self) -> Cube:
         if self._new_pickables is None:
             self._new_pickables = self._current - self._original
         
         return self._new_pickables
 
     @property
-    def removed_pickables(self) -> Cube:
+    def removed_cubeables(self) -> Cube:
         if self._removed_pickables is None:
             self._removed_pickables = self._original - self._current
 
@@ -63,14 +63,14 @@ class CubeDelta(object):
             for printing, multiplicity in
             sorted(
                 ms.items(),
-                key=lambda item: str(item[0])
+                key = lambda item: str(item[0])
             )
         )
 
     @property
     def report(self) -> str:
-        return f'New pickables:\n{self.new_pickables.pp_string}\n------\n' \
-               f'Removed pickables:\n{self.removed_pickables.pp_string}\n------\n' \
+        return f'New pickables:\n{self.new_cubeables.pp_string}\n------\n' \
+               f'Removed pickables:\n{self.removed_cubeables.pp_string}\n------\n' \
                f'New printings ({len(self.new_printings)}):\n' \
                f'{self._multiset_to_indented_string(self.new_printings)}\n' \
                f'Removed printings ({len(self.removed_printings)}):\n' \
@@ -92,20 +92,28 @@ class CubeDeltaOperation(Serializeable):
         self._purples = Counter() if purples is None else Counter(purples)
 
     @property
-    def printings(self) -> t.Iterable[Printing]:
+    def printings(self) -> t.Counter[Printing]:
         return self._printings
 
     @property
-    def traps(self) -> t.Iterable[Trap]:
+    def traps(self) -> t.Counter[Trap]:
         return self._traps
 
     @property
-    def tickets(self) -> t.Iterable[Ticket]:
+    def tickets(self) -> t.Counter[Ticket]:
         return self._tickets
 
     @property
-    def purples(self) -> t.Iterable[Purple]:
+    def purples(self) -> t.Counter[Purple]:
         return self._purples
+
+    @property
+    def laps(self) -> Counter[Lap]:
+        return self._traps + self._tickets + self._purples
+
+    @property
+    def cubeables(self) -> Counter[cubeable]:
+        return self._printings + self.laps
 
     def serialize(self) -> serialization_model:
         return {
@@ -138,6 +146,25 @@ class CubeDeltaOperation(Serializeable):
                 for purple, multiplicity in
                 value.get('purples', ())
             }
+        )
+
+    def __add__(self, other) -> 'CubeDeltaOperation':
+        printings = Counter()
+        traps = Counter()
+        tickets = Counter()
+        purples = Counter()
+
+        for delta in (self, other):
+            printings.update(delta.printings)
+            traps.update(delta.traps)
+            tickets.update(delta.tickets)
+            purples.update(delta.purples)
+
+        return CubeDeltaOperation(
+            printings = printings,
+            traps = traps,
+            tickets = tickets,
+            purples = purples,
         )
 
     def __hash__(self) -> int:
