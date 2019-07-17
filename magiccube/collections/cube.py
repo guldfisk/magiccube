@@ -2,12 +2,12 @@ import typing as t
 
 import hashlib
 import itertools
-
 from collections import OrderedDict
+
+from yeetlong.multiset import FrozenMultiset
 
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
-from mtgorp.utilities.containers import HashableMultiset
 from mtgorp.tools.search.pattern import Pattern
 
 from magiccube.laps.lap import Lap
@@ -28,34 +28,34 @@ class Cube(Serializeable):
 		tickets: t.Optional[t.Iterable[Ticket]] = None,
 		purples: t.Optional[t.Iterable[Purple]] = None,
 	):
-		self._printings = HashableMultiset() if printings is None else HashableMultiset(printings)
-		self._traps = HashableMultiset() if traps is None else HashableMultiset(traps)
-		self._tickets = HashableMultiset() if tickets is None else HashableMultiset(tickets)
-		self._purples = HashableMultiset() if purples is None else HashableMultiset(purples)
+		self._printings = FrozenMultiset() if printings is None else FrozenMultiset(printings)
+		self._traps = FrozenMultiset() if traps is None else FrozenMultiset(traps)
+		self._tickets = FrozenMultiset() if tickets is None else FrozenMultiset(tickets)
+		self._purples = FrozenMultiset() if purples is None else FrozenMultiset(purples)
 
-		self._laps = None #type: HashableMultiset[Lap]
-		self._cubeables = None #type: HashableMultiset[cubeable]
+		self._laps = None #type: FrozenMultiset[Lap]
+		self._cubeables = None #type: FrozenMultiset[cubeable]
 
 		self._persistent_hash = None #type: str
 
 	@property
-	def printings(self) -> HashableMultiset[Printing]:
+	def printings(self) -> FrozenMultiset[Printing]:
 		return self._printings
 
 	@property
-	def traps(self) -> HashableMultiset[Trap]:
+	def traps(self) -> FrozenMultiset[Trap]:
 		return self._traps
 
 	@property
-	def tickets(self) -> HashableMultiset[Ticket]:
+	def tickets(self) -> FrozenMultiset[Ticket]:
 		return self._tickets
 
 	@property
-	def purples(self) -> HashableMultiset[Purple]:
+	def purples(self) -> FrozenMultiset[Purple]:
 		return self._purples
 
 	@staticmethod
-	def _multiset_to_indented_string(ms: HashableMultiset[Printing]) -> str:
+	def _multiset_to_indented_string(ms: FrozenMultiset[Printing]) -> str:
 		return '\n'.join(
 			f'\t{multiplicity}x {printing}'
 			for printing, multiplicity in
@@ -79,14 +79,14 @@ class Cube(Serializeable):
 		)
 
 	@property
-	def laps(self) -> HashableMultiset[Lap]:
+	def laps(self) -> FrozenMultiset[Lap]:
 		if self._laps is None:
 			self._laps = self._traps + self._tickets + self._purples
 
 		return self._laps
 
 	@property
-	def cubeables(self) -> HashableMultiset[cubeable]:
+	def cubeables(self) -> FrozenMultiset[cubeable]:
 		if self._cubeables is None:
 			self._cubeables = self._printings + self.laps
 

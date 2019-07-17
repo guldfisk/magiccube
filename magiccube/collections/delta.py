@@ -1,8 +1,9 @@
 import typing as t
 
+from yeetlong.multiset import FrozenMultiset
+
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
-from mtgorp.utilities.containers import HashableMultiset, Counter
 
 from magiccube.collections.cube import Cube, cubeable
 from magiccube.laps.lap import Lap
@@ -37,27 +38,27 @@ class CubeDelta(object):
         return self._removed_pickables
     
     @property
-    def new_printings(self) -> HashableMultiset[Printing]:
+    def new_printings(self) -> FrozenMultiset[Printing]:
         if self._new_printings is None:
             self._new_printings = (
-                HashableMultiset(self._current.all_printings)
-                - HashableMultiset(self._original.all_printings)
+                FrozenMultiset(self._current.all_printings)
+                - FrozenMultiset(self._original.all_printings)
             )
 
         return self._new_printings
 
     @property
-    def removed_printings(self) -> HashableMultiset[Printing]:
+    def removed_printings(self) -> FrozenMultiset[Printing]:
         if self._removed_printings is None:
             self._removed_printings = (
-                HashableMultiset(self._original.all_printings)
-                - HashableMultiset(self._current.all_printings)
+                FrozenMultiset(self._original.all_printings)
+                - FrozenMultiset(self._current.all_printings)
             )
 
         return self._removed_printings
 
     @staticmethod
-    def _multiset_to_indented_string(ms: HashableMultiset[Printing]) -> str:
+    def _multiset_to_indented_string(ms: FrozenMultiset[Printing]) -> str:
         return '\n'.join(
             f'\t{multiplicity}x {printing}'
             for printing, multiplicity in

@@ -9,8 +9,9 @@ from PIL import Image, ImageDraw
 from promise import Promise
 import aggdraw
 
+from yeetlong.multiset import FrozenMultiset
+
 from mtgorp.models.persistent.printing import Printing
-from mtgorp.utilities.containers import HashableMultiset
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 from mtgimg.interface import ImageLoader
 
@@ -22,11 +23,11 @@ class PrintingNode(Serializeable):
 	_MINIMAL_STRING_CONNECTOR = None #type: str
 
 	def __init__(self, children: t.Iterable[t.Union[Printing, 'PrintingNode']]):
-		self._children = HashableMultiset(children)
+		self._children = FrozenMultiset(children)
 		self._persistent_hash = None
 
 	@property
-	def children(self) -> HashableMultiset[t.Union[Printing, 'PrintingNode']]:
+	def children(self) -> FrozenMultiset[t.Union[Printing, 'PrintingNode']]:
 		return self._children
 
 	def get_minimal_string(self, identified_by_id: bool = True) -> str:
