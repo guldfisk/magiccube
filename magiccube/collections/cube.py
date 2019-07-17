@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 
 import hashlib
@@ -16,208 +18,216 @@ from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
 
 
-cubeable = t.Union[Lap, Printing]
+Cubeable = t.Union[Lap, Printing]
 
 
 class Cube(Serializeable):
 
-	def __init__(
-		self,
-		printings: t.Optional[t.Iterable[Printing]] = None,
-		traps: t.Optional[t.Iterable[Trap]] = None,
-		tickets: t.Optional[t.Iterable[Ticket]] = None,
-		purples: t.Optional[t.Iterable[Purple]] = None,
-	):
-		self._printings = FrozenMultiset() if printings is None else FrozenMultiset(printings)
-		self._traps = FrozenMultiset() if traps is None else FrozenMultiset(traps)
-		self._tickets = FrozenMultiset() if tickets is None else FrozenMultiset(tickets)
-		self._purples = FrozenMultiset() if purples is None else FrozenMultiset(purples)
+    def __init__(
+        self,
+        cubeables: t.Optional[t.Iterable[Cubeable]] = None,
+    ):
+        self._cubeables = FrozenMultiset() if cubeables is None else FrozenMultiset(cubeables)
 
-		self._laps = None #type: FrozenMultiset[Lap]
-		self._cubeables = None #type: FrozenMultiset[cubeable]
+        self._printings = None #type: FrozenMultiset[Printing]
+        self._traps = None #type: FrozenMultiset[Trap]
+        self._tickets = None #type: FrozenMultiset[Ticket]
+        self._purples = None #type: FrozenMultiset[Purple]
+        self._laps = None #type: FrozenMultiset[Lap]
+        self._cubeables = None #type: FrozenMultiset[Cubeable]
+        self._persistent_hash = None #type: str
 
-		self._persistent_hash = None #type: str
+    @property
+    def cubeables(self) -> FrozenMultiset[Cubeable]:
+        return self._cubeables
 
-	@property
-	def printings(self) -> FrozenMultiset[Printing]:
-		return self._printings
+    @property
+    def printings(self) -> FrozenMultiset[Printing]:
+        if self._printings is None:
+            self._printings = FrozenMultiset(
+                cubeable
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, Printing)
+            )
+        return self._printings
 
-	@property
-	def traps(self) -> FrozenMultiset[Trap]:
-		return self._traps
+    @property
+    def traps(self) -> FrozenMultiset[Trap]:
+        if self._traps is None:
+            self._traps = FrozenMultiset(
+                cubeable
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, Trap)
+            )
+        return self._traps
 
-	@property
-	def tickets(self) -> FrozenMultiset[Ticket]:
-		return self._tickets
+    @property
+    def tickets(self) -> FrozenMultiset[Ticket]:
+        if self._tickets is None:
+            self._tickets = FrozenMultiset(
+                cubeable
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, Ticket)
+            )
+        return self._tickets
 
-	@property
-	def purples(self) -> FrozenMultiset[Purple]:
-		return self._purples
+    @property
+    def purples(self) -> FrozenMultiset[Purple]:
+        if self._purples is None:
+            self._purples = FrozenMultiset(
+                cubeable
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, Purple)
+            )
+        return self._purples
 
-	@staticmethod
-	def _multiset_to_indented_string(ms: FrozenMultiset[Printing]) -> str:
-		return '\n'.join(
-			f'\t{multiplicity}x {printing}'
-			for printing, multiplicity in
-			sorted(
-				ms.items(),
-				key = lambda item: str(item[0])
-			)
-		)
+    @staticmethod
+    def _multiset_to_indented_string(ms: FrozenMultiset[Printing]) -> str:
+        return '\n'.join(
+            f'\t{multiplicity}x {printing}'
+            for printing, multiplicity in
+            sorted(
+                ms.items(),
+                key = lambda item: str(item[0])
+            )
+        )
 
-	@property
-	def pp_string(self) -> str:
-		return '\n'.join(
-			f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
-			for pickable_type, pickables in
-			OrderedDict(
-				printings = self._printings,
-				traps = self._traps,
-				tickets = self._tickets,
-				purples = self._purples,
-			).items()
-		)
+    @property
+    def pp_string(self) -> str:
+        return '\n'.join(
+            f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
+            for pickable_type, pickables in
+            OrderedDict(
+                printings = self._printings,
+                traps = self._traps,
+                tickets = self._tickets,
+                purples = self._purples,
+            ).items()
+        )
 
-	@property
-	def laps(self) -> FrozenMultiset[Lap]:
-		if self._laps is None:
-			self._laps = self._traps + self._tickets + self._purples
+    @property
+    def laps(self) -> FrozenMultiset[Lap]:
+        if self._laps is None:
+            self._laps = FrozenMultiset(
+                cubeable
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, Lap)
+            )
+        return self._laps
 
-		return self._laps
+    @property
+    def all_printings(self) -> t.Iterator[Printing]:
+        for printing in self._printings:
+            yield printing
+        yield from self.garbage_printings
 
-	@property
-	def cubeables(self) -> FrozenMultiset[cubeable]:
-		if self._cubeables is None:
-			self._cubeables = self._printings + self.laps
+    @property
+    def garbage_printings(self) -> t.Iterator[Printing]:
+        for trap in self._traps:
+            yield from trap
+        for ticket in self._tickets:
+            yield from ticket
 
-		return self._cubeables
+    def filter(self, pattern: Pattern[Printing]) -> Cube:
+        return self.__class__(
+            cubeables = (
+                cubeable
+                for cubeable in
+                self._cubeables
+                if (
+                    isinstance(cubeable, Printing)
+                    and pattern.match(cubeable)
+                ) or any(pattern.matches(cubeable))
+            ),
+        )
 
-	@property
-	def all_printings(self) -> t.Iterator[Printing]:
-		for printing in self._printings:
-			yield printing
-		for printing in self.garbage_printings:
-			yield printing
+    def __iter__(self) -> t.Iterator[Cubeable]:
+        return self._cubeables.__iter__()
 
-	@property
-	def garbage_printings(self) -> t.Iterator[Printing]:
-		for trap in self._traps:
-			for printing in trap:
-				yield printing
-		for ticket in self._tickets:
-			for printing in ticket:
-				yield printing
+    def __len__(self) -> int:
+        return len(self._cubeables)
 
-	def filter(self, pattern: Pattern[Printing]) -> 'Cube':
-		return self.__class__(
-			printings = pattern.matches(self._printings),
-			traps = (
-				trap
-				for trap in
-				self._traps
-				if any(pattern.matches(trap))
-			),
-			tickets = (
-				ticket
-				for ticket in
-				self._tickets
-				if any(pattern.matches(ticket))
-			),
-			purples=self._purples,
-		)
+    def serialize(self) -> serialization_model:
+        return {
+            'printings': self._printings,
+            'traps': self._traps,
+            'tickets': self._tickets,
+            'purples': self._purples,
+        }
 
-	def __iter__(self) -> t.Iterator[Printing]:
-		return self.all_printings
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> Cube:
+        return cls(
+            itertools.chain(
+                inflator.inflate_all(Printing, value['printings']),
+                (
+                    Trap.deserialize(trap, inflator)
+                    for trap in
+                    value.get('traps', ())
+                ),
+                (
+                    Ticket.deserialize(ticket, inflator)
+                    for ticket in
+                    value.get('tickets', ())
+                ),
+                (
+                    Purple.deserialize(purple, inflator)
+                    for purple in
+                    value.get('purples', ())
+                ),
+            )
+        )
 
-	def __len__(self) -> int:
-		return len(self._printings) + len(self._traps) + len(self._tickets) + len(self._purples)
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({len(self)})'
 
-	def serialize(self) -> serialization_model:
-		return {
-			'printings': self._printings,
-			'traps': self._traps,
-			'tickets': self._tickets,
-			'purples': self._purples,
-		}
+    def __hash__(self) -> int:
+        return hash(self._cubeables)
+    
+    def persistent_hash(self) -> str:
+        if self._persistent_hash is not None:
+            return self._persistent_hash
 
-	@classmethod
-	def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Cube':
-		return cls(
-			inflator.inflate_all(Printing, value['printings']),
-			(
-				Trap.deserialize(trap, inflator)
-				for trap in
-				value.get('traps', ())
-			),
-			(
-				Ticket.deserialize(ticket, inflator)
-				for ticket in
-				value.get('tickets', ())
-			),
-			(
-				Purple.deserialize(purple, inflator)
-				for purple in
-				value.get('purples', ())
-			),
-		)
+        hasher = hashlib.sha512()
 
-	def __repr__(self) -> str:
-		return f'{self.__class__.__name__}({len(self)})'
+        for printing in sorted(self._printings, key=lambda _printing: _printing.id):
+            hasher.update(str(printing.id).encode('ASCII'))
 
-	def __hash__(self) -> int:
-		return hash((self._printings, self._traps, self._tickets, self._purples))
-	
-	def persistent_hash(self) -> str:
-		if self._persistent_hash is not None:
-			return self._persistent_hash
+        for persistent_hash in sorted(
+            lap.persistent_hash()
+            for lap in
+            self.laps
+        ):
+            hasher.update(persistent_hash.encode('UTF-8'))
 
-		hasher = hashlib.sha512()
+        self._persistent_hash = hasher.hexdigest()
 
-		for printing in sorted(self._printings, key=lambda _printing: _printing.id):
-			hasher.update(str(printing.id).encode('ASCII'))
+        return self._persistent_hash
 
-		for persistent_hash in itertools.chain(
-			sorted(
-				trap.persistent_hash() for trap in self._traps
-			),
-			sorted(
-				ticket.persistent_hash() for ticket in self._tickets
-			),
-			sorted(
-				purple.persistent_hash() for purple in self._purples
-			),
-		):
-			hasher.update(persistent_hash.encode('UTF-8'))
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._cubeables == other._cubeables
+        )
 
-		self._persistent_hash = hasher.hexdigest()
+    def __add__(self, other):
+        return self.__class__(
+            self._cubeables == other.cubeables
+        )
 
-		return self._persistent_hash
+    def __sub__(self, other):
+        return self.__class__(
+            self._printings - other.printings,
+            self._traps - other.traps,
+            self._tickets - other.tickets,
+            self._purples - other.purples,
+        )
 
-	def __eq__(self, other: object) -> bool:
-		return (
-			isinstance(other, self.__class__)
-			and self._printings == other._printings
-			and self._traps == other._traps
-			and self._tickets == other._tickets
-			and self._purples == other._purples
-		)
-
-	def __add__(self, other):
-		return self.__class__(
-			self._printings + other.printings,
-			self._traps + other.traps,
-			self._tickets + other.tickets,
-			self._purples + other.purples,
-		)
-
-	def __sub__(self, other):
-		return self.__class__(
-			self._printings - other.printings,
-			self._traps - other.traps,
-			self._tickets - other.tickets,
-			self._purples - other.purples,
-		)
-
-	def __str__(self) -> str:
-		return f'{self.__class__.__name__}({self.__hash__()})'
+    def __str__(self) -> str:
+        return f'{self.__class__.__name__}({self.__hash__()})'
 

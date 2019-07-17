@@ -1,11 +1,12 @@
 import typing as t
 
 from yeetlong.multiset import FrozenMultiset
+from yeetlong.counters import FrozenCounter
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 
-from magiccube.collections.cube import Cube, cubeable
+from magiccube.collections.cube import Cube, Cubeable
 from magiccube.laps.lap import Lap
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
@@ -87,33 +88,49 @@ class CubeDeltaOperation(Serializeable):
         tickets: t.Optional[t.Mapping[Ticket, int]] = None,
         purples: t.Optional[t.Mapping[Purple, int]] = None,
     ):
-        self._printings = Counter() if printings is None else Counter(printings)
-        self._traps = Counter() if traps is None else Counter(traps)
-        self._tickets = Counter() if tickets is None else Counter(tickets)
-        self._purples = Counter() if purples is None else Counter(purples)
+        self._printings = (
+            FrozenCounter()
+            if printings is None else
+            FrozenCounter(printings)
+        )# type: FrozenCounter[Printing]
+        self._traps = (
+            FrozenCounter()
+            if traps is None else
+            FrozenCounter(traps)
+        )# type: FrozenCounter[Trap]
+        self._tickets = (
+            FrozenCounter()
+            if tickets is None else
+            FrozenCounter(tickets)
+        )# type: FrozenCounter[Ticket]
+        self._purples = (
+            FrozenCounter()
+            if purples is None else
+            FrozenCounter(purples)
+        )# type: FrozenCounter[Purple]
 
     @property
-    def printings(self) -> t.Counter[Printing]:
+    def printings(self) -> FrozenCounter[Printing]:
         return self._printings
 
     @property
-    def traps(self) -> t.Counter[Trap]:
+    def traps(self) -> FrozenCounter[Trap]:
         return self._traps
 
     @property
-    def tickets(self) -> t.Counter[Ticket]:
+    def tickets(self) -> FrozenCounter[Ticket]:
         return self._tickets
 
     @property
-    def purples(self) -> t.Counter[Purple]:
+    def purples(self) -> FrozenCounter[Purple]:
         return self._purples
 
     @property
-    def laps(self) -> Counter[Lap]:
+    def laps(self) -> FrozenCounter[Lap]:
         return self._traps + self._tickets + self._purples
 
     @property
-    def cubeables(self) -> Counter[cubeable]:
+    def cubeables(self) -> FrozenCounter[Cubeable]:
         return self._printings + self.laps
 
     def serialize(self) -> serialization_model:
@@ -150,10 +167,10 @@ class CubeDeltaOperation(Serializeable):
         )
 
     def __add__(self, other) -> 'CubeDeltaOperation':
-        printings = Counter()
-        traps = Counter()
-        tickets = Counter()
-        purples = Counter()
+        printings = FrozenCounter()
+        traps = FrozenCounter()
+        tickets = FrozenCounter()
+        purples = FrozenCounter()
 
         for delta in (self, other):
             printings.update(delta.printings)
