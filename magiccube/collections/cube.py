@@ -153,10 +153,10 @@ class Cube(Serializeable):
 
     def serialize(self) -> serialization_model:
         return {
-            'printings': self._printings,
-            'traps': self._traps,
-            'tickets': self._tickets,
-            'purples': self._purples,
+            'printings': self.printings,
+            'traps': self.traps,
+            'tickets': self.tickets,
+            'purples': self.purples,
         }
 
     @classmethod
