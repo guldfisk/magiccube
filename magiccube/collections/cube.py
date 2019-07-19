@@ -194,7 +194,7 @@ class Cube(Serializeable):
 
         hasher = hashlib.sha512()
 
-        for printing in sorted(self._printings, key=lambda _printing: _printing.id):
+        for printing in sorted(self.printings, key=lambda _printing: _printing.id):
             hasher.update(str(printing.id).encode('ASCII'))
 
         for persistent_hash in sorted(
@@ -216,15 +216,12 @@ class Cube(Serializeable):
 
     def __add__(self, other):
         return self.__class__(
-            self._cubeables == other.cubeables
+            self._cubeables + other.cubeables
         )
 
     def __sub__(self, other):
         return self.__class__(
-            self._printings - other.printings,
-            self._traps - other.traps,
-            self._tickets - other.tickets,
-            self._purples - other.purples,
+            self._cubeables - self._cubeables
         )
 
     def __str__(self) -> str:

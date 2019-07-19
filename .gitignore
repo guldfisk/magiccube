@@ -1,3 +1,6 @@
 .idea/
 /magiccube/test.py
 misccube/test.py
+misccube/__pycache__/
+misccube/cubeload/__pycache__/
+misccube/lapproxy/out/
