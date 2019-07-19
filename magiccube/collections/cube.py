@@ -141,7 +141,10 @@ class Cube(Serializeable):
                 if (
                     isinstance(cubeable, Printing)
                     and pattern.match(cubeable)
-                ) or any(pattern.matches(cubeable))
+                ) or (
+                    isinstance(cubeable, Lap)
+                    and any(pattern.matches(cubeable))
+                )
             ),
         )
 
