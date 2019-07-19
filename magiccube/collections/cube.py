@@ -127,9 +127,9 @@ class Cube(Serializeable):
 
     @property
     def garbage_printings(self) -> t.Iterator[Printing]:
-        for trap in self._traps:
+        for trap in self.traps:
             yield from trap
-        for ticket in self._tickets:
+        for ticket in self.tickets:
             yield from ticket
 
     def filter(self, pattern: Pattern[Printing]) -> Cube:
