@@ -121,7 +121,7 @@ class Cube(Serializeable):
 
     @property
     def all_printings(self) -> t.Iterator[Printing]:
-        for printing in self._printings:
+        for printing in self.printings:
             yield printing
         yield from self.garbage_printings
 
