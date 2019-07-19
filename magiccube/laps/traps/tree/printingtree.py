@@ -37,10 +37,7 @@ class PrintingNode(Serializeable):
 			if isinstance(child, Printing) else
 			f'({child.get_minimal_string(identified_by_id)})'
 			for child, multiplicity in
-			sorted(
-				self._children.items(),
-				key = lambda item: str(item[0]),
-			)
+			self.sorted_items
 		)
 
 	@LazyProperty
@@ -94,7 +91,7 @@ class PrintingNode(Serializeable):
 		)
 
 	@LazyProperty
-	def sorted_uniques(self) -> t.List[t.Tuple[t.Union[Printing, 'PrintingNode'], int]]:
+	def sorted_uniques(self) -> t.List[t.Union[Printing, 'PrintingNode']]:
 		return sorted(
 			self._children.distinct_elements(),
 			key = lambda p:

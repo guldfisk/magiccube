@@ -34,7 +34,6 @@ class Cube(Serializeable):
         self._tickets = None #type: FrozenMultiset[Ticket]
         self._purples = None #type: FrozenMultiset[Purple]
         self._laps = None #type: FrozenMultiset[Lap]
-        self._cubeables = None #type: FrozenMultiset[Cubeable]
         self._persistent_hash = None #type: str
 
     @property
@@ -102,10 +101,10 @@ class Cube(Serializeable):
             f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
             for pickable_type, pickables in
             OrderedDict(
-                printings = self._printings,
-                traps = self._traps,
-                tickets = self._tickets,
-                purples = self._purples,
+                printings = self.printings,
+                traps = self.traps,
+                tickets = self.tickets,
+                purples = self.purples,
             ).items()
         )
 
@@ -163,7 +162,7 @@ class Cube(Serializeable):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> Cube:
         return cls(
-            itertools.chain(
+            cubeables = itertools.chain(
                 inflator.inflate_all(Printing, value['printings']),
                 (
                     Trap.deserialize(trap, inflator)
