@@ -142,7 +142,7 @@ class Cube(Serializeable):
                     isinstance(cubeable, Printing)
                     and pattern.match(cubeable)
                 ) or (
-                    isinstance(cubeable, Lap)
+                    isinstance(cubeable, t.Iterable)
                     and any(pattern.matches(cubeable))
                 )
             ),
@@ -217,14 +217,14 @@ class Cube(Serializeable):
             and self._cubeables == other._cubeables
         )
 
-    def __add__(self, other):
+    def __add__(self, other: Cube) -> Cube:
         return self.__class__(
             self._cubeables + other.cubeables
         )
 
-    def __sub__(self, other):
+    def __sub__(self, other: Cube) -> Cube:
         return self.__class__(
-            self._cubeables - self._cubeables
+            self._cubeables - other.cubeables
         )
 
     def __str__(self) -> str:

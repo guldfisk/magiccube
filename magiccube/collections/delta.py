@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import typing as t
+
+import itertools
 
 from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
@@ -19,24 +23,24 @@ class CubeDelta(object):
         self._original = original
         self._current = current
         
-        self._new_pickables = None
-        self._removed_pickables = None
+        self._new_cubeables = None
+        self._removed_cubeables = None
         self._new_printings = None
         self._removed_printings = None
 
     @property
     def new_cubeables(self) -> Cube:
-        if self._new_pickables is None:
-            self._new_pickables = self._current - self._original
+        if self._new_cubeables is None:
+            self._new_cubeables = self._current - self._original
         
-        return self._new_pickables
+        return self._new_cubeables
 
     @property
     def removed_cubeables(self) -> Cube:
-        if self._removed_pickables is None:
-            self._removed_pickables = self._original - self._current
+        if self._removed_cubeables is None:
+            self._removed_cubeables = self._original - self._current
 
-        return self._removed_pickables
+        return self._removed_cubeables
     
     @property
     def new_printings(self) -> FrozenMultiset[Printing]:
@@ -71,137 +75,178 @@ class CubeDelta(object):
 
     @property
     def report(self) -> str:
-        return f'New pickables:\n{self.new_cubeables.pp_string}\n------\n' \
-               f'Removed pickables:\n{self.removed_cubeables.pp_string}\n------\n' \
+        return f'New cubeables ({len(self.new_cubeables)}):\n{self.new_cubeables.pp_string}\n------\n' \
+               f'Removed cubeables ({len(self.removed_cubeables)}):\n{self.removed_cubeables.pp_string}\n------\n' \
                f'New printings ({len(self.new_printings)}):\n' \
                f'{self._multiset_to_indented_string(self.new_printings)}\n' \
                f'Removed printings ({len(self.removed_printings)}):\n' \
                f'{self._multiset_to_indented_string(self.removed_printings)}'
+
+    def as_operation(self) -> CubeDeltaOperation:
+        # print(
+        #     CubeDeltaOperation(
+        #         self._current.cubeables.elements()
+        #     )
+        # )
+        # print(
+        #     CubeDeltaOperation(
+        #         self._original.cubeables.elements()
+        #     )
+        # )
+        #
+        # delta_operation = CubeDeltaOperation(
+        #     self._current.cubeables.elements()
+        # ) - CubeDeltaOperation(
+        #     self._original.cubeables.elements()
+        # )
+        #
+        # for item, multiplicity in delta_operation.cubeables.items():
+        #     if multiplicity > 0:
+        #         print(item, multiplicity)
+
+        return CubeDeltaOperation(
+            self._current.cubeables.elements()
+        ) - CubeDeltaOperation(
+            self._original.cubeables.elements()
+        )
 
 
 class CubeDeltaOperation(Serializeable):
 
     def __init__(
         self,
-        printings: t.Optional[t.Mapping[Printing, int]] = None,
-        traps: t.Optional[t.Mapping[Trap, int]] = None,
-        tickets: t.Optional[t.Mapping[Ticket, int]] = None,
-        purples: t.Optional[t.Mapping[Purple, int]] = None,
+        cubeables: t.Optional[t.Mapping[Cubeable, int]] = None,
     ):
-        self._printings = (
+        self._cubeables = (
             FrozenCounter()
-            if printings is None else
-            FrozenCounter(printings)
-        )# type: FrozenCounter[Printing]
-        self._traps = (
-            FrozenCounter()
-            if traps is None else
-            FrozenCounter(traps)
-        )# type: FrozenCounter[Trap]
-        self._tickets = (
-            FrozenCounter()
-            if tickets is None else
-            FrozenCounter(tickets)
-        )# type: FrozenCounter[Ticket]
-        self._purples = (
-            FrozenCounter()
-            if purples is None else
-            FrozenCounter(purples)
-        )# type: FrozenCounter[Purple]
+            if cubeables is None else
+            FrozenCounter(cubeables)
+        ) #type: FrozenCounter[Cubeable]
 
     @property
-    def printings(self) -> FrozenCounter[Printing]:
-        return self._printings
+    def printings(self) -> t.Iterator[t.Tuple[Printing, int]]:
+        return (
+            (cubeable, multiplicity)
+            for cubeable, multiplicity in
+            self._cubeables
+            if isinstance(cubeable, Printing)
+        )
 
     @property
-    def traps(self) -> FrozenCounter[Trap]:
-        return self._traps
+    def traps(self) -> t.Iterator[t.Tuple[Trap, int]]:
+        return (
+            (cubeable, multiplicity)
+            for cubeable, multiplicity in
+            self._cubeables
+            if isinstance(cubeable, Trap)
+        )
 
     @property
-    def tickets(self) -> FrozenCounter[Ticket]:
-        return self._tickets
+    def tickets(self) -> t.Iterator[t.Tuple[Ticket, int]]:
+        return (
+            (cubeable, multiplicity)
+            for cubeable, multiplicity in
+            self._cubeables
+            if isinstance(cubeable, Ticket)
+        )
 
     @property
-    def purples(self) -> FrozenCounter[Purple]:
-        return self._purples
+    def purples(self) -> t.Iterator[t.Tuple[Purple, int]]:
+        return (
+            (cubeable, multiplicity)
+            for cubeable, multiplicity in
+            self._cubeables
+            if isinstance(cubeable, Purple)
+        )
 
     @property
-    def laps(self) -> FrozenCounter[Lap]:
-        return self._traps + self._tickets + self._purples
+    def laps(self) -> t.Iterator[t.Tuple[Lap, int]]:
+        return itertools.chain(
+            self.traps,
+            self.tickets,
+            self.purples,
+        )
 
     @property
     def cubeables(self) -> FrozenCounter[Cubeable]:
-        return self._printings + self.laps
+        return self._cubeables
 
     def serialize(self) -> serialization_model:
         return {
-            'printings': self._printings.items(),
-            'traps': self._traps.items(),
-            'tickets': self._tickets.items(),
-            'purples': self._purples.items(),
+            'printings': self.printings,
+            'traps': self.traps,
+            'tickets': self.tickets,
+            'purples': self.purples,
         }
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
         return cls(
-            printings = {
-                inflator.inflate(Printing, printing): multiplicity
-                for printing, multiplicity in
-                value.get('printings', [])
-            },
-            traps = {
-                Trap.deserialize(trap, inflator): multiplicity
-                for trap, multiplicity in
-                value.get('traps', [])
-            },
-            tickets = {
-                Ticket.deserialize(ticket, inflator): multiplicity
-                for ticket, multiplicity in
-                value.get('tickets', [])
-            },
-            purples = {
-                Purple.deserialize(purple, inflator): multiplicity
-                for purple, multiplicity in
-                value.get('purples', [])
+            {
+                cubeable: multiplicity
+                for cubeable, multiplicity in
+                itertools.chain(
+                    (
+                        (inflator.inflate(Printing, printing), multiplicity)
+                        for printing, multiplicity in
+                        value.get('printings', [])
+                    ),
+                    (
+                        (Trap.deserialize(trap, inflator), multiplicity)
+                        for trap, multiplicity in
+                        value.get('traps', [])
+                    ),
+                    (
+                        (Ticket.deserialize(ticket, inflator), multiplicity)
+                        for ticket, multiplicity in
+                        value.get('tickets', [])
+                    ),
+                    (
+                        (Purple.deserialize(purple, inflator), multiplicity)
+                        for purple, multiplicity in
+                        value.get('purples', [])
+                    )
+                )
             }
         )
 
-    def __add__(self, other) -> 'CubeDeltaOperation':
-        printings = FrozenCounter()
-        traps = FrozenCounter()
-        tickets = FrozenCounter()
-        purples = FrozenCounter()
+    def __add__(self, other: t.Union[CubeDeltaOperation, Cube]) -> CubeDeltaOperation:
+        return self.__class__(
+            self._cubeables + other.cubeables
+        )
 
-        for delta in (self, other):
-            printings.update(delta.printings)
-            traps.update(delta.traps)
-            tickets.update(delta.tickets)
-            purples.update(delta.purples)
+    __radd__ = __add__
 
-        return CubeDeltaOperation(
-            printings = printings,
-            traps = traps,
-            tickets = tickets,
-            purples = purples,
+    def __sub__(self, other: t.Union[CubeDeltaOperation, Cube]) -> CubeDeltaOperation:
+        return self.__class__(
+            self._cubeables - other.cubeables
+        )
+
+    __rsub__ = __sub__
+
+    def __mul__(self, other: int) -> CubeDeltaOperation:
+        return self.__class__(
+            self._cubeables * other
+        )
+
+    __rmul__ = __mul__
+
+    def __invert__(self):
+        return self.__class__(
+            self._cubeables * -1
         )
 
     def __hash__(self) -> int:
-        return hash((self._printings, self._traps, self._tickets, self._purples))
+        return hash(self._cubeables)
 
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self._printings == other._printings
-            and self._traps == other._traps
-            and self._tickets == other._tickets
-            and self._purples == other._purples
+            and self._cubeables == other._cubeables
         )
 
     def __repr__(self) -> str:
-        return '{}({}, {}, {}, {})'.format(
+        return '{}({})'.format(
             self.__class__.__name__,
-            self._printings,
-            self._traps,
-            self._tickets,
-            self._purples,
+            self._cubeables,
         )
