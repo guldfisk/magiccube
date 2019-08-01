@@ -11,10 +11,13 @@ from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 
 from magiccube.collections.cube import Cube, Cubeable
+from magiccube.collections.nodecollection import NodeCollection
 from magiccube.laps.lap import Lap
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
+from magiccube.laps.traps.tree.printingtree import PrintingNode
+from magiccube.collections.cubeable import CubeableCollection
 
 
 class CubeDelta(object):
@@ -90,7 +93,7 @@ class CubeDelta(object):
         )
 
 
-class CubeDeltaOperation(Serializeable):
+class CubeDeltaOperation(CubeableCollection):
 
     def __init__(
         self,
@@ -159,7 +162,7 @@ class CubeDeltaOperation(Serializeable):
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> CubeDeltaOperation:
         return cls(
             {
                 cubeable: multiplicity
@@ -229,3 +232,4 @@ class CubeDeltaOperation(Serializeable):
             self.__class__.__name__,
             self._cubeables,
         )
+

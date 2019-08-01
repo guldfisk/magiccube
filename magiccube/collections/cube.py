@@ -8,20 +8,18 @@ from collections import OrderedDict
 
 from yeetlong.multiset import FrozenMultiset
 
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.tools.search.pattern import Pattern
 
 from magiccube.laps.lap import Lap
-from magiccube.laps.traps.trap import Trap
+from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
+from magiccube.collections.cubeable import Cubeable, CubeableCollection
 
 
-Cubeable = t.Union[Lap, Printing]
-
-
-class Cube(Serializeable):
+class Cube(CubeableCollection):
 
     def __init__(
         self,
@@ -29,12 +27,13 @@ class Cube(Serializeable):
     ):
         self._cubeables = FrozenMultiset() if cubeables is None else FrozenMultiset(cubeables)
 
-        self._printings = None #type: FrozenMultiset[Printing]
-        self._traps = None #type: FrozenMultiset[Trap]
-        self._tickets = None #type: FrozenMultiset[Ticket]
-        self._purples = None #type: FrozenMultiset[Purple]
-        self._laps = None #type: FrozenMultiset[Lap]
-        self._persistent_hash = None #type: str
+        self._printings: FrozenMultiset[Printing] = None
+        self._traps: FrozenMultiset[Trap] = None
+        self._garbage_traps: FrozenMultiset[Trap] = None
+        self._tickets: FrozenMultiset[Ticket] = None
+        self._purples: FrozenMultiset[Purple] = None
+        self._laps: FrozenMultiset[Lap] = None
+        self._persistent_hash: str = None
 
     @property
     def cubeables(self) -> FrozenMultiset[Cubeable]:
@@ -61,6 +60,18 @@ class Cube(Serializeable):
                 if isinstance(cubeable, Trap)
             )
         return self._traps
+
+    @property
+    def garbage_traps(self) -> FrozenMultiset[Trap]:
+        if self._garbage_traps is None:
+            self._garbage_traps = FrozenMultiset(
+                cubeable
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, Trap)
+                and cubeable.intention_type == IntentionType.GARBAGE
+            )
+        return self._garbage_traps
 
     @property
     def tickets(self) -> FrozenMultiset[Ticket]:
@@ -217,16 +228,24 @@ class Cube(Serializeable):
             and self._cubeables == other._cubeables
         )
 
-    def __add__(self, other: Cube) -> Cube:
+    def __add__(self, other: t.Union[CubeableCollection, t.Iterable[Cubeable]]) -> Cube:
+        if isinstance(other, CubeableCollection):
+            return self.__class__(
+                self._cubeables + other.cubeables
+            )
         return self.__class__(
-            self._cubeables + other.cubeables
+            self._cubeables + other
         )
 
-    def __sub__(self, other: Cube) -> Cube:
+    def __sub__(self, other: t.Union[CubeableCollection, t.Iterable[Cubeable]]) -> Cube:
+        if isinstance(other, CubeableCollection):
+            return self.__class__(
+                self._cubeables + other.cubeables
+            )
         return self.__class__(
-            self._cubeables - other.cubeables
+            self._cubeables - other
         )
-
+    
     def __str__(self) -> str:
         return f'{self.__class__.__name__}({self.__hash__()})'
 
