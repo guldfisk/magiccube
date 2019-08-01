@@ -101,14 +101,13 @@ class CubeDeltaOperation(Serializeable):
             if cubeables is None else
             FrozenCounter(cubeables)
         ) #type: FrozenCounter[Cubeable]
-        print('OK', self._cubeables)
 
     @property
     def printings(self) -> t.Iterator[t.Tuple[Printing, int]]:
         return (
             (cubeable, multiplicity)
             for cubeable, multiplicity in
-            self._cubeables
+            self._cubeables.items()
             if isinstance(cubeable, Printing)
         )
 
@@ -117,7 +116,7 @@ class CubeDeltaOperation(Serializeable):
         return (
             (cubeable, multiplicity)
             for cubeable, multiplicity in
-            self._cubeables
+            self._cubeables.items()
             if isinstance(cubeable, Trap)
         )
 
@@ -126,7 +125,7 @@ class CubeDeltaOperation(Serializeable):
         return (
             (cubeable, multiplicity)
             for cubeable, multiplicity in
-            self._cubeables
+            self._cubeables.items()
             if isinstance(cubeable, Ticket)
         )
 
@@ -135,7 +134,7 @@ class CubeDeltaOperation(Serializeable):
         return (
             (cubeable, multiplicity)
             for cubeable, multiplicity in
-            self._cubeables
+            self._cubeables.items()
             if isinstance(cubeable, Purple)
         )
 
