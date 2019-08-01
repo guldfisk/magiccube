@@ -83,27 +83,6 @@ class CubeDelta(object):
                f'{self._multiset_to_indented_string(self.removed_printings)}'
 
     def as_operation(self) -> CubeDeltaOperation:
-        # print(
-        #     CubeDeltaOperation(
-        #         self._current.cubeables.elements()
-        #     )
-        # )
-        # print(
-        #     CubeDeltaOperation(
-        #         self._original.cubeables.elements()
-        #     )
-        # )
-        #
-        # delta_operation = CubeDeltaOperation(
-        #     self._current.cubeables.elements()
-        # ) - CubeDeltaOperation(
-        #     self._original.cubeables.elements()
-        # )
-        #
-        # for item, multiplicity in delta_operation.cubeables.items():
-        #     if multiplicity > 0:
-        #         print(item, multiplicity)
-
         return CubeDeltaOperation(
             self._current.cubeables.elements()
         ) - CubeDeltaOperation(
@@ -122,6 +101,7 @@ class CubeDeltaOperation(Serializeable):
             if cubeables is None else
             FrozenCounter(cubeables)
         ) #type: FrozenCounter[Cubeable]
+        print('OK', self._cubeables)
 
     @property
     def printings(self) -> t.Iterator[t.Tuple[Printing, int]]:
