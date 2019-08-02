@@ -64,6 +64,18 @@ class CubePatch(Serializeable):
             self._node_delta_operation,
         )
 
+    def __add__(self, other: CubePatch) -> CubePatch:
+        return self.__class__(
+            self._cube_delta_operation + other._cube_delta_operation,
+            self._node_delta_operation + other._node_delta_operation,
+        )
+
+    def __sub__(self, other: CubePatch) -> CubePatch:
+        return self.__class__(
+            self._cube_delta_operation - other._cube_delta_operation,
+            self._node_delta_operation - other._node_delta_operation,
+        )
+
 
 class CubeUpdater(object):
     
