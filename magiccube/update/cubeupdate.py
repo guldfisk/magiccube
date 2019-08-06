@@ -39,7 +39,11 @@ class CubePatch(Serializeable):
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> CubePatch:
         return cls(
             cube_delta_operation = CubeDeltaOperation.deserialize(value['cube_delta'], inflator),
-            node_delta_operation = NodesDeltaOperation.deserialize(value['nodes_delta'], inflator),
+            node_delta_operation = (
+                NodesDeltaOperation.deserialize(value['nodes_delta'], inflator)
+                if 'nodes_delta' in value else
+                NodesDeltaOperation()
+            ),
         )
 
     def __hash__(self) -> int:
