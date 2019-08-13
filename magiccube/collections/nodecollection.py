@@ -102,6 +102,12 @@ class NodeCollection(Serializeable):
                 value['nodes']
             )
         )
+
+    def items(self) -> t.Iterable[t.Tuple[ConstrainedNode, int]]:
+        return self._nodes.items()
+
+    def __iter__(self) -> t.Iterator[ConstrainedNode]:
+        return self._nodes.__iter__()
     
     def __len__(self) -> int:
         return self._nodes.__len__()   
