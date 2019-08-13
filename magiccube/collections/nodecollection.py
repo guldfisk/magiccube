@@ -66,7 +66,7 @@ class ConstrainedNode(Serializeable):
         )
 
     def __repr__(self):
-        return f'CC({self.node})'
+        return f'CC({self.node}, {self.groups}, {self.value})'
 
     def __deepcopy__(self, memodict: t.Dict):
         return self
