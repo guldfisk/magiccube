@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+import hashlib
+
 from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
 
@@ -21,6 +23,8 @@ class ConstrainedNode(Serializeable):
             colors = node.children.__iter__().__next__().cardboard.front_card.color
             if len(colors) == 1:
                 self._groups |= {color.name for color in colors}
+
+        self._persistent_hash = None
 
     @property
     def value(self) -> float:
@@ -51,6 +55,21 @@ class ConstrainedNode(Serializeable):
             value = value['value'],
             groups = value['groups'],
         )
+
+    def persistent_hash(self) -> str:
+        if self._persistent_hash is not None:
+            return self._persistent_hash
+
+        hasher = hashlib.sha512()
+
+        hasher.update(self.node.persistent_hash().encode('ASCII'))
+        hasher.update(self.value)
+        for group in sorted(self.groups):
+            hasher.update(group.encode('UTF-8'))
+
+        self._persistent_hash = hasher.hexdigest()
+
+        return self._persistent_hash
 
     def __hash__(self) -> int:
         if not hasattr(self, '_hash'):

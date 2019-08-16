@@ -143,17 +143,6 @@ class PrintingNode(Serializeable):
                 in value['options']
             }
         )
-        # return (
-        #     AnyNode
-        #     if value['type'] == AnyNode.__name__ else
-        #     AllNode
-        # )(
-        #     inflator.inflate(Printing, option)
-        #     if isinstance(option, int) else
-        #     cls.deserialize(option, inflator)
-        #     for option in
-        #     value['options']
-        # )
 
     def __hash__(self):
         return hash((self.__class__, self._children))
