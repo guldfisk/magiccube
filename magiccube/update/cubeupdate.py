@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import typing as t
+from abc import ABC, abstractmethod
+import itertools
 
 import copy
 
@@ -16,15 +18,231 @@ from magiccube.collections.nodecollection import NodeCollection, NodesDeltaOpera
 from magiccube.collections.delta import CubeDeltaOperation
 
 
+class CubeChange(ABC):
+
+    @abstractmethod
+    def __hash__(self) -> int:
+        pass
+
+    @abstractmethod
+    def __eq__(self, other) -> bool:
+        pass
+
+
+class NewPrinting(CubeChange):
+
+    def __init__(self, printing: Printing):
+        self._printing = printing
+
+    @property
+    def printing(self) -> Printing:
+        return self._printing
+
+    def __hash__(self) -> int:
+        return hash(self._printing)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._printing == other._printing
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            self._printing,
+        )
+
+
+class RemovedPrinting(CubeChange):
+
+    def __init__(self, printing: Printing):
+        self._printing = printing
+
+    @property
+    def printing(self) -> Printing:
+        return self._printing
+
+    def __hash__(self) -> int:
+        return hash(self._printing)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._printing == other._printing
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            self._printing,
+        )
+
+
+class NewNode(CubeChange):
+
+    def __init__(self, node: ConstrainedNode):
+        self._node = node
+
+    @property
+    def node(self) -> ConstrainedNode:
+        return self._node
+
+    def __hash__(self) -> int:
+        return hash(self._node)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._node == other._node
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            self._node,
+        )
+
+
+class RemovedNode(CubeChange):
+
+    def __init__(self, node: ConstrainedNode):
+        self._node = node
+
+    @property
+    def node(self) -> ConstrainedNode:
+        return self._node
+
+    def __hash__(self) -> int:
+        return hash(self._node)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._node == other._node
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            self._node,
+        )
+
+
+class PrintingToNode(CubeChange):
+
+    def __init__(self, printing: Printing):
+        self._printing = printing
+
+    @property
+    def printing(self) -> Printing:
+        return self._printing
+
+    def __hash__(self) -> int:
+        return hash(self._printing)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._printing == other._printing
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            self._printing,
+        )
+
+
+class NodeToPrinting(CubeChange):
+
+    def __init__(self, node: ConstrainedNode):
+        self._node = node
+
+    @property
+    def node(self) -> ConstrainedNode:
+        return self._node
+
+    def __hash__(self) -> int:
+        return hash(self._node)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._node == other._node
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            self._node,
+        )
+
+
+class AlteredNode(CubeChange):
+
+    def __init__(self, before: ConstrainedNode, after: ConstrainedNode):
+        self._before = before
+        self._after = after
+
+    @property
+    def before(self) -> ConstrainedNode:
+        return self._before
+
+    @property
+    def after(self) -> ConstrainedNode:
+        return self._after
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self._before,
+                self._after,
+            )
+        )
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and other ._before == self._before
+            and other._after == self._after
+        )
+
+    def __repr__(self) -> str:
+        return '{}({}, {})'.format(
+            self.__class__.__name__,
+            self._before,
+            self._after,
+        )
+
+
 class VerboseCubePatch(object):
 
-    def __init__(self):
-        self._removed_printings = []
-        self._added_printings = []
-        self._printings_moved_to_nodes = []
-        self._added_nodes = []
-        self._removed_nodes = []
-        self._changed_nodes = []
+    def __init__(self, changes: t.Iterable[CubeChange]):
+        self._changes = Multiset(changes)
+
+    @property
+    def changes(self) -> Multiset[CubeChange]:
+        return self._changes
+
+    def __hash__(self) -> int:
+        return hash(self._changes)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._changes == other._changes
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            {
+                change: multiplicity
+                for change, multiplicity in
+                self._changes.items()
+            },
+        )
 
 
 class CubePatch(Serializeable):
@@ -142,15 +360,53 @@ class CubePatch(Serializeable):
         for _, new_node in altered_nodes:
             new_nodes.remove(new_node, 1)
 
-        print('new printings'.ljust(30), new_printings)
-        print('removed printings'.ljust(30), removed_printings)
-        print('new nodes'.ljust(30), new_nodes)
-        print('removed nodes'.ljust(30), removed_nodes)
-        print('printings moved to nodes'.ljust(30), printings_moved_to_nodes)
-        print('nodes moved to printings'.ljust(30), nodes_moved_to_printings)
-        print('altered_nodes'.ljust(30), altered_nodes)
+        # print('new printings'.ljust(30), new_printings)
+        # print('removed printings'.ljust(30), removed_printings)
+        # print('new nodes'.ljust(30), new_nodes)
+        # print('removed nodes'.ljust(30), removed_nodes)
+        # print('printings moved to nodes'.ljust(30), printings_moved_to_nodes)
+        # print('nodes moved to printings'.ljust(30), nodes_moved_to_printings)
+        # print('altered_nodes'.ljust(30), altered_nodes)
 
-        return VerboseCubePatch()
+        return VerboseCubePatch(
+            itertools.chain(
+                (
+                    NewPrinting(printing)
+                    for printing in
+                    new_printings
+                ),
+                (
+                    RemovedPrinting(printing)
+                    for printing in
+                    removed_printings
+                ),
+                (
+                    NewNode(node)
+                    for node in
+                    new_nodes
+                ),
+                (
+                    RemovedNode(node)
+                    for node in
+                    removed_nodes
+                ),
+                (
+                    PrintingToNode(printing)
+                    for printing in
+                    printings_moved_to_nodes
+                ),
+                (
+                    NodeToPrinting(node)
+                    for node in
+                    nodes_moved_to_printings
+                ),
+                (
+                    AlteredNode(before, after)
+                    for before, after in
+                    altered_nodes
+                )
+            )
+        )
 
     def serialize(self) -> serialization_model:
         return {
