@@ -143,10 +143,11 @@ class CubeDeltaOperation(CubeableCollection):
 
     @property
     def laps(self) -> t.Iterator[t.Tuple[Lap, int]]:
-        return itertools.chain(
-            self.traps,
-            self.tickets,
-            self.purples,
+        return (
+            (cubeable, multiplicity)
+            for cubeable, multiplicity in
+            self._cubeables.items()
+            if isinstance(cubeable, Lap)
         )
 
     @property

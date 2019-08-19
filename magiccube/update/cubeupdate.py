@@ -12,8 +12,9 @@ from mtgorp.models.serilization.serializeable import Serializeable, serializatio
 from mtgorp.models.persistent.printing import Printing
 
 from magiccube.laps.traps.tree.printingtree import BorderedNode
+from magiccube.laps.lap import Lap
 from magiccube.laps.traps.trap import Trap,IntentionType
-from magiccube.collections.cube import Cube
+from magiccube.collections.cube import Cube, Cubeable
 from magiccube.collections.nodecollection import NodeCollection, NodesDeltaOperation, ConstrainedNode
 from magiccube.collections.delta import CubeDeltaOperation
 
@@ -29,53 +30,53 @@ class CubeChange(ABC):
         pass
 
 
-class NewPrinting(CubeChange):
+class NewCubeable(CubeChange):
 
-    def __init__(self, printing: Printing):
-        self._printing = printing
+    def __init__(self, cubeable: Cubeable):
+        self._cubeable = cubeable
 
     @property
-    def printing(self) -> Printing:
-        return self._printing
+    def cubeable(self) -> Cubeable:
+        return self._cubeable
 
     def __hash__(self) -> int:
-        return hash(self._printing)
+        return hash(self._cubeable)
 
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self._printing == other._printing
+            and self._cubeable == other._cubeable
         )
 
     def __repr__(self) -> str:
         return '{}({})'.format(
             self.__class__.__name__,
-            self._printing,
+            self._cubeable,
         )
 
 
-class RemovedPrinting(CubeChange):
+class RemovedCubeable(CubeChange):
 
-    def __init__(self, printing: Printing):
-        self._printing = printing
+    def __init__(self, cubeable: Cubeable):
+        self._cubeable = cubeable
 
     @property
-    def printing(self) -> Printing:
-        return self._printing
+    def cubeable(self) -> Cubeable:
+        return self._cubeable
 
     def __hash__(self) -> int:
-        return hash(self._printing)
+        return hash(self._cubeable)
 
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self._printing == other._printing
+            and self._cubeable == other._cubeable
         )
 
     def __repr__(self) -> str:
         return '{}({})'.format(
             self.__class__.__name__,
-            self._printing,
+            self._cubeable,
         )
 
 
@@ -265,11 +266,28 @@ class CubePatch(Serializeable):
 
     @property
     def as_verbose(self) -> VerboseCubePatch:
+        new_laps: Multiset[Lap] = Multiset(
+            {
+                lap: multiplicity
+                for lap, multiplicity
+                in self._cube_delta_operation.laps
+                if multiplicity > 0
+            }
+        )
+        removed_laps: Multiset[Lap] = Multiset(
+            {
+                lap: -multiplicity
+                for lap, multiplicity
+                in self._cube_delta_operation.laps
+                if multiplicity < 0
+            }
+        )
+
         new_printings: Multiset[Printing] = Multiset(
             {
                 printing: multiplicity
                 for printing, multiplicity
-                in self._cube_delta_operation.cubeables.items()
+                in self._cube_delta_operation.printings
                 if multiplicity > 0
             }
         )
@@ -277,7 +295,7 @@ class CubePatch(Serializeable):
             {
                 printing: -multiplicity
                 for printing, multiplicity
-                in self._cube_delta_operation.cubeables.items()
+                in self._cube_delta_operation.printings
                 if multiplicity < 0
             }
         )
@@ -360,23 +378,25 @@ class CubePatch(Serializeable):
         for _, new_node in altered_nodes:
             new_nodes.remove(new_node, 1)
 
-        # print('new printings'.ljust(30), new_printings)
-        # print('removed printings'.ljust(30), removed_printings)
-        # print('new nodes'.ljust(30), new_nodes)
-        # print('removed nodes'.ljust(30), removed_nodes)
-        # print('printings moved to nodes'.ljust(30), printings_moved_to_nodes)
-        # print('nodes moved to printings'.ljust(30), nodes_moved_to_printings)
-        # print('altered_nodes'.ljust(30), altered_nodes)
-
         return VerboseCubePatch(
             itertools.chain(
                 (
-                    NewPrinting(printing)
+                    NewCubeable(lap)
+                    for lap in
+                    new_laps
+                ),
+                (
+                    RemovedCubeable(lap)
+                    for lap in
+                    removed_laps
+                ),
+                (
+                    NewCubeable(printing)
                     for printing in
                     new_printings
                 ),
                 (
-                    RemovedPrinting(printing)
+                    RemovedCubeable(printing)
                     for printing in
                     removed_printings
                 ),
