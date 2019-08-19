@@ -132,51 +132,75 @@ class RemovedNode(CubeChange):
 
 class PrintingToNode(CubeChange):
 
-    def __init__(self, printing: Printing):
-        self._printing = printing
+    def __init__(self, before: Printing, after: ConstrainedNode):
+        self._before = before
+        self._after = after
 
     @property
-    def printing(self) -> Printing:
-        return self._printing
+    def before(self) -> Printing:
+        return self._before
+
+    @property
+    def after(self) -> ConstrainedNode:
+        return self._after
 
     def __hash__(self) -> int:
-        return hash(self._printing)
+        return hash(
+            (
+                self._before,
+                self._after,
+            )
+        )
 
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self._printing == other._printing
+            and other ._before == self._before
+            and other._after == self._after
         )
 
     def __repr__(self) -> str:
-        return '{}({})'.format(
+        return '{}({}, {})'.format(
             self.__class__.__name__,
-            self._printing,
+            self._before,
+            self._after,
         )
 
 
 class NodeToPrinting(CubeChange):
 
-    def __init__(self, node: ConstrainedNode):
-        self._node = node
+    def __init__(self, before: ConstrainedNode, after: Printing):
+        self._before = before
+        self._after = after
 
     @property
-    def node(self) -> ConstrainedNode:
-        return self._node
+    def before(self) -> ConstrainedNode:
+        return self._before
+
+    @property
+    def after(self) -> Printing:
+        return self._after
 
     def __hash__(self) -> int:
-        return hash(self._node)
+        return hash(
+            (
+                self._before,
+                self._after,
+            )
+        )
 
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self._node == other._node
+            and other ._before == self._before
+            and other._after == self._after
         )
 
     def __repr__(self) -> str:
-        return '{}({})'.format(
+        return '{}({}, {})'.format(
             self.__class__.__name__,
-            self._node,
+            self._before,
+            self._after,
         )
 
 
@@ -328,19 +352,20 @@ class CubePatch(Serializeable):
                 except KeyError:
                     new_printings_alone_in_nodes[child] = [node]
 
-        printings_moved_to_nodes: Multiset[Printing] = Multiset()
+        printings_moved_to_nodes: Multiset[t.Tuple[Printing, ConstrainedNode]] = Multiset()
 
         for printing in removed_printings:
             if printing in new_printings_alone_in_nodes:
-                printings_moved_to_nodes.add(printing)
+                node = new_printings_alone_in_nodes[printing].pop()
+                printings_moved_to_nodes.add((printing, node))
                 new_nodes.remove(
-                    new_printings_alone_in_nodes[printing].pop(),
+                    node,
                     1,
                 )
                 if not new_printings_alone_in_nodes[printing]:
                     del new_printings_alone_in_nodes[printing]
 
-        removed_printings -= printings_moved_to_nodes
+        removed_printings -= Multiset(printing for printing, _ in printings_moved_to_nodes.items())
 
         removed_printings_alone_in_nodes: t.Dict[Printing, t.List[ConstrainedNode]] = {}
 
@@ -352,19 +377,18 @@ class CubePatch(Serializeable):
                 except KeyError:
                     removed_printings_alone_in_nodes[child] = [node]
 
-        nodes_moved_to_printings: Multiset[ConstrainedNode] = Multiset()
+        nodes_moved_to_printings: Multiset[t.Tuple[ConstrainedNode, Printing]] = Multiset()
 
         for printing in new_printings:
             if printing in removed_printings_alone_in_nodes:
-                nodes_moved_to_printings.add(
-                    removed_printings_alone_in_nodes[printing].pop(),
-                )
+                node = removed_printings_alone_in_nodes[printing].pop()
+                nodes_moved_to_printings.add((node, printing))
                 if not removed_printings_alone_in_nodes[printing]:
                     del removed_printings_alone_in_nodes[printing]
                 new_printings.remove(printing, 1)
                 break
 
-        removed_nodes -= nodes_moved_to_printings
+        removed_nodes -= Multiset(node for node, _ in nodes_moved_to_printings.items())
 
         altered_nodes = []
 
@@ -411,13 +435,13 @@ class CubePatch(Serializeable):
                     removed_nodes
                 ),
                 (
-                    PrintingToNode(printing)
-                    for printing in
+                    PrintingToNode(printing, node)
+                    for printing, node in
                     printings_moved_to_nodes
                 ),
                 (
-                    NodeToPrinting(node)
-                    for node in
+                    NodeToPrinting(node, printing)
+                    for node, printing in
                     nodes_moved_to_printings
                 ),
                 (
