@@ -6,6 +6,7 @@ import itertools
 
 import copy
 
+from magiccube.laps.tickets.ticket import Ticket
 from orp.database import Model
 from yeetlong.multiset import Multiset
 
@@ -21,6 +22,10 @@ from magiccube.collections.delta import CubeDeltaOperation
 
 
 class CubeChange(PersistentHashable):
+
+    @abstractmethod
+    def explain(self) -> str:
+        pass
 
     @abstractmethod
     def __hash__(self) -> int:
@@ -63,13 +68,31 @@ class CubeableCubeChange(CubeChange):
             self._cubeable,
         )
 
+    @abstractmethod
+    def explain(self) -> str:
+        pass
+
+    def minimize_cubeable(self) -> str:
+        if isinstance(self._cubeable, Printing):
+            return self._cubeable.full_name()
+        if isinstance(self._cubeable, Trap):
+            return self._cubeable.node.get_minimal_string(identified_by_id=False)
+        if isinstance(self._cubeable, Ticket):
+            return 'Ticket'
+        return 'Purple'
+
+
 
 class NewCubeable(CubeableCubeChange):
-    pass
+
+    def explain(self) -> str:
+        return f'Add {self.minimize_cubeable()}'
 
 
 class RemovedCubeable(CubeableCubeChange):
-    pass
+
+    def explain(self) -> str:
+        return f'Remove {self.minimize_cubeable()}'
 
 
 class NodeCubeChange(CubeChange):
@@ -81,6 +104,10 @@ class NodeCubeChange(CubeChange):
     @property
     def node(self) -> ConstrainedNode:
         return self._node
+
+    @abstractmethod
+    def explain(self) -> str:
+        pass
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
@@ -103,11 +130,15 @@ class NodeCubeChange(CubeChange):
 
 
 class NewNode(NodeCubeChange):
-    pass
+
+    def explain(self) -> str:
+        return f'Add {self._node.get_minimal_string()}'
 
 
 class RemovedNode(NodeCubeChange):
-    pass
+
+    def explain(self) -> str:
+        return f'Remove {self._node.get_minimal_string()}'
 
 
 class PrintingToNode(CubeChange):
@@ -123,6 +154,9 @@ class PrintingToNode(CubeChange):
     @property
     def after(self) -> ConstrainedNode:
         return self._after
+
+    def explain(self) -> str:
+        return f'{self.before.full_name()} -> {self.after.get_minimal_string()}'
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
@@ -166,6 +200,9 @@ class NodeToPrinting(CubeChange):
     def after(self) -> Printing:
         return self._after
 
+    def explain(self) -> str:
+        return f'{self.before.get_minimal_string()} -> {self.after.full_name()}'
+
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
         yield self._before.persistent_hash().encode('ASCII')
@@ -207,6 +244,19 @@ class AlteredNode(CubeChange):
     @property
     def after(self) -> ConstrainedNode:
         return self._after
+
+    def explain(self) -> str:
+        added_groups = self._after.groups - self._before.groups
+        removed_groups = self._before.groups - self._after.groups
+        s = self._after.node.get_minimal_string(identified_by_id=False)
+        for group in added_groups:
+            s += ' +' + group
+        for group in removed_groups:
+            s += ' -' + group
+        if self._before.value != self._after.value:
+            s += f' {self._before.value} -> {self.after.value}'
+
+        return s
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')

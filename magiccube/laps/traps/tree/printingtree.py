@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import typing as t
+import os
 
 from abc import abstractmethod
-import hashlib
-import os
+
 
 from lazy_property import LazyProperty
 from PIL import Image, ImageDraw
@@ -19,8 +19,6 @@ from mtgimg.interface import ImageLoader
 
 from magiccube import paths
 from magiccube.laps import imageutils
-
-
 
 
 class PrintingNode(Serializeable, PersistentHashable):
@@ -68,26 +66,6 @@ class PrintingNode(Serializeable, PersistentHashable):
             for option, multiplicity in
             self.sorted_items
         )
-
-    # def persistent_hash(self) -> str:
-    #     if self._persistent_hash is not None:
-    #         return self._persistent_hash
-    # 
-    #     hasher = hashlib.sha512()
-    #     hasher.update(self.__class__.__name__.encode('UTF-8'))
-    # 
-    #     for s in sorted(
-    #         str(child.id)
-    #         if isinstance(child, Printing)
-    #         else child.persistent_hash()
-    #         for child in
-    #         self._children
-    #     ):
-    #         hasher.update(s.encode('ASCII'))
-    # 
-    #     self._persistent_hash = hasher.hexdigest()
-    # 
-    #     return self._persistent_hash
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('UTF-8')
@@ -299,19 +277,19 @@ class BorderedNode(PrintingNode):
         return background
 
 
-_ALL_COLOR = (50, 50 ,50)
-_ANY_COLOR = (170, 170, 170)
+ALL_COLOR = (50, 50 , 50)
+ANY_COLOR = (170, 170, 170)
 
 
 class AllNode(BorderedNode):
     _MINIMAL_STRING_CONNECTOR = '; '
 
-    _BORDER_COLOR = _ALL_COLOR
-    _BORDER_TRIANGLE_COLOR = _ANY_COLOR
+    _BORDER_COLOR = ALL_COLOR
+    _BORDER_TRIANGLE_COLOR = ANY_COLOR
 
 
 class AnyNode(BorderedNode):
     _MINIMAL_STRING_CONNECTOR = ' || '
 
-    _BORDER_COLOR = _ANY_COLOR
-    _BORDER_TRIANGLE_COLOR = _ALL_COLOR
+    _BORDER_COLOR = ANY_COLOR
+    _BORDER_TRIANGLE_COLOR = ALL_COLOR

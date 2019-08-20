@@ -34,6 +34,9 @@ class ConstrainedNode(Serializeable, PersistentHashable):
     def groups(self) -> t.FrozenSet[str]:
         return self._groups
 
+    def get_minimal_string(self) -> str:
+        return f'({self.value}, {sorted(self._groups)}, {self._node.get_minimal_string(identified_by_id=False)})'
+
     def serialize(self) -> serialization_model:
         return {
             'node': self._node,
