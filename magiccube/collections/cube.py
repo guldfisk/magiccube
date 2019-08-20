@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import typing as t
-
-import hashlib
 import itertools
+
 from collections import OrderedDict
 
 from yeetlong.multiset import FrozenMultiset
@@ -200,26 +199,6 @@ class Cube(CubeableCollection, PersistentHashable):
 
     def __hash__(self) -> int:
         return hash(self._cubeables)
-    
-    # def persistent_hash(self) -> str:
-    #     if self._persistent_hash is not None:
-    #         return self._persistent_hash
-    # 
-    #     hasher = hashlib.sha512()
-    # 
-    #     for printing in sorted(self.printings, key=lambda _printing: _printing.id):
-    #         hasher.update(str(printing.id).encode('ASCII'))
-    # 
-    #     for persistent_hash in sorted(
-    #         lap.persistent_hash()
-    #         for lap in
-    #         self.laps
-    #     ):
-    #         hasher.update(persistent_hash.encode('UTF-8'))
-    # 
-    #     self._persistent_hash = hasher.hexdigest()
-    # 
-    #     return self._persistent_hash
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for printing in sorted(self.printings, key=lambda _printing: _printing.id):
