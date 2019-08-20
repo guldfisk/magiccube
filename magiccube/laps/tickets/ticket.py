@@ -26,7 +26,6 @@ class Ticket(Lap):
 	def __init__(self, printings: t.Iterable[Printing], name: str):
 		self._name  = name
 		self._options = frozenset(printings)
-		self._persistent_hash = None #type: str
 
 	@property
 	def name(self):
@@ -139,25 +138,35 @@ class Ticket(Lap):
 	def __hash__(self) -> int:
 		return hash((self._options, self._name))
 
-	def persistent_hash(self) -> str:
-		if self._persistent_hash is not None:
-			return self._persistent_hash
+	# def persistent_hash(self) -> str:
+	# 	if self._persistent_hash is not None:
+	# 		return self._persistent_hash
+	# 
+	# 	hasher = hashlib.sha512()
+	# 
+	# 	hasher.update(self.__class__.__name__.encode('UTF-8'))
+	# 	hasher.update(self._name.encode('UTF-8'))
+	# 
+	# 	for s in sorted(
+	# 		str(option.id)
+	# 		for option in
+	# 		self._options
+	# 	):
+	# 		hasher.update(s.encode('ASCII'))
+	# 
+	# 	self._persistent_hash = hasher.hexdigest()
+	# 
+	# 	return self._persistent_hash
 
-		hasher = hashlib.sha512()
-
-		hasher.update(self.__class__.__name__.encode('UTF-8'))
-		hasher.update(self._name.encode('UTF-8'))
-
+	def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+		yield self.__class__.__name__.encode('UTF-8')
+		yield self._name.encode('UTF-8')
 		for s in sorted(
 			str(option.id)
 			for option in
 			self._options
 		):
-			hasher.update(s.encode('ASCII'))
-
-		self._persistent_hash = hasher.hexdigest()
-
-		return self._persistent_hash
+			yield s.encode('ASCII')
 
 	def __eq__(self, other: object) -> bool:
 		return (

@@ -1,23 +1,20 @@
 from __future__ import annotations
 
+import itertools
 import typing as t
 
-import itertools
-
-from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
+from yeetlong.multiset import FrozenMultiset
 
 from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 
 from magiccube.collections.cube import Cube, Cubeable
-from magiccube.collections.nodecollection import NodeCollection
+from magiccube.collections.cubeable import CubeableCollection
 from magiccube.laps.lap import Lap
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
-from magiccube.laps.traps.tree.printingtree import PrintingNode
-from magiccube.collections.cubeable import CubeableCollection
 
 
 class CubeDelta(object):

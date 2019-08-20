@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 from yeetlong.multiset import FrozenMultiset
 
-from mtgorp.models.serilization.serializeable import serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.tools.search.pattern import Pattern
 
@@ -19,7 +19,7 @@ from magiccube.laps.purples.purple import Purple
 from magiccube.collections.cubeable import Cubeable, CubeableCollection
 
 
-class Cube(CubeableCollection):
+class Cube(CubeableCollection, PersistentHashable):
 
     def __init__(
         self,
@@ -33,7 +33,6 @@ class Cube(CubeableCollection):
         self._tickets: FrozenMultiset[Ticket] = None
         self._purples: FrozenMultiset[Purple] = None
         self._laps: FrozenMultiset[Lap] = None
-        self._persistent_hash: str = None
 
     @property
     def cubeables(self) -> FrozenMultiset[Cubeable]:
@@ -202,25 +201,35 @@ class Cube(CubeableCollection):
     def __hash__(self) -> int:
         return hash(self._cubeables)
     
-    def persistent_hash(self) -> str:
-        if self._persistent_hash is not None:
-            return self._persistent_hash
+    # def persistent_hash(self) -> str:
+    #     if self._persistent_hash is not None:
+    #         return self._persistent_hash
+    # 
+    #     hasher = hashlib.sha512()
+    # 
+    #     for printing in sorted(self.printings, key=lambda _printing: _printing.id):
+    #         hasher.update(str(printing.id).encode('ASCII'))
+    # 
+    #     for persistent_hash in sorted(
+    #         lap.persistent_hash()
+    #         for lap in
+    #         self.laps
+    #     ):
+    #         hasher.update(persistent_hash.encode('UTF-8'))
+    # 
+    #     self._persistent_hash = hasher.hexdigest()
+    # 
+    #     return self._persistent_hash
 
-        hasher = hashlib.sha512()
-
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for printing in sorted(self.printings, key=lambda _printing: _printing.id):
-            hasher.update(str(printing.id).encode('ASCII'))
-
+            yield str(printing.id).encode('ASCII')
         for persistent_hash in sorted(
             lap.persistent_hash()
             for lap in
             self.laps
         ):
-            hasher.update(persistent_hash.encode('UTF-8'))
-
-        self._persistent_hash = hasher.hexdigest()
-
-        return self._persistent_hash
+            yield persistent_hash.encode('ASCII')
 
     def __eq__(self, other: object) -> bool:
         return (

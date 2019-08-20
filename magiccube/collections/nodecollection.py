@@ -7,12 +7,12 @@ import hashlib
 from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
 
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
 
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 
 
-class ConstrainedNode(Serializeable):
+class ConstrainedNode(Serializeable, PersistentHashable):
 
     def __init__(self, value: float, node: PrintingNode, groups: t.Iterable[str] = ()):
         self._value = value
@@ -23,8 +23,6 @@ class ConstrainedNode(Serializeable):
             colors = node.children.__iter__().__next__().cardboard.front_card.color
             if len(colors) == 1:
                 self._groups |= {color.name for color in colors}
-
-        self._persistent_hash = None
 
     @property
     def value(self) -> float:
@@ -56,20 +54,26 @@ class ConstrainedNode(Serializeable):
             groups = value['groups'],
         )
 
-    def persistent_hash(self) -> str:
-        if self._persistent_hash is not None:
-            return self._persistent_hash
+    # def persistent_hash(self) -> str:
+    #     if self._persistent_hash is not None:
+    #         return self._persistent_hash
+    #
+    #     hasher = hashlib.sha512()
+    #
+    #     hasher.update(self.node.persistent_hash().encode('ASCII'))
+    #     hasher.update(self.value)
+    #     for group in sorted(self.groups):
+    #         hasher.update(group.encode('UTF-8'))
+    #
+    #     self._persistent_hash = hasher.hexdigest()
+    #
+    #     return self._persistent_hash
 
-        hasher = hashlib.sha512()
-
-        hasher.update(self.node.persistent_hash().encode('ASCII'))
-        hasher.update(self.value)
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.node.persistent_hash().encode('ASCII')
+        yield str(self.value).encode('ASCII')
         for group in sorted(self.groups):
-            hasher.update(group.encode('UTF-8'))
-
-        self._persistent_hash = hasher.hexdigest()
-
-        return self._persistent_hash
+            yield group.encode('UTF-8')
 
     def __hash__(self) -> int:
         if not hasattr(self, '_hash'):

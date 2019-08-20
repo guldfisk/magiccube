@@ -14,7 +14,7 @@ import aggdraw
 from yeetlong.multiset import FrozenMultiset
 
 from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
 from mtgimg.interface import ImageLoader
 
 from magiccube import paths
@@ -23,7 +23,7 @@ from magiccube.laps import imageutils
 
 
 
-class PrintingNode(Serializeable):
+class PrintingNode(Serializeable, PersistentHashable):
     _MINIMAL_STRING_CONNECTOR = None #type: str
     
     def __init__(
@@ -34,7 +34,6 @@ class PrintingNode(Serializeable):
         ],
     ):
         self._children = FrozenMultiset(children)
-        self._persistent_hash = None
 
     @property
     def children(self) -> FrozenMultiset[NodeChild]:
@@ -70,13 +69,28 @@ class PrintingNode(Serializeable):
             self.sorted_items
         )
 
-    def persistent_hash(self) -> str:
-        if self._persistent_hash is not None:
-            return self._persistent_hash
+    # def persistent_hash(self) -> str:
+    #     if self._persistent_hash is not None:
+    #         return self._persistent_hash
+    # 
+    #     hasher = hashlib.sha512()
+    #     hasher.update(self.__class__.__name__.encode('UTF-8'))
+    # 
+    #     for s in sorted(
+    #         str(child.id)
+    #         if isinstance(child, Printing)
+    #         else child.persistent_hash()
+    #         for child in
+    #         self._children
+    #     ):
+    #         hasher.update(s.encode('ASCII'))
+    # 
+    #     self._persistent_hash = hasher.hexdigest()
+    # 
+    #     return self._persistent_hash
 
-        hasher = hashlib.sha512()
-        hasher.update(self.__class__.__name__.encode('UTF-8'))
-
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('UTF-8')
         for s in sorted(
             str(child.id)
             if isinstance(child, Printing)
@@ -84,11 +98,7 @@ class PrintingNode(Serializeable):
             for child in
             self._children
         ):
-            hasher.update(s.encode('ASCII'))
-
-        self._persistent_hash = hasher.hexdigest()
-
-        return self._persistent_hash
+            yield s.encode('ASCII')
 
     @LazyProperty
     def sorted_items(self) -> t.List[t.Tuple[NodeChild, int]]:
@@ -153,7 +163,7 @@ class PrintingNode(Serializeable):
             and self._children == other._children
         )
 
-    def __iter__(self) -> t.Iterable[Printing]:
+    def __iter__(self) -> t.Iterator[Printing]:
         for child in self._children:
             if isinstance(child, Printing):
                 yield child
