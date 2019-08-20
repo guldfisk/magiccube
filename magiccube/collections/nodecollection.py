@@ -35,7 +35,11 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         return self._groups
 
     def get_minimal_string(self) -> str:
-        return f'({self.value}, {sorted(self._groups)}, {self._node.get_minimal_string(identified_by_id=False)})'
+        return '({}, {} - {})'.format(
+            self._node.get_minimal_string(identified_by_id=False),
+            self.value,
+            ', '.join(sorted(self._groups)),
+        )
 
     def serialize(self) -> serialization_model:
         return {

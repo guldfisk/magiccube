@@ -68,11 +68,7 @@ class CubeableCubeChange(CubeChange):
             self._cubeable,
         )
 
-    @abstractmethod
     def explain(self) -> str:
-        pass
-
-    def minimize_cubeable(self) -> str:
         if isinstance(self._cubeable, Printing):
             return self._cubeable.full_name()
         if isinstance(self._cubeable, Trap):
@@ -84,15 +80,11 @@ class CubeableCubeChange(CubeChange):
 
 
 class NewCubeable(CubeableCubeChange):
-
-    def explain(self) -> str:
-        return f'Add {self.minimize_cubeable()}'
+    pass
 
 
 class RemovedCubeable(CubeableCubeChange):
-
-    def explain(self) -> str:
-        return f'Remove {self.minimize_cubeable()}'
+    pass
 
 
 class NodeCubeChange(CubeChange):
@@ -105,9 +97,8 @@ class NodeCubeChange(CubeChange):
     def node(self) -> ConstrainedNode:
         return self._node
 
-    @abstractmethod
     def explain(self) -> str:
-        pass
+        return self._node.get_minimal_string()
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
@@ -130,15 +121,11 @@ class NodeCubeChange(CubeChange):
 
 
 class NewNode(NodeCubeChange):
-
-    def explain(self) -> str:
-        return f'Add {self._node.get_minimal_string()}'
+    pass
 
 
 class RemovedNode(NodeCubeChange):
-
-    def explain(self) -> str:
-        return f'Remove {self._node.get_minimal_string()}'
+    pass
 
 
 class PrintingToNode(CubeChange):
@@ -410,7 +397,7 @@ class CubePatch(Serializeable):
                 if not new_printings_alone_in_nodes[printing]:
                     del new_printings_alone_in_nodes[printing]
 
-        removed_printings -= Multiset(printing for printing, _ in printings_moved_to_nodes.items())
+        removed_printings -= Multiset(printing for printing, _ in printings_moved_to_nodes)
 
         removed_printings_alone_in_nodes: t.Dict[Printing, t.List[ConstrainedNode]] = {}
 
