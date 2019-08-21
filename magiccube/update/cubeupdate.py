@@ -67,7 +67,7 @@ class CubeableCubeChange(CubeChange):
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
         return cls(
             inflator.inflate(Printing, value['cubeable'])
-            if value['cubeable'] == 'Printing' else
+            if value['type'] == 'Printing' else
             cls._cubeables_name_map[value['type']].deserialize(
                 value['cubeable'],
                 inflator,
