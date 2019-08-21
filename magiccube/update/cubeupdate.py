@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import typing as t
-from abc import abstractmethod
 import itertools
-
 import copy
+
+from enum import Enum
+from abc import abstractmethod
 
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
@@ -22,7 +23,15 @@ from magiccube.collections.nodecollection import NodeCollection, NodesDeltaOpera
 from magiccube.collections.delta import CubeDeltaOperation
 
 
+class CubeChangeCategory(Enum):
+    ADDITION = 'addition'
+    SUBTRACTION = 'subtraction'
+    MODIFICATION = 'modification'
+    TRANSFER = 'transfer'
+
+
 class CubeChange(Serializeable, PersistentHashable):
+    category = CubeChangeCategory.MODIFICATION
 
     @abstractmethod
     def explain(self) -> str:
@@ -111,6 +120,7 @@ class CubeableCubeChange(CubeChange):
 
 
 class NewCubeable(CubeableCubeChange):
+    category = CubeChangeCategory.ADDITION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -123,6 +133,7 @@ class NewCubeable(CubeableCubeChange):
 
 
 class RemovedCubeable(CubeableCubeChange):
+    category = CubeChangeCategory.SUBTRACTION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -181,6 +192,7 @@ class NodeCubeChange(CubeChange):
 
 
 class NewNode(NodeCubeChange):
+    category = CubeChangeCategory.ADDITION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -193,6 +205,7 @@ class NewNode(NodeCubeChange):
 
 
 class RemovedNode(NodeCubeChange):
+    category = CubeChangeCategory.ADDITION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -205,6 +218,7 @@ class RemovedNode(NodeCubeChange):
 
 
 class PrintingToNode(CubeChange):
+    category = CubeChangeCategory.TRANSFER
 
     def __init__(self, before: Printing, after: ConstrainedNode):
         self._before = before
@@ -278,6 +292,7 @@ class PrintingToNode(CubeChange):
 
 
 class NodeToPrinting(CubeChange):
+    category = CubeChangeCategory.TRANSFER
 
     def __init__(self, before: ConstrainedNode, after: Printing):
         self._before = before
@@ -351,6 +366,7 @@ class NodeToPrinting(CubeChange):
 
 
 class AlteredNode(CubeChange):
+    category = CubeChangeCategory.MODIFICATION
 
     def __init__(self, before: ConstrainedNode, after: ConstrainedNode):
         self._before = before
