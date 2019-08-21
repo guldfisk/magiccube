@@ -676,6 +676,12 @@ class CubePatch(Serializeable):
             self._node_delta_operation,
         )
 
+    def __mul__(self, other: int) -> CubePatch:
+        return self.__class__(
+            self._cube_delta_operation * other,
+            self._node_delta_operation * other,
+        )
+
     def __add__(self, other: CubePatch) -> CubePatch:
         return self.__class__(
             self._cube_delta_operation + other._cube_delta_operation,
