@@ -112,12 +112,34 @@ class CubeDeltaOperation(CubeableCollection):
         )
 
     @property
+    def new_printings(self) -> t.Iterator[t.Tuple[Printing, int]]:
+        return (
+            (
+                (cubeable, multiplicity)
+                for cubeable, multiplicity in
+                self.printings
+                if multiplicity > 0
+            )
+        )
+
+    @property
     def traps(self) -> t.Iterator[t.Tuple[Trap, int]]:
         return (
             (cubeable, multiplicity)
             for cubeable, multiplicity in
             self._cubeables.items()
             if isinstance(cubeable, Trap)
+        )
+
+    @property
+    def new_traps(self) -> t.Iterator[t.Tuple[Trap, int]]:
+        return (
+            (
+                (trap, multiplicity)
+                for trap, multiplicity in
+                self.traps
+                if multiplicity > 0
+            )
         )
 
     @property
@@ -130,12 +152,34 @@ class CubeDeltaOperation(CubeableCollection):
         )
 
     @property
+    def new_tickets(self) -> t.Iterator[t.Tuple[Ticket, int]]:
+        return (
+            (
+                (ticket, multiplicity)
+                for ticket, multiplicity in
+                self.tickets
+                if multiplicity > 0
+            )
+        )
+
+    @property
     def purples(self) -> t.Iterator[t.Tuple[Purple, int]]:
         return (
             (cubeable, multiplicity)
             for cubeable, multiplicity in
             self._cubeables.items()
             if isinstance(cubeable, Purple)
+        )
+
+    @property
+    def new_purples(self) -> t.Iterator[t.Tuple[Purple, int]]:
+        return (
+            (
+                (purple, multiplicity)
+                for purple, multiplicity in
+                self.purples
+                if multiplicity > 0
+            )
         )
 
     @property
@@ -150,6 +194,17 @@ class CubeDeltaOperation(CubeableCollection):
     @property
     def cubeables(self) -> FrozenCounter[Cubeable]:
         return self._cubeables
+
+    @property
+    def all_new_printings(self) -> t.Iterable[Printing]:
+        for printing, multiplicity in self.new_printings:
+            yield from itertools.repeat(printing, multiplicity)
+        for trap, multiplicity in self.new_traps:
+            for _ in range(multiplicity):
+                yield from trap
+        for ticket, multiplicity in self.new_tickets:
+            for _ in range(multiplicity):
+                yield from ticket.options
 
     def serialize(self) -> serialization_model:
         return {

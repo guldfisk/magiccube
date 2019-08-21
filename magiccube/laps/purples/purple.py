@@ -1,7 +1,6 @@
 import typing as t
 
 import os
-import hashlib
 
 from PIL import Image, ImageDraw
 import aggdraw
@@ -111,18 +110,6 @@ class Purple(Lap):
     def get_image_name(self, back: bool = False, crop: bool = False) -> str:
         return self.persistent_hash()
         
-    # def persistent_hash(self) -> str:
-    #     if self._persistent_hash is not None:
-    #         return self._persistent_hash
-	# 
-    #     hasher = hashlib.sha512()
-	# 
-    #     hasher.update(self._name.encode('UTF-8'))
-	# 
-    #     self._persistent_hash = hasher.hexdigest()
-	# 
-    #     return self._persistent_hash
-
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self._name.encode('UTF-8')
 

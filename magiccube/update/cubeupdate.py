@@ -922,6 +922,18 @@ class CubeUpdater(object):
         self._new_nodes = None
 
     @property
+    def cube(self) -> Cube:
+        return self._cube
+
+    @property
+    def node_collection(self) -> self._node_collection:
+        return self._node_collection
+
+    @property
+    def patch(self) -> CubePatch:
+        return self._patch
+
+    @property
     def new_no_garbage_cube(self):
         if self._new_no_garbage_cube is None:
             self._new_no_garbage_cube = (
