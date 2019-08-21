@@ -7,15 +7,17 @@ import copy
 from enum import Enum
 from abc import abstractmethod
 
-from magiccube.laps.purples.purple import Purple
-from magiccube.laps.tickets.ticket import Ticket
+from yeetlong.multiset import Multiset, FrozenMultiset
+
 from orp.database import Model
-from yeetlong.multiset import Multiset
 
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
 
-from magiccube.laps.traps.tree.printingtree import BorderedNode
+from magiccube.laps.purples.purple import Purple
+from magiccube.laps.tickets.ticket import Ticket
+
+from magiccube.laps.traps.tree.printingtree import BorderedNode, PrintingNode
 from magiccube.laps.lap import Lap
 from magiccube.laps.traps.trap import Trap,IntentionType
 from magiccube.collections.cube import Cube, Cubeable
@@ -205,7 +207,7 @@ class NewNode(NodeCubeChange):
 
 
 class RemovedNode(NodeCubeChange):
-    category = CubeChangeCategory.ADDITION
+    category = CubeChangeCategory.SUBTRACTION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -217,15 +219,15 @@ class RemovedNode(NodeCubeChange):
         )
 
 
-class PrintingToNode(CubeChange):
+class PrintingsToNode(CubeChange):
     category = CubeChangeCategory.TRANSFER
 
-    def __init__(self, before: Printing, after: ConstrainedNode):
-        self._before = before
+    def __init__(self, before: t.Iterable[Printing], after: ConstrainedNode):
+        self._before = before if isinstance(before, FrozenMultiset) else FrozenMultiset(before)
         self._after = after
 
     @property
-    def before(self) -> Printing:
+    def before(self) -> FrozenMultiset[Printing]:
         return self._before
 
     @property
@@ -233,7 +235,16 @@ class PrintingToNode(CubeChange):
         return self._after
 
     def explain(self) -> str:
-        return f'{self.before.full_name()} -> {self.after.get_minimal_string()}'
+        return '{} -> {}'.format(
+            ', '.join(
+                (
+                    ((str(multiplicity) + 'x ') if multiplicity != 1 else '') + printing.full_name()
+                    for printing, multiplicity in
+                    self._before.items()
+                )
+            ),
+            self._after.get_minimal_string(),
+        )
 
     def serialize(self) -> serialization_model:
         return {
@@ -244,13 +255,14 @@ class PrintingToNode(CubeChange):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
         return cls(
-            inflator.inflate(Printing, value['before']),
+            inflator.inflate_all(Printing, value['before']),
             ConstrainedNode.deserialize(value['after'], inflator),
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
-        yield str(self._before.id).encode('ASCII')
+        for _id in sorted((printing.id for printing in self._before)):
+            yield str(_id).encode('ASCII')
         yield self._after.persistent_hash().encode('ASCII')
 
     def __hash__(self) -> int:
@@ -279,7 +291,9 @@ class PrintingToNode(CubeChange):
         return CubePatch(
             CubeDeltaOperation(
                 {
-                    self._before: -1,
+                    printing: -multiplicity
+                    for printing, multiplicity in
+                    self._before.items()
                 }
             ),
             NodesDeltaOperation(
@@ -290,24 +304,126 @@ class PrintingToNode(CubeChange):
         )
 
 
+class TrapNodeTransfer(CubeChange):
+    category = CubeChangeCategory.TRANSFER
+    
+    def __init__(self, trap: Trap, node: ConstrainedNode):
+        self._trap = trap
+        self._node = node
 
-class NodeToPrinting(CubeChange):
+    @abstractmethod
+    def explain(self) -> str:
+        pass
+
+    def __hash__(self) -> int:
+        return hash((self._trap, self._node))
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and other._trap == self._trap
+            and other._node == self._node
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            self._node,
+        )
+
+    @abstractmethod
+    def as_patch(self) -> CubePatch:
+        pass
+
+    def serialize(self) -> serialization_model:
+        return {
+            'trap': self._trap,
+            'node': self._node,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            trap = Trap.deserialize(value['trap'], inflator),
+            node = ConstrainedNode.deserialize(value['node'], inflator),
+        )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('ASCII')
+        yield self._trap.persistent_hash().encode('ASCII')
+        yield self._node.persistent_hash().encode('ASCII')
+        
+        
+class TrapToNode(TrapNodeTransfer):
+    
+    def explain(self) -> str:
+        return 'trap -> {}'.format(
+            self._node.get_minimal_string()
+        )
+    
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            CubeDeltaOperation(
+                {
+                    self._trap: -1,
+                }
+            ),
+            NodesDeltaOperation(
+                {
+                    self._node: 1,
+                }
+            ),
+        ) 
+    
+    
+class NodeToTrap(TrapNodeTransfer):
+    
+    def explain(self) -> str:
+        return '{} -> Trap'.format(
+            self._node.get_minimal_string()
+        )
+    
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            CubeDeltaOperation(
+                {
+                    self._trap: 1,
+                }
+            ),
+            NodesDeltaOperation(
+                {
+                    self._node: -1,
+                }
+            ),
+        ) 
+
+
+class NodeToPrintings(CubeChange):
     category = CubeChangeCategory.TRANSFER
 
-    def __init__(self, before: ConstrainedNode, after: Printing):
+    def __init__(self, before: ConstrainedNode, after: t.Iterable[Printing]):
         self._before = before
-        self._after = after
+        self._after = after if isinstance(after, FrozenMultiset) else FrozenMultiset(after)
 
     @property
     def before(self) -> ConstrainedNode:
         return self._before
 
     @property
-    def after(self) -> Printing:
+    def after(self) -> FrozenMultiset[Printing]:
         return self._after
 
     def explain(self) -> str:
-        return f'{self.before.get_minimal_string()} -> {self.after.full_name()}'
+        return '{} -> {}'.format(
+            self._before.get_minimal_string(),
+            ', '.join(
+                (
+                    ((str(multiplicity) + 'x ') if multiplicity != 1 else '') + printing.full_name()
+                    for printing, multiplicity in
+                    self._after.items()
+                )
+            ),
+        )
 
     def serialize(self) -> serialization_model:
         return {
@@ -319,14 +435,14 @@ class NodeToPrinting(CubeChange):
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
         return cls(
             ConstrainedNode.deserialize(value['before'], inflator),
-            inflator.inflate(Printing, value['after']),
+            inflator.inflate_all(Printing, value['after']),
         )
-
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
+        for _id in sorted((printing.id for printing in self._after)):
+            yield str(_id).encode('ASCII')
         yield self._before.persistent_hash().encode('ASCII')
-        yield str(self._after.id).encode('ASCII')
 
     def __hash__(self) -> int:
         return hash(
@@ -339,7 +455,7 @@ class NodeToPrinting(CubeChange):
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and other ._before == self._before
+            and other._before == self._before
             and other._after == self._after
         )
 
@@ -354,7 +470,9 @@ class NodeToPrinting(CubeChange):
         return CubePatch(
             CubeDeltaOperation(
                 {
-                    self._after: 1,
+                    printing: multiplicity
+                    for printing, multiplicity in
+                    self._after.items()
                 }
             ),
             NodesDeltaOperation(
@@ -545,53 +663,118 @@ class CubePatch(Serializeable):
             }
         )
 
-        new_printings_alone_in_nodes: t.Dict[Printing, t.List[ConstrainedNode]] = {}
-
-        for node in new_nodes:
-            if len(node.node.children) == 1:
-                child = node.node.children.__iter__().__next__()
-                try:
-                    new_printings_alone_in_nodes[child].append(node)
-                except KeyError:
-                    new_printings_alone_in_nodes[child] = [node]
-
-        printings_moved_to_nodes: Multiset[t.Tuple[Printing, ConstrainedNode]] = Multiset()
-
-        for printing in removed_printings:
-            if printing in new_printings_alone_in_nodes:
-                node = new_printings_alone_in_nodes[printing].pop()
-                printings_moved_to_nodes.add((printing, node))
-                new_nodes.remove(
-                    node,
-                    1,
+        new_unnested_nodes = sorted(
+            (
+                node
+                for node in
+                new_nodes
+                    if all(
+                    isinstance(child, Printing)
+                    for child in
+                    node.node.children
                 )
-                if not new_printings_alone_in_nodes[printing]:
-                    del new_printings_alone_in_nodes[printing]
+            ),
+            key = lambda node: len(node.node.children),
+            reverse = True,
+        )
 
-        removed_printings -= Multiset(printing for printing, _ in printings_moved_to_nodes)
+        printings_moved_to_nodes = Multiset()
+        
+        for node in new_unnested_nodes:
+            if node.node.children <= removed_printings:
+                printings_moved_to_nodes.add(
+                    (
+                        node.node.children,
+                        node,
+                    )
+                )
+                removed_printings -= node.node.children
 
-        removed_printings_alone_in_nodes: t.Dict[Printing, t.List[ConstrainedNode]] = {}
+        for _, node in printings_moved_to_nodes:
+            new_nodes.remove(node, 1)
 
+        removed_unnested_nodes = sorted(
+            (
+                node
+                for node in
+                removed_nodes
+                if all(
+                isinstance(child, Printing)
+                for child in
+                node.node.children
+            )
+            ),
+            key=lambda node: len(node.node.children),
+            reverse=True,
+        )
+        
+        nodes_moved_to_printings = Multiset()
+        
+        for node in removed_unnested_nodes:
+            if node.node.children <= new_printings:
+                nodes_moved_to_printings.add(
+                    (
+                        node.node.children,
+                        node,
+                    )
+                )
+                new_printings -= node.node.children
+
+        for _, node in nodes_moved_to_printings:
+            removed_nodes.remove(node, 1)
+            
+        
+        removed_nodes_by_node: t.Dict[PrintingNode, t.List[ConstrainedNode]] = {}
+        
         for node in removed_nodes:
-            if len(node.node.children) == 1:
-                child = node.node.children.__iter__().__next__()
-                try:
-                    removed_printings_alone_in_nodes[child].append(node)
-                except KeyError:
-                    removed_printings_alone_in_nodes[child] = [node]
-
-        nodes_moved_to_printings: Multiset[t.Tuple[ConstrainedNode, Printing]] = Multiset()
-
-        for printing in new_printings:
-            if printing in removed_printings_alone_in_nodes:
-                node = removed_printings_alone_in_nodes[printing].pop()
-                nodes_moved_to_printings.add((node, printing))
-                if not removed_printings_alone_in_nodes[printing]:
-                    del removed_printings_alone_in_nodes[printing]
-                new_printings.remove(printing, 1)
-                break
-
-        removed_nodes -= Multiset(node for node, _ in nodes_moved_to_printings.items())
+            try:
+                removed_nodes_by_node[node.node].append(node)
+            except KeyError:
+                removed_nodes_by_node[node.node] = [node]
+            
+        nodes_to_traps: Multiset[t.Tuple[Trap, ConstrainedNode]] = Multiset()
+            
+        for lap in new_laps:
+            if isinstance(lap, Trap) and lap.node in removed_nodes_by_node:
+                nodes_to_traps.add(
+                    (
+                        lap,
+                        removed_nodes_by_node[lap.node].pop()
+                    )
+                )
+                if not removed_nodes_by_node[lap.node]:
+                    del removed_nodes_by_node[lap.node]
+                
+        for trap, node in nodes_to_traps:
+            new_laps.remove(trap, 1)
+            removed_nodes.remove(node, 1)
+            
+       
+        new_nodes_by_node: t.Dict[PrintingNode, t.List[ConstrainedNode]] = {}
+        
+        for node in new_nodes:
+            try:
+                new_nodes_by_node[node.node].append(node)
+            except KeyError:
+                new_nodes_by_node[node.node] = [node]
+            
+        traps_to_nodes: Multiset[t.Tuple[Trap, ConstrainedNode]] = Multiset()
+            
+        for lap in removed_laps:
+            if isinstance(lap, Trap) and lap.node in new_nodes_by_node:
+                traps_to_nodes.add(
+                    (
+                        lap,
+                        new_nodes_by_node[lap.node].pop()
+                    )
+                )
+                if not new_nodes_by_node[lap.node]:
+                    del new_nodes_by_node[lap.node]
+                
+        for trap, node in traps_to_nodes:
+            removed_laps.remove(trap, 1)
+            new_nodes.remove(node, 1)
+            
 
         altered_nodes = []
 
@@ -638,14 +821,24 @@ class CubePatch(Serializeable):
                     removed_nodes
                 ),
                 (
-                    PrintingToNode(printing, node)
-                    for printing, node in
+                    PrintingsToNode(printings, node)
+                    for printings, node in
                     printings_moved_to_nodes
                 ),
                 (
-                    NodeToPrinting(node, printing)
-                    for node, printing in
+                    NodeToPrintings(node, printings)
+                    for printings, node in
                     nodes_moved_to_printings
+                ),
+                (
+                    NodeToTrap(trap, node)
+                    for trap, node in
+                    nodes_to_traps
+                ),
+                (
+                    TrapToNode(trap, node)
+                    for trap, node in
+                    traps_to_nodes
                 ),
                 (
                     AlteredNode(before, after)
