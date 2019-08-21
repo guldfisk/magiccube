@@ -60,12 +60,14 @@ class CubeableCubeChange(CubeChange):
     _cubeables_name_map = {
         klass.__name__: klass
         for klass in
-        (Printing, Trap, Ticket, Purple)
+        (Trap, Ticket, Purple)
     }
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
         return cls(
+            inflator.inflate(Printing, value['cubeable'])
+            if value['cubeable'] == 'Printing' else
             cls._cubeables_name_map[value['type']].deserialize(
                 value['cubeable'],
                 inflator,
