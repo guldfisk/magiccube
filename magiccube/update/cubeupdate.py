@@ -6,6 +6,7 @@ import itertools
 
 import copy
 
+from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from orp.database import Model
 from yeetlong.multiset import Multiset
@@ -21,7 +22,7 @@ from magiccube.collections.nodecollection import NodeCollection, NodesDeltaOpera
 from magiccube.collections.delta import CubeDeltaOperation
 
 
-class CubeChange(PersistentHashable):
+class CubeChange(Serializeable, PersistentHashable):
 
     @abstractmethod
     def explain(self) -> str:
@@ -35,6 +36,10 @@ class CubeChange(PersistentHashable):
     def __eq__(self, other) -> bool:
         pass
 
+    @abstractmethod
+    def as_patch(self) -> CubePatch:
+        pass
+
 
 class CubeableCubeChange(CubeChange):
 
@@ -45,6 +50,27 @@ class CubeableCubeChange(CubeChange):
     @property
     def cubeable(self) -> Cubeable:
         return self._cubeable
+
+    def serialize(self) -> serialization_model:
+        return {
+            'cubeable': self._cubeable,
+            'type': self._cubeable.__class__.__name__,
+        }
+
+    _cubeables_name_map = {
+        klass.__name__: klass
+        for klass in
+        (Printing, Trap, Ticket, Purple)
+    }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            cls._cubeables_name_map[value['type']].deserialize(
+                value['cubeable'],
+                inflator,
+            )
+        )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
@@ -77,14 +103,33 @@ class CubeableCubeChange(CubeChange):
             return 'Ticket'
         return 'Purple'
 
+    @abstractmethod
+    def as_patch(self) -> CubePatch:
+        pass
 
 
 class NewCubeable(CubeableCubeChange):
-    pass
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            CubeDeltaOperation(
+                {
+                    self._cubeable: 1,
+                }
+            )
+        )
 
 
 class RemovedCubeable(CubeableCubeChange):
-    pass
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            CubeDeltaOperation(
+                {
+                    self._cubeable: -1,
+                }
+            )
+        )
 
 
 class NodeCubeChange(CubeChange):
@@ -99,6 +144,15 @@ class NodeCubeChange(CubeChange):
 
     def explain(self) -> str:
         return self._node.get_minimal_string()
+
+    def serialize(self) -> serialization_model:
+        return {
+            'node': self._node,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(ConstrainedNode.deserialize(value['node'], inflator))
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
@@ -119,13 +173,33 @@ class NodeCubeChange(CubeChange):
             self._node,
         )
 
+    @abstractmethod
+    def as_patch(self) -> CubePatch:
+        pass
+
 
 class NewNode(NodeCubeChange):
-    pass
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            node_delta_operation=NodesDeltaOperation(
+                {
+                    self._node: 1,
+                }
+            )
+        )
 
 
 class RemovedNode(NodeCubeChange):
-    pass
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            node_delta_operation=NodesDeltaOperation(
+                {
+                    self._node: -1,
+                }
+            )
+        )
 
 
 class PrintingToNode(CubeChange):
@@ -144,6 +218,19 @@ class PrintingToNode(CubeChange):
 
     def explain(self) -> str:
         return f'{self.before.full_name()} -> {self.after.get_minimal_string()}'
+
+    def serialize(self) -> serialization_model:
+        return {
+            'before': self._before,
+            'after': self._after,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            inflator.inflate(Printing, value['before']),
+            ConstrainedNode.deserialize(value['after'], inflator),
+        )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
@@ -172,6 +259,21 @@ class PrintingToNode(CubeChange):
             self._after,
         )
 
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            CubeDeltaOperation(
+                {
+                    self._before: -1,
+                }
+            ),
+            NodesDeltaOperation(
+                {
+                    self._after: 1,
+                }
+            ),
+        )
+
+
 
 class NodeToPrinting(CubeChange):
 
@@ -189,6 +291,20 @@ class NodeToPrinting(CubeChange):
 
     def explain(self) -> str:
         return f'{self.before.get_minimal_string()} -> {self.after.full_name()}'
+
+    def serialize(self) -> serialization_model:
+        return {
+            'before': self._before,
+            'after': self._after,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            ConstrainedNode.deserialize(value['before'], inflator),
+            inflator.inflate(Printing, value['after']),
+        )
+
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
@@ -215,6 +331,20 @@ class NodeToPrinting(CubeChange):
             self.__class__.__name__,
             self._before,
             self._after,
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            CubeDeltaOperation(
+                {
+                    self._after: 1,
+                }
+            ),
+            NodesDeltaOperation(
+                {
+                    self._before: -1,
+                }
+            ),
         )
 
 
@@ -245,6 +375,19 @@ class AlteredNode(CubeChange):
 
         return s
 
+    def serialize(self) -> serialization_model:
+        return {
+            'before': self._before,
+            'after': self._after,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            ConstrainedNode.deserialize(value['before'], inflator),
+            ConstrainedNode.deserialize(value['after'], inflator),
+        )
+
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
         yield self._before.persistent_hash().encode('ASCII')
@@ -270,6 +413,16 @@ class AlteredNode(CubeChange):
             self.__class__.__name__,
             self._before,
             self._after,
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            node_delta_operation = NodesDeltaOperation(
+                {
+                    self._before: -1,
+                    self._after: 1,
+                }
+            ),
         )
 
 
@@ -515,7 +668,7 @@ class CubePatch(Serializeable):
             and self._cube_delta_operation == other._cube_delta_operation
             and self._node_delta_operation == other._node_delta_operation
         )
-    
+
     def __repr__(self):
         return '{}({}, {})'.format(
             self.__class__.__name__,
@@ -537,7 +690,7 @@ class CubePatch(Serializeable):
 
 
 class CubeUpdater(object):
-    
+
     def __init__(
         self,
         cube: Cube,
@@ -561,7 +714,7 @@ class CubeUpdater(object):
                 )
                 + self._patch.cube_delta_operation
             )
-        
+
         return self._new_no_garbage_cube
 
     @property
