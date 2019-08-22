@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 import itertools
 import copy
+from collections import defaultdict
 
 from enum import Enum
 from abc import abstractmethod
@@ -562,6 +563,62 @@ class AlteredNode(CubeChange):
         )
 
 
+class PrintingChange(CubeChange):
+    category = CubeChangeCategory.MODIFICATION
+
+    def __init__(self, before: Printing, after: Printing):
+        self._before = before
+        self._after = after
+
+    def explain(self) -> str:
+        return f'{self._after.cardboard.name} {self._before.expansion.code} -> {self._after.expansion.code}'
+
+    def __hash__(self) -> int:
+        return hash((self._before, self._after))
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._before == other._before
+            and self._after == other._after
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            CubeDeltaOperation(
+                {
+                    self._before: -1,
+                    self._after: 1,
+                }
+            ),
+        )
+
+    def serialize(self) -> serialization_model:
+        return {
+            'before': self._before,
+            'after': self._after,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            inflator.inflate(Printing, value['before']),
+            inflator.inflate(Printing, value['after']),
+        )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('ASCII')
+        yield str(self._before.id).encode('ASCII')
+        yield str(self._after.id).encode('ASCII')
+
+    def __repr__(self) -> str:
+        return '{}({}, {})'.format(
+            self.__class__.__name__,
+            self._before,
+            self._after,
+        )
+
+
 class VerboseCubePatch(object):
 
     def __init__(self, changes: t.Iterable[CubeChange]):
@@ -662,6 +719,34 @@ class CubePatch(Serializeable):
                 if multiplicity < 0
             }
         )
+
+        new_printings_cardboard_map = defaultdict(lambda : [])
+
+        for printing in new_printings:
+            new_printings_cardboard_map[printing.cardboard].append(printing)
+
+        removed_printings_cardboard_map = defaultdict(lambda : [])
+
+        for printing in removed_printings:
+            removed_printings_cardboard_map[printing.cardboard].append(printing)
+
+        for printings in itertools.chain(
+            new_printings_cardboard_map.values(),
+            removed_printings_cardboard_map.values(),
+        ):
+            printings.sort(key=lambda p: p.expansion.code)
+
+        printing_changes: Multiset[t.Tuple[Printing, Printing]] = Multiset()
+
+        for cardboard in new_printings_cardboard_map.keys() & removed_printings_cardboard_map.keys():
+            new = new_printings_cardboard_map[cardboard]
+            removed = removed_printings_cardboard_map[cardboard]
+            while new and removed:
+                _new = new.pop()
+                _removed = removed.pop()
+                printing_changes.add((_removed, _new))
+                new_printings.remove(_new, 1)
+                removed_printings.remove(_removed, 1)
 
         new_unnested_nodes = sorted(
             (
@@ -790,6 +875,11 @@ class CubePatch(Serializeable):
 
         return VerboseCubePatch(
             itertools.chain(
+                (
+                    PrintingChange(before, after)
+                    for before, after in
+                    printing_changes
+                ),
                 (
                     NewCubeable(lap)
                     for lap in

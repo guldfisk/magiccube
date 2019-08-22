@@ -123,6 +123,17 @@ class CubeDeltaOperation(CubeableCollection):
         )
 
     @property
+    def removed_printings(self) -> t.Iterator[t.Tuple[Printing, int]]:
+        return (
+            (
+                (cubeable, -multiplicity)
+                for cubeable, multiplicity in
+                self.printings
+                if multiplicity < 0
+            )
+        )
+
+    @property
     def traps(self) -> t.Iterator[t.Tuple[Trap, int]]:
         return (
             (cubeable, multiplicity)
@@ -139,6 +150,17 @@ class CubeDeltaOperation(CubeableCollection):
                 for trap, multiplicity in
                 self.traps
                 if multiplicity > 0
+            )
+        )
+
+    @property
+    def removed_traps(self) -> t.Iterator[t.Tuple[Trap, int]]:
+        return (
+            (
+                (trap, -multiplicity)
+                for trap, multiplicity in
+                self.traps
+                if multiplicity < 0
             )
         )
 
@@ -163,6 +185,17 @@ class CubeDeltaOperation(CubeableCollection):
         )
 
     @property
+    def removed_tickets(self) -> t.Iterator[t.Tuple[Ticket, int]]:
+        return (
+            (
+                (ticket, -multiplicity)
+                for ticket, multiplicity in
+                self.tickets
+                if multiplicity < 0
+            )
+        )
+
+    @property
     def purples(self) -> t.Iterator[t.Tuple[Purple, int]]:
         return (
             (cubeable, multiplicity)
@@ -183,6 +216,17 @@ class CubeDeltaOperation(CubeableCollection):
         )
 
     @property
+    def removed_purples(self) -> t.Iterator[t.Tuple[Purple, int]]:
+        return (
+            (
+                (purple, -multiplicity)
+                for purple, multiplicity in
+                self.purples
+                if multiplicity < 0
+            )
+        )
+
+    @property
     def laps(self) -> t.Iterator[t.Tuple[Lap, int]]:
         return (
             (cubeable, multiplicity)
@@ -194,6 +238,17 @@ class CubeDeltaOperation(CubeableCollection):
     @property
     def cubeables(self) -> FrozenCounter[Cubeable]:
         return self._cubeables
+
+    @property
+    def all_removed_printings(self) -> t.Iterable[Printing]:
+        for printing, multiplicity in self.removed_printings:
+            yield from itertools.repeat(printing, multiplicity)
+        for trap, multiplicity in self.removed_traps:
+            for _ in range(multiplicity):
+                yield from trap
+        for ticket, multiplicity in self.removed_tickets:
+            for _ in range(multiplicity):
+                yield from ticket.options
 
     @property
     def all_new_printings(self) -> t.Iterable[Printing]:

@@ -168,6 +168,12 @@ class NodesDeltaOperation(Serializeable):
             for _ in range(multiplicity):
                 yield from node.node
 
+    @property
+    def all_removed_printings(self) -> t.Iterator[Printing]:
+        for node, multiplicity in self._nodes.items():
+            for _ in range(-multiplicity):
+                yield from node.node
+
 
     def serialize(self) -> serialization_model:
         return {

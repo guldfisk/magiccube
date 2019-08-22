@@ -7,10 +7,12 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
+from yeetlong.multiset import FrozenMultiset
+from yeetlong.counters import FrozenCounter
+
 from magiccube.collections.nodecollection import ConstrainedNode
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
-from yeetlong.multiset import FrozenMultiset
 
 from magiccube.update.cubeupdate import CubeUpdater
 
@@ -186,6 +188,61 @@ class PrintingMismatch(ReportNotification):
 #         pass
 
 
+class CardboardChange(ReportNotification):
+    notification_level = ReportNotificationLevel.INFO
+
+    def __init__(self, changes: FrozenCounter[Cardboard]):
+        self._changes = changes
+
+    @classmethod
+    def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+        new_cardboards = FrozenMultiset(
+            printing.cardboard
+            for printing in
+            itertools.chain(
+                updater.patch.cube_delta_operation.all_new_printings,
+                updater.patch.node_delta_operation.all_new_printings,
+            )
+        )
+        removed_cardboards = FrozenMultiset(
+            printing.cardboard
+            for printing in
+            itertools.chain(
+                updater.patch.cube_delta_operation.all_removed_printings,
+                updater.patch.node_delta_operation.all_removed_printings,
+            )
+        )
+
+        return CardboardChange(
+            FrozenCounter(
+                new_cardboards.elements()
+            ) - FrozenCounter(
+                removed_cardboards.elements()
+            )
+        )
+
+    @property
+    def title(self) -> str:
+        return 'Cardboard changes'
+
+    @property
+    def content(self) -> str:
+        return 'Added:\n{}\n\nRemoved:\n{}'.format(
+            '\n'.join(
+                ((str(multiplicity) + 'x ') if multiplicity != 1 else '') + cardboard.name
+                for cardboard, multiplicity in
+                self._changes.items()
+                if multiplicity > 0
+            ),
+            '\n'.join(
+                str(multiplicity) + ' ' + cardboard.name
+                for cardboard, multiplicity in
+                self._changes.items()
+                if multiplicity < 0
+            ),
+        )
+
+
 class ReportBlueprint(object):
     
     def __init__(self, notification_checks: t.Iterable[t.Type[ReportNotification]]):
@@ -214,6 +271,8 @@ DEFAULT_REPORT_BLUEPRINT = ReportBlueprint(
         ChangedSize,
         NodesWithoutGroups,
         PrintingMismatch,
+
+        CardboardChange,
     }
 )
 
