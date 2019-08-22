@@ -32,6 +32,8 @@ setup(
 		'numpy',
 		'requests',
 		'aggdraw',
-		'appdirs', 'deap'
+		'appdirs',
+		'deap',
+		'matplotlib',
 	],
 )
