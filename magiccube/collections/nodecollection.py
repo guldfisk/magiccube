@@ -17,7 +17,7 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         self._value = value
         self._node = node
 
-        self._groups = frozenset(groups)
+        self._groups = frozenset(group for group in groups if group)
         # if len(node.children) == 1:
         #     colors = node.children.__iter__().__next__().cardboard.front_card.color
         #     if len(colors) == 1:
