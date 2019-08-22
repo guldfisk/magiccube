@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
+from mtgorp.models.persistent.printing import Printing
 from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
 
@@ -160,6 +161,13 @@ class NodesDeltaOperation(Serializeable):
     @property
     def nodes(self) -> FrozenCounter[ConstrainedNode]:
         return self._nodes
+
+    @property
+    def all_new_printings(self) -> t.Iterator[Printing]:
+        for node, multiplicity in self._nodes.items():
+            for _ in range(multiplicity):
+                yield from node.node
+
 
     def serialize(self) -> serialization_model:
         return {
