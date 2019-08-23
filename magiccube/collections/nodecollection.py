@@ -80,7 +80,8 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         )
 
     def __repr__(self):
-        return f'CC({self.node}, {self.groups}, {self.value})'
+        # return f'CC({self.node}, {self.groups}, {self.value})'
+        return f'CC({round(self.value, 2)})'
 
     def __deepcopy__(self, memodict: t.Dict):
         return self
