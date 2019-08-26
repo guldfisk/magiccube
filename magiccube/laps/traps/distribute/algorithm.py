@@ -14,7 +14,7 @@ from evolution import model
 from yeetlong.multiset import FrozenMultiset
 
 from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
-from magiccube.laps.traps.trap import Trap
+from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.collections.nodecollection import ConstrainedNode
 
 
@@ -37,9 +37,16 @@ class DistributionNode(object):
     def groups(self) -> t.FrozenSet[str]:
         return self._groups
 
+    @property
+    def as_constrained_node(self):
+        return ConstrainedNode(
+            value = self._value,
+            node = self._node,
+            groups = self._groups,
+        )
   
     def __repr__(self):
-        return f'CC({self.node}, {self.groups}, {self.value})'
+        return f'DN({self.node}, {self.groups}, {self.value})'
 
     def __deepcopy__(self, memodict: t.Dict):
         return self
@@ -97,7 +104,12 @@ class TrapDistribution(model.Individual):
                 else:
                     cubeables.append(cubeable)
 
-            traps.append(Trap(AllNode(cubeables)))
+            traps.append(
+                Trap(
+                    AllNode(cubeables),
+                    intention_type = IntentionType.GARBAGE,
+                )
+            )
 
         return FrozenMultiset(traps)
 
@@ -315,7 +327,7 @@ class SizeHomogeneityConstraint(model.Constraint):
         )
 
 
-class Distributor(model.Environment):
+class Distributor(model.Environment[TrapDistribution]):
 
     def __init__(
         self,
