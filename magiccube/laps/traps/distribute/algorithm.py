@@ -169,7 +169,10 @@ def mate_distributions(
 
 
 def logistic(x: float, max_value: float, mid: float, slope: float) -> float:
-    return max_value / (1 + math.e ** (slope * (x - mid)))
+    try:
+        return max_value / (1 + math.e ** (slope * (x - mid)))
+    except OverflowError:
+        return 0
 
 
 class ValueDistributionHomogeneityConstraint(model.Constraint):
@@ -189,7 +192,7 @@ class ValueDistributionHomogeneityConstraint(model.Constraint):
                 )
             ) / trap_amount
         )
-        self._relator = self._average_trap_value ** 2
+        self._relator = self._average_trap_value ** 2 * trap_amount
 
     def _value_distribution_heterogeneity_factor(self, distribution: TrapDistribution) -> float:
         return sum(
@@ -213,7 +216,7 @@ class ValueDistributionHomogeneityConstraint(model.Constraint):
             ) / self._relator,
             max_value = 2,
             mid = 0,
-            slope = 5,
+            slope = 7,
         )
 
 
@@ -290,7 +293,7 @@ class SizeHomogeneityConstraint(model.Constraint):
         trap_amount: int,
     ):
         self._average_trap_size = len(nodes) / trap_amount
-        self._relator = self._average_trap_size ** 2
+        self._relator = self._average_trap_size ** 2 * trap_amount
 
     def _size_heterogeneity_factor(self, distribution: TrapDistribution) -> float:
         return sum(

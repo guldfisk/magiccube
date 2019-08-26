@@ -67,9 +67,7 @@ class ConstrainedNode(Serializeable, PersistentHashable):
             yield group.encode('UTF-8')
 
     def __hash__(self) -> int:
-        if not hasattr(self, '_hash'):
-            setattr(self, '_hash', hash((self.node, self.value, self.groups)))
-        return getattr(self, '_hash')
+        return hash((self._node, self._value, self._groups))
 
     def __eq__(self, other: object) -> bool:
         return (
@@ -80,8 +78,7 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         )
 
     def __repr__(self):
-        # return f'CC({self.node}, {self.groups}, {self.value})'
-        return f'CC({round(self.value, 2)})'
+        return f'CC({self.node}, {self.groups}, {self.value})'
 
     def __deepcopy__(self, memodict: t.Dict):
         return self
