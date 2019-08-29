@@ -9,7 +9,8 @@ from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 
-from evolution import model
+from evolution import logging, model
+from evolution.environment import Environment
 
 from yeetlong.multiset import FrozenMultiset
 
@@ -327,7 +328,7 @@ class SizeHomogeneityConstraint(model.Constraint):
         )
 
 
-class Distributor(model.Environment[TrapDistribution]):
+class Distributor(Environment[TrapDistribution]):
 
     def __init__(
         self,
@@ -357,16 +358,16 @@ class Distributor(model.Environment[TrapDistribution]):
             ),
             initial_population_size = initial_population_size,
             constraints = constraints,
-            logger = model.Logger(
+            logger = logging.Logger(
                 OrderedDict(
                     (
                         (
                             'max',
-                            model.LogMax(),
+                            logging.LogMax(),
                         ),
                         (
                             'mean',
-                            model.LogAverage(),
+                            logging.LogAverage(),
                         ),
                     )
                 )
