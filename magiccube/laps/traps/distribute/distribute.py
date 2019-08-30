@@ -33,7 +33,10 @@ class DistributionWorker(threading.Thread):
         with self._communication_lock:
             self._running = False
             self._terminating.set()
-            self._pause_lock.release()
+            try:
+                self._pause_lock.release()
+            except RuntimeError:
+                pass
 
     def pause(self):
         with self._communication_lock:
@@ -42,7 +45,10 @@ class DistributionWorker(threading.Thread):
 
     def resume(self):
         with self._communication_lock:
-            self._pause_lock.release()
+            try:
+                self._pause_lock.release()
+            except RuntimeError:
+                pass
             self._running = True
 
     def run(self) -> None:
@@ -54,17 +60,17 @@ class DistributionWorker(threading.Thread):
                     self._distributor.spawn_generation()
                 )
                 if (
-                    not self._max_generations
-                    or len(self._distributor.logger.values) >= self._max_generations
+                    self._max_generations
+                    and len(self._distributor.logger.values) >= self._max_generations
                 ):
                     self.stop()
 
 
 class DistributionTask(threading.Thread):
 
-    def __init__(self, distributor: Distributor, **kwargs):
+    def __init__(self, distributor: Distributor, max_generations: int = 0, **kwargs):
         super().__init__(**kwargs)
-        self._worker = DistributionWorker(distributor, daemon = True)
+        self._worker = DistributionWorker(distributor, max_generations = max_generations, daemon = True)
 
         self._running: bool = False
         self._terminating = threading.Event()
