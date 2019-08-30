@@ -12,10 +12,11 @@ from magiccube.laps.traps.distribute.algorithm import Distributor
 
 class DistributionWorker(threading.Thread):
 
-    def __init__(self, distributor: Distributor, **kwargs):
+    def __init__(self, distributor: Distributor, *, max_generations: int = 0, **kwargs):
         super().__init__(**kwargs)
         self._distributor: Distributor = distributor
-        
+        self._max_generations = max_generations
+
         self._running: bool = False
         self._terminating = threading.Event()
         self._pause_lock = threading.Lock()
@@ -52,24 +53,29 @@ class DistributionWorker(threading.Thread):
                 self._log_frames.put(
                     self._distributor.spawn_generation()
                 )
+                if (
+                    not self._max_generations
+                    or len(self._distributor.logger.values) >= self._max_generations
+                ):
+                    self.stop()
 
-                
+
 class DistributionTask(threading.Thread):
 
     def __init__(self, distributor: Distributor, **kwargs):
         super().__init__(**kwargs)
         self._worker = DistributionWorker(distributor, daemon = True)
-        
+
         self._running: bool = False
         self._terminating = threading.Event()
         self._lock = threading.Lock()
         self._message_queue = queue.Queue()
-        
+
         self._communication_lock = threading.Lock()
         self._subscription_lock = threading.Lock()
         self._frames = []
         self._subscribers: t.Dict[str, queue.Queue[t.Dict[str, t.Any]]] = {}
-        
+
     def _process_frame(self, frame: LogFrame) -> None:
         with self._subscription_lock:
             self._frames.append(frame)
@@ -80,7 +86,7 @@ class DistributionTask(threading.Thread):
                         'frame': frame,
                     }
                 )
-        
+
     def _notify_status_change(self, status: str) -> None:
         with self._subscription_lock:
             for subscriber in self._subscribers.values():
@@ -103,6 +109,13 @@ class DistributionTask(threading.Thread):
             )
             return q
 
+    def unsubscribe(self, key: str) -> None:
+        with self._subscription_lock:
+            try:
+                del self._subscribers[key]
+            except KeyError:
+                pass
+
     def stop(self):
         self._terminating.set()
         self._worker.stop()
@@ -115,7 +128,6 @@ class DistributionTask(threading.Thread):
     def resume(self):
         self._worker.resume()
         self._notify_status_change('resumed')
-        
 
     def run(self) -> None:
         self._notify_status_change('started')

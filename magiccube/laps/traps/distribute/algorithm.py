@@ -57,7 +57,7 @@ class TrapDistribution(model.Individual):
 
     def __init__(
         self,
-        constrained_nodes: t.Iterable[DistributionNode] = (),
+        distribution_nodes: t.Iterable[DistributionNode] = (),
         trap_amount: int = 1,
         traps: t.Optional[t.List[t.List[DistributionNode]]] = None,
         random_initialization: bool = False
@@ -70,12 +70,12 @@ class TrapDistribution(model.Individual):
             self.traps: t.List[t.List[DistributionNode]] = [[] for _ in range(trap_amount)]
 
             if random_initialization:
-                for constrained_node in constrained_nodes:
+                for constrained_node in distribution_nodes:
                     random.choice(self.traps).append(constrained_node)
 
             else:
                 for constrained_node, trap in zip(
-                    constrained_nodes,
+                    distribution_nodes,
                     itertools.cycle(self.traps)
                 ):
                     trap.append(constrained_node)
@@ -338,7 +338,7 @@ class Distributor(Environment[TrapDistribution]):
         group_weights: t.Dict[str, float],
         constraints: model.ConstraintSet,
     ):
-        self._constrained_nodes: t.List[DistributionNode] = list(
+        self._distribution_nodes: t.List[DistributionNode] = list(
             map(
                 DistributionNode,
                 nodes,
@@ -351,7 +351,7 @@ class Distributor(Environment[TrapDistribution]):
             individual_factory = (
                 lambda:
                     TrapDistribution(
-                        constrained_nodes = self._constrained_nodes,
+                        distribution_nodes = self._distribution_nodes,
                         trap_amount = self._trap_amount,
                         random_initialization = True,
                     )
@@ -378,7 +378,7 @@ class Distributor(Environment[TrapDistribution]):
 
     @property
     def distribution_nodes(self) -> t.List[DistributionNode]:
-        return self._constrained_nodes
+        return self._distribution_nodes
 
     @property
     def trap_amount(self):

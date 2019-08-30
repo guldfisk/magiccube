@@ -1016,7 +1016,7 @@ class CubeUpdater(object):
         return self._cube
 
     @property
-    def node_collection(self) -> self._node_collection:
+    def node_collection(self) -> NodeCollection:
         return self._node_collection
 
     @property
