@@ -23,14 +23,23 @@ class DistributionWorker(threading.Thread):
         self._communication_lock = threading.Lock()
         self._message_queue = queue.Queue()
 
-        self._log_frames = queue.Queue()
-
     @property
-    def log_frames(self) -> queue.Queue[LogFrame]:
-        return self._log_frames
+    def message_queue(self) -> queue.Queue[t.Dict[str, t.Any]]:
+        return self._message_queue
+
+    def _notify_status(self, status: str) -> None:
+        self._message_queue.put(
+            {
+                'type': 'status',
+                'status': status,
+            }
+        )
 
     def stop(self):
+        if self._terminating.is_set():
+            return
         with self._communication_lock:
+            self._notify_status('stopping')
             self._running = False
             self._terminating.set()
             try:
@@ -39,12 +48,18 @@ class DistributionWorker(threading.Thread):
                 pass
 
     def pause(self):
+        if self._terminating.is_set():
+            return
         with self._communication_lock:
+            self._notify_status('pausing')
             self._pause_lock.acquire(blocking = False)
             self._running = False
 
     def resume(self):
+        if self._terminating.is_set():
+            return
         with self._communication_lock:
+            self._notify_status('resuming')
             try:
                 self._pause_lock.release()
             except RuntimeError:
@@ -53,24 +68,36 @@ class DistributionWorker(threading.Thread):
 
     def run(self) -> None:
         self._running = True
+        self._notify_status('started')
         while not self._terminating.is_set():
             self._pause_lock.acquire()
             while self._running:
-                self._log_frames.put(
-                    self._distributor.spawn_generation()
+                self._message_queue.put(
+                    {
+                        'type': 'frame',
+                        'frame': self._distributor.spawn_generation(),
+                    }
                 )
                 if (
                     self._max_generations
                     and len(self._distributor.logger.values) >= self._max_generations
                 ):
+                    self._message_queue.put(
+                        {
+                            'type': 'status',
+                            'status': 'completed',
+                            'generations': len(self._distributor.logger.values)
+                        }
+                    )
                     self.stop()
+        self._notify_status('stopped')
 
 
 class DistributionTask(threading.Thread):
 
     def __init__(self, distributor: Distributor, max_generations: int = 0, **kwargs):
         super().__init__(**kwargs)
-        self._worker = DistributionWorker(distributor, max_generations = max_generations, daemon = True)
+        self._worker = DistributionWorker(distributor, max_generations = max_generations)
 
         self._running: bool = False
         self._terminating = threading.Event()
@@ -79,29 +106,14 @@ class DistributionTask(threading.Thread):
 
         self._communication_lock = threading.Lock()
         self._subscription_lock = threading.Lock()
-        self._frames = []
+        self._messages = []
         self._subscribers: t.Dict[str, queue.Queue[t.Dict[str, t.Any]]] = {}
 
-    def _process_frame(self, frame: LogFrame) -> None:
+    def _process_message(self, message: t.Dict[str, t.Any]) -> None:
         with self._subscription_lock:
-            self._frames.append(frame)
+            self._messages.append(message)
             for subscriber in self._subscribers.values():
-                subscriber.put(
-                    {
-                        'type': 'frame',
-                        'frame': frame,
-                    }
-                )
-
-    def _notify_status_change(self, status: str) -> None:
-        with self._subscription_lock:
-            for subscriber in self._subscribers.values():
-                subscriber.put(
-                    {
-                        'type': 'status_change',
-                        'status': status,
-                    }
-                )
+                subscriber.put(message)
 
     def subscribe(self, key: str) -> queue.Queue[t.Dict[str, t.Any]]:
         with self._subscription_lock:
@@ -109,8 +121,8 @@ class DistributionTask(threading.Thread):
             self._subscribers[key] = q
             q.put(
                 {
-                    'type': 'frames',
-                    'frames': self._frames,
+                    'type': 'previous_messages',
+                    'messages': self._messages,
                 }
             )
             return q
@@ -125,23 +137,22 @@ class DistributionTask(threading.Thread):
     def stop(self):
         self._terminating.set()
         self._worker.stop()
-        self._notify_status_change('stopped')
 
     def pause(self):
         self._worker.pause()
-        self._notify_status_change('paused')
 
     def resume(self):
         self._worker.resume()
-        self._notify_status_change('resumed')
 
     def run(self) -> None:
-        self._notify_status_change('started')
         self._worker.start()
         while not self._terminating.is_set():
             try:
-                self._process_frame(
-                    self._worker.log_frames.get(timeout = 5)
+                message = self._worker.message_queue.get(timeout = 5)
+                self._process_message(
+                    message
                 )
+                if message['type'] == 'status' and message['status'] == 'stopped':
+                    self._terminating.set()
             except queue.Empty:
                 pass
