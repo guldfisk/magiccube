@@ -242,7 +242,7 @@ class CubeDeltaOperation(CubeableCollection):
     @property
     def new_cubeables(self) -> t.Iterator[t.Tuple[Cubeable, int]]:
         return (
-            cubeable, multiplicity
+            (cubeable, multiplicity)
             for cubeable, multiplicity in
             self._cubeables.items()
             if multiplicity > 0
@@ -251,7 +251,7 @@ class CubeDeltaOperation(CubeableCollection):
     @property
     def removed_cubeables(self) -> t.Iterator[t.Tuple[Cubeable, int]]:
         return (
-            cubeable, multiplicity
+            (cubeable, multiplicity)
             for cubeable, multiplicity in
             self._cubeables.items()
             if multiplicity < 0
