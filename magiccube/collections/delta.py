@@ -238,6 +238,24 @@ class CubeDeltaOperation(CubeableCollection):
     @property
     def cubeables(self) -> FrozenCounter[Cubeable]:
         return self._cubeables
+    
+    @property
+    def new_cubeables(self) -> t.Iterator[t.Tuple[Cubeable, int]]:
+        return (
+            cubeable, multiplicity
+            for cubeable, multiplicity in
+            self._cubeables.items()
+            if multiplicity > 0
+        )
+    
+    @property
+    def removed_cubeables(self) -> t.Iterator[t.Tuple[Cubeable, int]]:
+        return (
+            cubeable, multiplicity
+            for cubeable, multiplicity in
+            self._cubeables.items()
+            if multiplicity < 0
+        )
 
     @property
     def all_removed_printings(self) -> t.Iterable[Printing]:

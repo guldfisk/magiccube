@@ -50,7 +50,9 @@ class ChangedSize(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ChangedSize]:
-        size_delta = sum(updater.patch.cube_delta_operation.cubeables.multiplicities())
+        new_cube = updater.cube + updater.patch.cube_delta_operation
+
+        size_delta = len(new_cube) - len(updater.cube)
         if size_delta == 0:
             return None
 
@@ -107,6 +109,24 @@ class NodesWithoutGroups(ReportNotification):
                 self._nodes.items()
             )
         )
+
+
+# class RemoveNonExistentCubeables(ReportNotification):
+#     notification_level = ReportNotificationLevel.WARNING
+#
+#     @classmethod
+#     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+#         FrozenMultiset(
+#             (~updater.patch.cube_delta_operation.cubeables).new_cubeables
+#         )
+#
+#     @property
+#     def title(self) -> str:
+#         return 'Remove non-existent cubeables'
+#
+#     @property
+#     def content(self) -> str:
+#         pass
 
 
 class PrintingMismatch(ReportNotification):
