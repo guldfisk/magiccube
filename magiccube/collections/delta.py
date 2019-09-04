@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import typing as t
 
+from mtgorp.models.persistent.cardboard import Cardboard
 from yeetlong.counters import FrozenCounter
 from yeetlong.multiset import FrozenMultiset
 
@@ -53,6 +54,10 @@ class CubeDelta(object):
         return self._new_printings
 
     @property
+    def new_cardboards(self) -> FrozenMultiset[Cardboard]:
+        return FrozenMultiset(printing.cardboard for printing in self.new_printings)
+
+    @property
     def removed_printings(self) -> FrozenMultiset[Printing]:
         if self._removed_printings is None:
             self._removed_printings = (
@@ -61,6 +66,10 @@ class CubeDelta(object):
             )
 
         return self._removed_printings
+
+    @property
+    def removed_cardboards(self) -> FrozenMultiset[Cardboard]:
+        return FrozenMultiset(printing.cardboard for printing in self.removed_printings)
 
     @staticmethod
     def _multiset_to_indented_string(ms: FrozenMultiset[Printing]) -> str:

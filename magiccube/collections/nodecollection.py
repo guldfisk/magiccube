@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+from frozendict import frozendict
+
 from mtgorp.models.persistent.printing import Printing
 from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
@@ -11,6 +13,147 @@ from mtgorp.models.serilization.serializeable import Serializeable, PersistentHa
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 
 
+class GroupMap(Serializeable):
+
+    def __init__(self, groups: t.Mapping[str, float]):
+        self._groups = groups if isinstance(groups, frozendict) else frozendict(groups)
+
+    def normalized(self) -> GroupMap:
+        max_weight = max(self._groups.values())
+        return self.__class__(
+            frozendict(
+                (group, weight / max_weight)
+                for group, weight in
+                self._groups.items()
+            )
+        )
+
+    def serialize(self) -> serialization_model:
+        return {
+            'groups': [
+                (group, weight)
+                for group, weight in
+                self._groups.items()
+            ]
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            frozendict(
+                [
+                    (group, weight)
+                    for group, weight in
+                    value['groups']
+                ]
+            )
+        )
+
+    def __add__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
+        groups = dict(self._groups)
+        for group, weight in other._groups:
+            if weight is None:
+                try:
+                    del groups[group]
+                except KeyError:
+                    pass
+            else:
+                groups[group] = weight
+        return self.__class__(groups)
+
+    __radd__ = __add__
+
+    def __hash__(self) -> int:
+        return hash(self._groups)
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._groups == other._groups
+        )
+
+
+class GroupMapDeltaOperation(Serializeable):
+
+    def __init__(
+        self,
+        new_groups: t.Optional[t.Mapping[str, t.Optional[float]]] = None,
+        removed_groups: t.Optional[t.Mapping[str, t.Optional[float]]] = None,
+    ):
+        self._new_groups = (
+            frozendict()
+            if new_groups is None else
+            (
+                new_groups
+                if isinstance(new_groups, frozendict) else
+                frozendict(new_groups)
+            )
+        )
+        self._removed_groups = (
+            frozendict()
+            if removed_groups is None else
+            (
+                removed_groups
+                if isinstance(removed_groups, frozendict) else
+                frozendict(removed_groups)
+            )
+        )
+
+    @property
+    def new_groups(self) -> t.Mapping[str, t.Optional[float]]:
+        return self._new_groups
+
+    @property
+    def removed_groups(self) -> t.Mapping[str, t.Optional[float]]:
+        return self._removed_groups
+
+    def serialize(self) -> serialization_model:
+        return {
+            'groups': [
+                (group, weight)
+                for group, weight in
+                self._groups.items()
+            ]
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+        return cls(
+            frozendict(
+                [
+                    (group, weight)
+                    for group, weight in
+                    value['groups']
+                ]
+            )
+        )
+
+    def __add__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
+        groups = dict(self._groups)
+        groups.update(other._groups)
+        return self.__class__(groups)
+
+    __radd__ = __add__
+    
+    def __sub__(self, other: GroupMapDeltaOperation):
+        groups = dict(self._groups)
+        for group in other.groups:
+            try:
+                del groups[group]
+            except KeyError:
+                pass
+        return self.__class__(groups)
+
+    def __hash__(self) -> int:
+        return hash(self._groups)
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._groups == other._groups
+        )
+
+
 class ConstrainedNode(Serializeable, PersistentHashable):
 
     def __init__(self, value: float, node: PrintingNode, groups: t.Iterable[str] = ()):
@@ -18,10 +161,6 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         self._node = node
 
         self._groups = frozenset(group for group in groups if group)
-        # if len(node.children) == 1:
-        #     colors = node.children.__iter__().__next__().cardboard.front_card.color
-        #     if len(colors) == 1:
-        #         self._groups |= {color.name for color in colors}
 
     @property
     def value(self) -> float:
@@ -37,7 +176,7 @@ class ConstrainedNode(Serializeable, PersistentHashable):
 
     def get_minimal_string(self) -> str:
         return '({}, {} - {})'.format(
-            self._node.get_minimal_string(identified_by_id=False),
+            self._node.get_minimal_string(identified_by_id = False),
             self.value,
             ', '.join(sorted(self._groups)),
         )
@@ -118,11 +257,16 @@ class NodeCollection(Serializeable):
     def items(self) -> t.Iterable[t.Tuple[ConstrainedNode, int]]:
         return self._nodes.items()
 
+    @property
+    def all_printings(self) -> t.Iterator[Printing]:
+        for node in self._nodes:
+            yield from node.node
+
     def __iter__(self) -> t.Iterator[ConstrainedNode]:
         return self._nodes.__iter__()
-    
+
     def __len__(self) -> int:
-        return self._nodes.__len__()   
+        return self._nodes.__len__()
 
     def __hash__(self) -> int:
         return hash(self._nodes)
@@ -132,12 +276,12 @@ class NodeCollection(Serializeable):
             isinstance(other, self.__class__)
             and self._nodes == other._nodes
         )
-    
+
     def __add__(self, other: t.Union[NodeCollection, NodesDeltaOperation]) -> NodeCollection:
         return self.__class__(
             self._nodes + other.nodes
         )
-    
+
     def __sub__(self, other: t.Union[NodeCollection, NodesDeltaOperation]) -> NodeCollection:
         return self.__class__(
             self._nodes - other.nodes
@@ -172,7 +316,6 @@ class NodesDeltaOperation(Serializeable):
             for _ in range(-multiplicity):
                 yield from node.node
 
-
     def serialize(self) -> serialization_model:
         return {
             'nodes': (
@@ -185,7 +328,7 @@ class NodesDeltaOperation(Serializeable):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> NodesDeltaOperation:
         return cls(
-            nodes={
+            nodes = {
                 ConstrainedNode.deserialize(
                     node,
                     inflator,
@@ -235,6 +378,3 @@ class NodesDeltaOperation(Serializeable):
             self.__class__.__name__,
             self._nodes,
         )
-
-        
-        

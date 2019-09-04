@@ -22,7 +22,13 @@ from magiccube.laps.traps.tree.printingtree import BorderedNode, PrintingNode
 from magiccube.laps.lap import Lap
 from magiccube.laps.traps.trap import Trap,IntentionType
 from magiccube.collections.cube import Cube, Cubeable
-from magiccube.collections.nodecollection import NodeCollection, NodesDeltaOperation, ConstrainedNode
+from magiccube.collections.nodecollection import (
+    NodeCollection,
+    NodesDeltaOperation,
+    ConstrainedNode,
+    GroupMap,
+    GroupMapDeltaOperation,
+)
 from magiccube.collections.delta import CubeDeltaOperation
 
 
@@ -51,6 +57,144 @@ class CubeChange(Serializeable, PersistentHashable):
     @abstractmethod
     def as_patch(self) -> CubePatch:
         pass
+
+
+# class GroupAlteredOrAdded(CubeChange):
+#     category = CubeChangeCategory.ADDITION
+# 
+#     def __init__(self, group: str, value: float):
+#         self._group = group
+#         self._value = value
+# 
+#     def explain(self) -> str:
+#         return f'{self._group}: {round(self._value, 2)}'
+# 
+#     def __hash__(self) -> int:
+#         return hash(self._group)
+# 
+#     def __eq__(self, other) -> bool:
+#         return (
+#             isinstance(other, self.__class__)
+#             and self._group == other._group
+#         )
+# 
+#     def as_patch(self) -> CubePatch:
+#         return CubePatch(
+#             group_map_delta_operation = GroupMapDeltaOperation(
+#                 {
+#                     self._group: self._value,
+#                 }
+#             )
+#         )
+# 
+#     def serialize(self) -> serialization_model:
+#         return {
+#             'group': self._group,
+#             'value': self._value,
+#         }
+# 
+#     @classmethod
+#     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupAlteredOrAdded:
+#         return cls(
+#             value['group'],
+#             value['value'],
+#         )
+# 
+#     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+#         yield self.__class__.__name__.encode('ASCII')
+#         yield self._group.encode('UTF-8')
+
+
+# class GroupWeightChange(CubeChange):
+#     category = CubeChangeCategory.MODIFICATION
+#
+#     def __init__(self, group: str, old_value: float, new_value: float):
+#         self._group = group
+#         self._old_value = old_value
+#         self._new_value = new_value
+#
+#     def explain(self) -> str:
+#         return f'{self._group}: {round(self._old_value, 2)} -> {round(self._new_value, 2)}'
+#
+#     def __hash__(self) -> int:
+#         return hash(self._group)
+#
+#     def __eq__(self, other) -> bool:
+#         return (
+#             isinstance(other, self.__class__)
+#             and self._group == other._group
+#         )
+#
+#     def as_patch(self) -> CubePatch:
+#         return CubePatch(
+#             group_map_delta_operation = GroupMapDeltaOperation(
+#                 {
+#                     self._group: self._new_value,
+#                 }
+#             )
+#         )
+#
+#     def serialize(self) -> serialization_model:
+#         return {
+#             'group': self._group,
+#             'old_value': self._old_value,
+#             'new_value': self._new_value,
+#         }
+#
+#     @classmethod
+#     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupWeightChange:
+#         return cls(
+#             group = value['group'],
+#             old_value = value['old_value'],
+#             new_value = value['new_value'],
+#         )
+#
+#     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+#         yield self.__class__.__name__.encode('ASCII')
+#         yield self._group.encode('UTF-8')
+        
+        
+# class RemoveGroup(CubeChange):
+#     category = CubeChangeCategory.ADDITION
+# 
+#     def __init__(self, group: str):
+#         self._group = group
+# 
+#     def explain(self) -> str:
+#         return self._group
+# 
+#     def __hash__(self) -> int:
+#         return hash(self._group)
+# 
+#     def __eq__(self, other) -> bool:
+#         return (
+#             isinstance(other, self.__class__)
+#             and self._group == other._group
+#         )
+# 
+#     def as_patch(self) -> CubePatch:
+#         return CubePatch(
+#             group_map_delta_operation = GroupMapDeltaOperation(
+#                 {
+#                     self._group: None,
+#                 }
+#             )
+#         )
+# 
+#     def serialize(self) -> serialization_model:
+#         return {
+#             'group': self._group,
+#         }
+# 
+#     @classmethod
+#     def deserialize(cls, value: serialization_model, inflator: Inflator) -> RemoveGroup:
+#         return cls(
+#             value['group'],
+#         )
+# 
+#     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+#         yield self.__class__.__name__.encode('ASCII')
+#         yield self._group.encode('UTF-8')
 
 
 class CubeableCubeChange(CubeChange):
@@ -859,7 +1003,6 @@ class CubePatch(Serializeable):
         for trap, node in traps_to_nodes:
             removed_laps.remove(trap, 1)
             new_nodes.remove(node, 1)
-            
 
         altered_nodes = []
 
@@ -940,8 +1083,8 @@ class CubePatch(Serializeable):
 
     def serialize(self) -> serialization_model:
         return {
-            'cube_delta': self._cube_delta_operation.serialize(),
-            'nodes_delta': self._node_delta_operation.serialize(),
+            'cube_delta': self._cube_delta_operation,
+            'nodes_delta': self._node_delta_operation,
         }
 
     @classmethod
@@ -1003,10 +1146,12 @@ class CubeUpdater(object):
         cube: Cube,
         node_collection: NodeCollection,
         patch: CubePatch,
+        group_map: GroupMap,
     ):
         self._cube = cube
         self._node_collection = node_collection
         self._patch = patch
+        self._group_map = group_map
 
         self._new_no_garbage_cube = None
         self._new_nodes = None
@@ -1022,6 +1167,10 @@ class CubeUpdater(object):
     @property
     def patch(self) -> CubePatch:
         return self._patch
+
+    @property
+    def group_map(self) -> GroupMap:
+        return self._group_map
 
     @property
     def new_no_garbage_cube(self):

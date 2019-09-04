@@ -7,6 +7,10 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
+from magiccube.collections.cube import Cube
+from magiccube.collections.cubeable import Cubeable
+from magiccube.collections.delta import CubeDelta
+from magiccube.laps.traps.trap import Trap, IntentionType
 from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
 
@@ -24,7 +28,7 @@ class ReportNotificationLevel(Enum):
 
 class ReportNotification(ABC):
     notification_level = ReportNotificationLevel.INFO
-    
+
     @classmethod
     @abstractmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
@@ -111,22 +115,66 @@ class NodesWithoutGroups(ReportNotification):
         )
 
 
-# class RemoveNonExistentCubeables(ReportNotification):
+# class NewGroupsWithoutNodes(ReportNotification):
 #     notification_level = ReportNotificationLevel.WARNING
-#
+# 
 #     @classmethod
 #     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-#         FrozenMultiset(
-#             (~updater.patch.cube_delta_operation.cubeables).new_cubeables
-#         )
-#
+#         pass
+# 
 #     @property
 #     def title(self) -> str:
-#         return 'Remove non-existent cubeables'
-#
+#         pass
+# 
 #     @property
 #     def content(self) -> str:
 #         pass
+
+
+# class NodesWithUnknownGroups(ReportNotification):
+#     notification_level = ReportNotificationLevel.WARNING
+# 
+#     @classmethod
+#     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+#         pass
+# 
+#     @property
+#     def title(self) -> str:
+#         pass
+# 
+#     @property
+#     def content(self) -> str:
+#         pass
+
+
+class RemoveNonExistentCubeables(ReportNotification):
+    notification_level = ReportNotificationLevel.WARNING
+
+    def __init__(self, non_existent_removed_cubeables: FrozenMultiset[Cubeable]):
+        self._non_existent_removed_cubeables = Cube(non_existent_removed_cubeables)
+
+    @classmethod
+    def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+        non_existent_cuts = FrozenMultiset(
+            {
+                cubeable: multiplicity
+                for cubeable, multiplicity in
+                (~updater.patch.cube_delta_operation.cubeables).positive()
+            }
+        ) - updater.cube.cubeables
+
+        if non_existent_cuts:
+            return cls(non_existent_cuts)
+        else:
+            return None
+
+    @property
+    def title(self) -> str:
+        return 'Remove non-existent cubeables'
+
+    @property
+    def content(self) -> str:
+        return self._non_existent_removed_cubeables.pp_string
 
 
 class PrintingMismatch(ReportNotification):
@@ -137,14 +185,14 @@ class PrintingMismatch(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[PrintingMismatch]:
-        old_cardboard_map = defaultdict(lambda : set())
+        old_cardboard_map = defaultdict(lambda: set())
         for printing in updater.cube.all_printings:
             old_cardboard_map[printing.cardboard].add(printing)
-        
-        new_cardboard_map = defaultdict(lambda : set())
+
+        new_cardboard_map = defaultdict(lambda: set())
         for printing in itertools.chain(
-          updater.patch.cube_delta_operation.all_new_printings,
-          updater.patch.node_delta_operation.all_new_printings,
+            updater.patch.cube_delta_operation.all_new_printings,
+            updater.patch.node_delta_operation.all_new_printings,
         ):
             new_cardboard_map[printing.cardboard].add(printing)
 
@@ -181,31 +229,44 @@ class PrintingMismatch(ReportNotification):
                 for cardboard, values in
                 sorted(
                     self._mismatches.items(),
-                    key=lambda i: i[0].name,
+                    key = lambda i: i[0].name,
                 )
             )
         )
 
 
-# class TrapSize(ReportNotification):
-#     notification_level = ReportNotificationLevel.INFO
-# 
-#     def __init__(self):
-#         pass
-# 
-#     def check(self, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-#         new_cube = updater.cube + updater.patch.cube_delta_operation
-#         
-#         previous_garbage_traps = len(updater.cube.garbage_traps)
-#         
-# 
-#     @property
-#     def title(self) -> str:
-#         return 'Trap sizes
-# 
-#     @property
-#     def content(self) -> str:
-#         pass
+class TrapSize(ReportNotification):
+    notification_level = ReportNotificationLevel.INFO
+
+    def __init__(self, old_trap_amount, old_node_amount, new_trap_amount, new_node_amount):
+        self._old_trap_amount = old_trap_amount
+        self._old_node_amount = old_node_amount
+        self._new_trap_amount = new_trap_amount
+        self._new_node_amount = new_node_amount
+
+    @classmethod
+    def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+        return cls(
+            old_trap_amount = len(updater.cube.garbage_traps),
+            old_node_amount = len(updater.node_collection),
+            new_trap_amount = updater.new_garbage_trap_amount,
+            new_node_amount = len(updater.node_collection + updater.patch.node_delta_operation),
+        )
+
+    @property
+    def title(self) -> str:
+        return 'Trap sizes'
+
+    @property
+    def content(self) -> str:
+        return 'Old average node pr trap: {} ({} / {})\nNew average node pr trap: {} ({} / {})'.format(
+            round(self._old_node_amount / self._old_trap_amount, 2),
+            self._old_node_amount,
+            self._old_trap_amount,
+            round(self._new_node_amount / self._new_trap_amount, 2),
+            self._new_node_amount,
+            self._new_trap_amount,
+        )
 
 
 class CardboardChange(ReportNotification):
@@ -216,28 +277,53 @@ class CardboardChange(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+        non_garbage_cube = Cube(
+            (
+                cubeable
+                for cubeable in
+                updater.cube.cubeables
+                if not (
+                    isinstance(cubeable, Trap)
+                    and cubeable.intention_type == IntentionType.GARBAGE
+                )
+            )
+        )
+        
+        new_no_garbage_cube = Cube(
+            (
+                cubeable
+                for cubeable in
+                (updater.cube + updater.patch.cube_delta_operation).cubeables
+                if not (
+                    isinstance(cubeable, Trap)
+                    and cubeable.intention_type == IntentionType.GARBAGE
+                )
+            )
+        )
+        
+        old_cardboards = FrozenMultiset(
+            printing.cardboard
+            for printing in
+            itertools.chain(
+                non_garbage_cube.all_printings,
+                updater.node_collection.all_printings,
+            )
+        )
+        
         new_cardboards = FrozenMultiset(
             printing.cardboard
             for printing in
             itertools.chain(
-                updater.patch.cube_delta_operation.all_new_printings,
-                updater.patch.node_delta_operation.all_new_printings,
+                new_no_garbage_cube.all_printings,
+                (updater.node_collection + updater.patch.node_delta_operation).all_printings,
             )
         )
-        removed_cardboards = FrozenMultiset(
-            printing.cardboard
-            for printing in
-            itertools.chain(
-                updater.patch.cube_delta_operation.all_removed_printings,
-                updater.patch.node_delta_operation.all_removed_printings,
-            )
-        )
-
+        
         return CardboardChange(
             FrozenCounter(
                 new_cardboards.elements()
             ) - FrozenCounter(
-                removed_cardboards.elements()
+                old_cardboards.elements()
             )
         )
 
@@ -264,7 +350,7 @@ class CardboardChange(ReportNotification):
 
 
 class ReportBlueprint(object):
-    
+
     def __init__(self, notification_checks: t.Iterable[t.Type[ReportNotification]]):
         self._notification_checks = (
             notification_checks
@@ -275,23 +361,26 @@ class ReportBlueprint(object):
     @property
     def checks(self) -> t.AbstractSet[t.Type[ReportNotification]]:
         return self._notification_checks
-        
+
     def __hash__(self) -> int:
         return hash(self._notification_checks)
-    
+
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
             and self._notification_checks == other._notification_checks
         )
-        
+
 
 DEFAULT_REPORT_BLUEPRINT = ReportBlueprint(
     {
+        # Warnings
         ChangedSize,
         NodesWithoutGroups,
+        RemoveNonExistentCubeables,
         PrintingMismatch,
-
+        # Info
+        TrapSize,
         CardboardChange,
     }
 )
@@ -302,7 +391,7 @@ class UpdateReport(object):
     def __init__(self, updater: CubeUpdater, blueprint: ReportBlueprint = DEFAULT_REPORT_BLUEPRINT):
         self._updater = updater
         self._blueprint = blueprint
-        
+
         self._notifications = sorted(
             (
                 notification
@@ -316,7 +405,7 @@ class UpdateReport(object):
                 )
                 if notification
             ),
-            key=lambda n: n.title,
+            key = lambda n: n.title,
         )
 
     @property
@@ -343,4 +432,3 @@ class UpdateReport(object):
             self.warnings,
             self.infos,
         )
-    

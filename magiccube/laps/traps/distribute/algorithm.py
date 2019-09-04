@@ -273,7 +273,7 @@ class GroupExclusivityConstraint(model.Constraint):
         return sum(
             (
                 1 - 1 / (1 + sum(node.value for node in nodes))
-                * max(self._group_weights.get(group, 1.) for group in groups)
+                * max(self._group_weights.get(group, .1) for group in groups)
             )
             for nodes, groups in
             collisions.items()
@@ -337,6 +337,7 @@ class Distributor(Environment[TrapDistribution]):
         initial_population_size: int,
         group_weights: t.Dict[str, float],
         constraints: model.ConstraintSet,
+        **kwargs,
     ):
         self._distribution_nodes: t.List[DistributionNode] = list(
             map(
@@ -374,6 +375,7 @@ class Distributor(Environment[TrapDistribution]):
             ),
             mutate = mutate_trap_distribution,
             mate = mate_distributions,
+            **kwargs,
         )
 
     @property
@@ -385,9 +387,9 @@ class Distributor(Environment[TrapDistribution]):
         return self._trap_amount
 
     def show_plot(self) -> None:
-        generations = range(len(self._logger.values['mean']))
-        fit_maxes = self._logger.values['max']
-        fit_averages = self._logger.values['mean']
+        generations = range(len(self._logger.values))
+        fit_maxes = [frame[0] for frame in self._logger.values]
+        fit_averages = [frame[1] for frame in self._logger.values]
 
         fig, ax1 = plt.subplots()
 

@@ -35,5 +35,6 @@ setup(
 		'appdirs',
 		'deap',
 		'matplotlib',
+        'frozendict',
 	],
 )
