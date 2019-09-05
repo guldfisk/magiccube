@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from collections import defaultdict
 
 from frozendict import frozendict
 
@@ -18,6 +19,10 @@ class GroupMap(Serializeable):
     def __init__(self, groups: t.Mapping[str, float]):
         self._groups = groups if isinstance(groups, frozendict) else frozendict(groups)
 
+    @property
+    def groups(self) -> t.Mapping[str, float]:
+        return self._groups
+
     def normalized(self) -> GroupMap:
         max_weight = max(self._groups.values())
         return self.__class__(
@@ -25,6 +30,7 @@ class GroupMap(Serializeable):
                 (group, weight / max_weight)
                 for group, weight in
                 self._groups.items()
+                if weight > 0
             )
         )
 
@@ -38,7 +44,7 @@ class GroupMap(Serializeable):
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupMap:
         return cls(
             frozendict(
                 [
@@ -50,18 +56,40 @@ class GroupMap(Serializeable):
         )
 
     def __add__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
-        groups = dict(self._groups)
+        groups = defaultdict(lambda : 0, self._groups)
         for group, weight in other._groups:
-            if weight is None:
-                try:
-                    del groups[group]
-                except KeyError:
-                    pass
-            else:
-                groups[group] = weight
+            groups[group] += weight
+            if not groups[group]:
+                del groups[group]
+
         return self.__class__(groups)
 
     __radd__ = __add__
+
+    def __sub__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
+        groups = defaultdict(lambda : 0, self._groups)
+        for group, weight in other._groups:
+            groups[group] -= weight
+            if not groups[group]:
+                del groups[group]
+
+        return self.__class__(groups)
+
+    __rsub__ = __sub__
+
+    def __mul__(self, other: float):
+        if other == 0:
+            return self.__class__({})
+        return self.__class__(
+            (group, weight * other)
+            for group, weight in
+            self._groups.items()
+        )
+
+    __rmul__ = __mul__
+
+    def __invert__(self):
+        return self.__mul__(-1)
 
     def __hash__(self) -> int:
         return hash(self._groups)
@@ -77,35 +105,21 @@ class GroupMapDeltaOperation(Serializeable):
 
     def __init__(
         self,
-        new_groups: t.Optional[t.Mapping[str, t.Optional[float]]] = None,
-        removed_groups: t.Optional[t.Mapping[str, t.Optional[float]]] = None,
+        groups: t.Optional[t.Mapping[str, t.Optional[float]]] = None,
     ):
-        self._new_groups = (
+        self._groups = (
             frozendict()
-            if new_groups is None else
+            if groups is None else
             (
-                new_groups
-                if isinstance(new_groups, frozendict) else
-                frozendict(new_groups)
-            )
-        )
-        self._removed_groups = (
-            frozendict()
-            if removed_groups is None else
-            (
-                removed_groups
-                if isinstance(removed_groups, frozendict) else
-                frozendict(removed_groups)
+                groups
+                if isinstance(groups, frozendict) else
+                frozendict(groups)
             )
         )
 
     @property
-    def new_groups(self) -> t.Mapping[str, t.Optional[float]]:
-        return self._new_groups
-
-    @property
-    def removed_groups(self) -> t.Mapping[str, t.Optional[float]]:
-        return self._removed_groups
+    def groups(self) -> t.Mapping[str, t.Optional[float]]:
+        return self._groups
 
     def serialize(self) -> serialization_model:
         return {
@@ -129,20 +143,34 @@ class GroupMapDeltaOperation(Serializeable):
         )
 
     def __add__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
-        groups = dict(self._groups)
-        groups.update(other._groups)
+        groups = defaultdict(lambda : 0, self._groups)
+        for group, value in other._groups.items():
+            groups[group] += value
         return self.__class__(groups)
 
     __radd__ = __add__
     
     def __sub__(self, other: GroupMapDeltaOperation):
-        groups = dict(self._groups)
-        for group in other.groups:
-            try:
-                del groups[group]
-            except KeyError:
-                pass
+        groups = defaultdict(lambda: 0, self._groups)
+        for group, value in other._groups.items():
+            groups[group] -= value
         return self.__class__(groups)
+
+    __rsub__ = __sub__
+
+    def __mul__(self, other: float):
+        return self.__class__(
+            {
+                group: value * other
+                for group, value in
+                self._groups.items()
+            }
+        )
+
+    __rmul__ = __mul__
+
+    def __invert__(self):
+        return self.__mul__(-1)
 
     def __hash__(self) -> int:
         return hash(self._groups)

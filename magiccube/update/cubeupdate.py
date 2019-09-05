@@ -8,6 +8,7 @@ from collections import defaultdict
 from enum import Enum
 from abc import abstractmethod
 
+from magiccube.collections.meta import MetaCube
 from yeetlong.multiset import Multiset, FrozenMultiset
 
 from orp.database import Model
@@ -59,142 +60,142 @@ class CubeChange(Serializeable, PersistentHashable):
         pass
 
 
-# class GroupAlteredOrAdded(CubeChange):
-#     category = CubeChangeCategory.ADDITION
-# 
-#     def __init__(self, group: str, value: float):
-#         self._group = group
-#         self._value = value
-# 
-#     def explain(self) -> str:
-#         return f'{self._group}: {round(self._value, 2)}'
-# 
-#     def __hash__(self) -> int:
-#         return hash(self._group)
-# 
-#     def __eq__(self, other) -> bool:
-#         return (
-#             isinstance(other, self.__class__)
-#             and self._group == other._group
-#         )
-# 
-#     def as_patch(self) -> CubePatch:
-#         return CubePatch(
-#             group_map_delta_operation = GroupMapDeltaOperation(
-#                 {
-#                     self._group: self._value,
-#                 }
-#             )
-#         )
-# 
-#     def serialize(self) -> serialization_model:
-#         return {
-#             'group': self._group,
-#             'value': self._value,
-#         }
-# 
-#     @classmethod
-#     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupAlteredOrAdded:
-#         return cls(
-#             value['group'],
-#             value['value'],
-#         )
-# 
-#     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-#         yield self.__class__.__name__.encode('ASCII')
-#         yield self._group.encode('UTF-8')
+class AddGroup(CubeChange):
+    category = CubeChangeCategory.ADDITION
+
+    def __init__(self, group: str, value: float):
+        self._group = group
+        self._value = value
+
+    def explain(self) -> str:
+        return f'{self._group}: {round(self._value, 2)}'
+
+    def __hash__(self) -> int:
+        return hash(self._group)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._group == other._group
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            group_map_delta_operation = GroupMapDeltaOperation(
+                {
+                    self._group: self._value,
+                }
+            )
+        )
+
+    def serialize(self) -> serialization_model:
+        return {
+            'group': self._group,
+            'value': self._value,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> AddGroup:
+        return cls(
+            value['group'],
+            value['value'],
+        )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('ASCII')
+        yield self._group.encode('UTF-8')
 
 
-# class GroupWeightChange(CubeChange):
-#     category = CubeChangeCategory.MODIFICATION
-#
-#     def __init__(self, group: str, old_value: float, new_value: float):
-#         self._group = group
-#         self._old_value = old_value
-#         self._new_value = new_value
-#
-#     def explain(self) -> str:
-#         return f'{self._group}: {round(self._old_value, 2)} -> {round(self._new_value, 2)}'
-#
-#     def __hash__(self) -> int:
-#         return hash(self._group)
-#
-#     def __eq__(self, other) -> bool:
-#         return (
-#             isinstance(other, self.__class__)
-#             and self._group == other._group
-#         )
-#
-#     def as_patch(self) -> CubePatch:
-#         return CubePatch(
-#             group_map_delta_operation = GroupMapDeltaOperation(
-#                 {
-#                     self._group: self._new_value,
-#                 }
-#             )
-#         )
-#
-#     def serialize(self) -> serialization_model:
-#         return {
-#             'group': self._group,
-#             'old_value': self._old_value,
-#             'new_value': self._new_value,
-#         }
-#
-#     @classmethod
-#     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupWeightChange:
-#         return cls(
-#             group = value['group'],
-#             old_value = value['old_value'],
-#             new_value = value['new_value'],
-#         )
-#
-#     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-#         yield self.__class__.__name__.encode('ASCII')
-#         yield self._group.encode('UTF-8')
+class GroupWeightChange(CubeChange):
+    category = CubeChangeCategory.MODIFICATION
+
+    def __init__(self, group: str, old_value: float, new_value: float):
+        self._group = group
+        self._old_value = old_value
+        self._new_value = new_value
+
+    def explain(self) -> str:
+        return f'{self._group}: {round(self._old_value, 2)} -> {round(self._new_value, 2)}'
+
+    def __hash__(self) -> int:
+        return hash(self._group)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._group == other._group
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            group_map_delta_operation = GroupMapDeltaOperation(
+                {
+                    self._group: self._new_value,
+                }
+            )
+        )
+
+    def serialize(self) -> serialization_model:
+        return {
+            'group': self._group,
+            'old_value': self._old_value,
+            'new_value': self._new_value,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupWeightChange:
+        return cls(
+            group = value['group'],
+            old_value = value['old_value'],
+            new_value = value['new_value'],
+        )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('ASCII')
+        yield self._group.encode('UTF-8')
         
         
-# class RemoveGroup(CubeChange):
-#     category = CubeChangeCategory.ADDITION
-# 
-#     def __init__(self, group: str):
-#         self._group = group
-# 
-#     def explain(self) -> str:
-#         return self._group
-# 
-#     def __hash__(self) -> int:
-#         return hash(self._group)
-# 
-#     def __eq__(self, other) -> bool:
-#         return (
-#             isinstance(other, self.__class__)
-#             and self._group == other._group
-#         )
-# 
-#     def as_patch(self) -> CubePatch:
-#         return CubePatch(
-#             group_map_delta_operation = GroupMapDeltaOperation(
-#                 {
-#                     self._group: None,
-#                 }
-#             )
-#         )
-# 
-#     def serialize(self) -> serialization_model:
-#         return {
-#             'group': self._group,
-#         }
-# 
-#     @classmethod
-#     def deserialize(cls, value: serialization_model, inflator: Inflator) -> RemoveGroup:
-#         return cls(
-#             value['group'],
-#         )
-# 
-#     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-#         yield self.__class__.__name__.encode('ASCII')
-#         yield self._group.encode('UTF-8')
+class RemoveGroup(CubeChange):
+    category = CubeChangeCategory.ADDITION
+
+    def __init__(self, group: str):
+        self._group = group
+
+    def explain(self) -> str:
+        return self._group
+
+    def __hash__(self) -> int:
+        return hash(self._group)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._group == other._group
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            group_map_delta_operation = GroupMapDeltaOperation(
+                {
+                    self._group: None,
+                }
+            )
+        )
+
+    def serialize(self) -> serialization_model:
+        return {
+            'group': self._group,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> RemoveGroup:
+        return cls(
+            value['group'],
+        )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('ASCII')
+        yield self._group.encode('UTF-8')
 
 
 class CubeableCubeChange(CubeChange):
@@ -798,9 +799,15 @@ class CubePatch(Serializeable):
         self,
         cube_delta_operation: t.Optional[CubeDeltaOperation] = None,
         node_delta_operation: t.Optional[NodesDeltaOperation] = None,
+        group_map_delta_operation: t.Optional[GroupMapDeltaOperation] = None,
     ):
         self._cube_delta_operation = CubeDeltaOperation() if cube_delta_operation is None else cube_delta_operation
         self._node_delta_operation = NodesDeltaOperation() if node_delta_operation is None else node_delta_operation
+        self._group_map_delta_operation = (
+            GroupMapDeltaOperation()
+            if group_map_delta_operation is None else
+            group_map_delta_operation
+        )
 
     @property
     def cube_delta_operation(self) -> CubeDeltaOperation:
@@ -811,7 +818,32 @@ class CubePatch(Serializeable):
         return self._node_delta_operation
 
     @property
-    def as_verbose(self) -> VerboseCubePatch:
+    def group_map_delta_operation(self) -> GroupMapDeltaOperation:
+        return self._group_map_delta_operation
+
+    def as_verbose(self, meta_cube: MetaCube) -> VerboseCubePatch:
+        group_updates = set()
+        
+        for group, new_weight in self.group_map_delta_operation.groups.items():
+            current_weight = meta_cube.group_map.groups.get(group)
+            if current_weight is None:
+                group_updates.add(
+                    AddGroup(group, new_weight)
+                )
+            else:
+                if -new_weight == current_weight:
+                    group_updates.add(
+                        RemoveGroup(group)
+                    )
+                else:
+                    group_updates.add(
+                        GroupWeightChange(
+                            group,
+                            current_weight,
+                            current_weight + new_weight,
+                        )
+                    )
+        
         new_laps: Multiset[Lap] = Multiset(
             {
                 lap: multiplicity
@@ -1018,6 +1050,7 @@ class CubePatch(Serializeable):
 
         return VerboseCubePatch(
             itertools.chain(
+                group_updates,
                 (
                     PrintingChange(before, after)
                     for before, after in
@@ -1143,42 +1176,42 @@ class CubeUpdater(object):
 
     def __init__(
         self,
-        cube: Cube,
-        node_collection: NodeCollection,
+        meta_cube: MetaCube,
         patch: CubePatch,
-        group_map: GroupMap,
     ):
-        self._cube = cube
-        self._node_collection = node_collection
+        self._meta_cube = meta_cube
         self._patch = patch
-        self._group_map = group_map
 
         self._new_no_garbage_cube = None
         self._new_nodes = None
 
     @property
-    def cube(self) -> Cube:
-        return self._cube
-
-    @property
-    def node_collection(self) -> NodeCollection:
-        return self._node_collection
+    def meta_cube(self) -> MetaCube:
+        return self._meta_cube
 
     @property
     def patch(self) -> CubePatch:
         return self._patch
 
     @property
+    def cube(self) -> Cube:
+        return self._meta_cube.cube
+
+    @property
+    def node_collection(self) -> NodeCollection:
+        return self._meta_cube.node_collection
+
+    @property
     def group_map(self) -> GroupMap:
-        return self._group_map
+        return self._meta_cube.group_map
 
     @property
     def new_no_garbage_cube(self):
         if self._new_no_garbage_cube is None:
             self._new_no_garbage_cube = (
-                self._cube
+                self.cube
                 + ~CubeDeltaOperation(
-                    self._cube.garbage_traps.elements()
+                    self.cube.garbage_traps.elements()
                 )
                 + self._patch.cube_delta_operation
             )
@@ -1188,38 +1221,38 @@ class CubeUpdater(object):
     @property
     def new_nodes(self):
         if self._new_nodes is None:
-            self._new_nodes = self._node_collection + self._patch.node_delta_operation
+            self._new_nodes = self.node_collection + self._patch.node_delta_operation
 
         return self._new_nodes
 
     @property
     def new_garbage_trap_amount(self):
-        return len(self._cube) - len(self.new_no_garbage_cube)
+        return len(self.cube) - len(self.new_no_garbage_cube)
 
-    def generate_garbage_traps(
-        self,
-        nodes: NodeCollection,
-        amount: int,
-        delta: int,
-    ) -> t.Iterable[BorderedNode]:
-        raise NotImplemented
+    # def generate_garbage_traps(
+    #     self,
+    #     nodes: NodeCollection,
+    #     amount: int,
+    #     delta: int,
+    # ) -> t.Iterable[BorderedNode]:
+    #     raise NotImplemented
 
     def old_average_trap_size(self) -> float:
-        return len(self._node_collection) / len(self._cube.garbage_traps)
+        return len(self.node_collection) / len(self.cube.garbage_traps)
 
     def new_average_trap_size(self) -> float:
         return len(self.new_nodes) / self.new_garbage_trap_amount
 
-    def update(self, delta: int = 0):
-        return self.new_no_garbage_cube + (
-            Trap(
-                node = node,
-                intention_type = IntentionType.GARBAGE,
-            )
-            for node in
-            self.generate_garbage_traps(
-                nodes=self.new_nodes,
-                amount=self.new_garbage_trap_amount,
-                delta=delta,
-            )
-        )
+    # def update(self, delta: int = 0):
+    #     return self.new_no_garbage_cube + (
+    #         Trap(
+    #             node = node,
+    #             intention_type = IntentionType.GARBAGE,
+    #         )
+    #         for node in
+    #         self.generate_garbage_traps(
+    #             nodes=self.new_nodes,
+    #             amount=self.new_garbage_trap_amount,
+    #             delta=delta,
+    #         )
+    #     )
