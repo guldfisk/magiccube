@@ -106,7 +106,7 @@ class GroupMap(Serializeable):
             ', '.join(
                 group + ': ' + str(weight)
                 for group, weight in
-                self._groups
+                self._groups.items()
             )
         )
 
@@ -197,7 +197,7 @@ class GroupMapDeltaOperation(Serializeable):
             ', '.join(
                 group + ': ' + str(weight)
                 for group, weight in
-                self._groups
+                self._groups.items()
             )
         )
 
