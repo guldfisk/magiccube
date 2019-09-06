@@ -240,7 +240,7 @@ class GroupExclusivityConstraint(model.Constraint):
         self,
         nodes: t.Iterable[DistributionNode],
         trap_amount: int,
-        group_weights: t.Dict[str, float],
+        group_weights: t. Mapping[str, float],
     ):
         self._group_weights = {} if group_weights is None else group_weights
 
@@ -335,7 +335,6 @@ class Distributor(Environment[TrapDistribution]):
         nodes: t.Iterable[ConstrainedNode],
         trap_amount: int,
         initial_population_size: int,
-        group_weights: t.Dict[str, float],
         constraints: model.ConstraintSet,
         **kwargs,
     ):
@@ -346,8 +345,7 @@ class Distributor(Environment[TrapDistribution]):
             )
         )
         self._trap_amount = trap_amount
-        self._group_weights = group_weights
-        
+
         super().__init__(
             individual_factory = (
                 lambda:

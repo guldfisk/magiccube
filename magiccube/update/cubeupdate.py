@@ -156,7 +156,7 @@ class GroupWeightChange(CubeChange):
         
         
 class RemoveGroup(CubeChange):
-    category = CubeChangeCategory.ADDITION
+    category = CubeChangeCategory.SUBTRACTION
 
     def __init__(self, group: str, weight: float):
         self._group = group
