@@ -100,6 +100,16 @@ class GroupMap(Serializeable):
             and self._groups == other._groups
         )
 
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            ', '.join(
+                group + ': ' + str(weight)
+                for group, weight in
+                self._groups
+            )
+        )
+
 
 class GroupMapDeltaOperation(Serializeable):
 
@@ -179,6 +189,16 @@ class GroupMapDeltaOperation(Serializeable):
         return (
             isinstance(other, self.__class__)
             and self._groups == other._groups
+        )
+
+    def __repr__(self) -> str:
+        return '{}({})'.format(
+            self.__class__.__name__,
+            ', '.join(
+                group + ': ' + str(weight)
+                for group, weight in
+                self._groups
+            )
         )
 
 
