@@ -836,7 +836,10 @@ class CubePatch(Serializeable):
             else:
                 if -new_weight == current_weight:
                     group_updates.add(
-                        RemoveGroup(group)
+                        RemoveGroup(
+                            group,
+                            new_weight,
+                        )
                     )
                 else:
                     group_updates.add(
