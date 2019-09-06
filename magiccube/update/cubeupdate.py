@@ -1118,6 +1118,7 @@ class CubePatch(Serializeable):
         return {
             'cube_delta': self._cube_delta_operation,
             'nodes_delta': self._node_delta_operation,
+            'groups_delta': self._group_map_delta_operation,
         }
 
     @classmethod
@@ -1129,6 +1130,11 @@ class CubePatch(Serializeable):
                 if 'nodes_delta' in value else
                 NodesDeltaOperation()
             ),
+            group_map_delta_operation = (
+                GroupMapDeltaOperation.deserialize(value['groups_delta'], inflator)
+                if 'groups_delta' in value else
+                GroupMapDeltaOperation()
+            ),
         )
 
     def __hash__(self) -> int:
@@ -1136,6 +1142,7 @@ class CubePatch(Serializeable):
             (
                 self._cube_delta_operation,
                 self._node_delta_operation,
+                self._group_map_delta_operation,
             )
         )
 
@@ -1144,31 +1151,36 @@ class CubePatch(Serializeable):
             isinstance(other, self.__class__)
             and self._cube_delta_operation == other._cube_delta_operation
             and self._node_delta_operation == other._node_delta_operation
+            and self._group_map_delta_operation == other.group_map_delta_operation
         )
 
     def __repr__(self):
-        return '{}({}, {})'.format(
+        return '{}({}, {}, {})'.format(
             self.__class__.__name__,
             self._cube_delta_operation,
             self._node_delta_operation,
+            self._group_map_delta_operation,
         )
 
     def __mul__(self, other: int) -> CubePatch:
         return self.__class__(
             self._cube_delta_operation * other,
             self._node_delta_operation * other,
+            self._group_map_delta_operation * other,
         )
 
     def __add__(self, other: CubePatch) -> CubePatch:
         return self.__class__(
             self._cube_delta_operation + other._cube_delta_operation,
             self._node_delta_operation + other._node_delta_operation,
+            self._group_map_delta_operation + other._group_map_delta_operation,
         )
 
     def __sub__(self, other: CubePatch) -> CubePatch:
         return self.__class__(
             self._cube_delta_operation - other._cube_delta_operation,
             self._node_delta_operation - other._node_delta_operation,
+            self._group_map_delta_operation - other._group_map_delta_operation,
         )
 
 
