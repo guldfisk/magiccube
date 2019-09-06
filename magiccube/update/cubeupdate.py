@@ -158,8 +158,9 @@ class GroupWeightChange(CubeChange):
 class RemoveGroup(CubeChange):
     category = CubeChangeCategory.ADDITION
 
-    def __init__(self, group: str):
+    def __init__(self, group: str, weight: float):
         self._group = group
+        self._weight = weight
 
     def explain(self) -> str:
         return self._group
@@ -177,7 +178,7 @@ class RemoveGroup(CubeChange):
         return CubePatch(
             group_map_delta_operation = GroupMapDeltaOperation(
                 {
-                    self._group: None,
+                    self._group: self._weight,
                 }
             )
         )
@@ -185,12 +186,14 @@ class RemoveGroup(CubeChange):
     def serialize(self) -> serialization_model:
         return {
             'group': self._group,
+            'weight': self._weight,
         }
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> RemoveGroup:
         return cls(
             value['group'],
+            value['weight'],
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
