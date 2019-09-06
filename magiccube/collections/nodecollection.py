@@ -154,16 +154,22 @@ class GroupMapDeltaOperation(Serializeable):
 
     def __add__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
         groups = defaultdict(lambda : 0, self._groups)
-        for group, value in other._groups.items():
-            groups[group] += value
+        for group, weight in other._groups.items():
+            groups[group] += weight
+            if not groups[group]:
+                del groups[group]
+
         return self.__class__(groups)
 
     __radd__ = __add__
-    
-    def __sub__(self, other: GroupMapDeltaOperation):
-        groups = defaultdict(lambda: 0, self._groups)
-        for group, value in other._groups.items():
-            groups[group] -= value
+
+    def __sub__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
+        groups = defaultdict(lambda : 0, self._groups)
+        for group, weight in other._groups.items():
+            groups[group] -= weight
+            if not groups[group]:
+                del groups[group]
+
         return self.__class__(groups)
 
     __rsub__ = __sub__
