@@ -57,7 +57,7 @@ class GroupMap(Serializeable):
 
     def __add__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
         groups = defaultdict(lambda : 0, self._groups)
-        for group, weight in other._groups:
+        for group, weight in other._groups.items():
             groups[group] += weight
             if not groups[group]:
                 del groups[group]
@@ -68,7 +68,7 @@ class GroupMap(Serializeable):
 
     def __sub__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
         groups = defaultdict(lambda : 0, self._groups)
-        for group, weight in other._groups:
+        for group, weight in other._groups.items():
             groups[group] -= weight
             if not groups[group]:
                 del groups[group]
