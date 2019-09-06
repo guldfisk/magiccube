@@ -130,7 +130,7 @@ class GroupWeightChange(CubeChange):
         return CubePatch(
             group_map_delta_operation = GroupMapDeltaOperation(
                 {
-                    self._group: self._new_value,
+                    self._group: self._new_value - self._old_value,
                 }
             )
         )
