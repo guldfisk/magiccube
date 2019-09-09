@@ -19,9 +19,9 @@ from mtgorp.models.persistent.printing import Printing
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 
-from magiccube.laps.traps.tree.printingtree import BorderedNode, PrintingNode
+from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.laps.lap import Lap
-from magiccube.laps.traps.trap import Trap,IntentionType
+from magiccube.laps.traps.trap import Trap
 from magiccube.collections.cube import Cube, Cubeable
 from magiccube.collections.nodecollection import (
     NodeCollection,
@@ -33,15 +33,14 @@ from magiccube.collections.nodecollection import (
 from magiccube.collections.delta import CubeDeltaOperation
 
 
-class CubeChangeCategory(Enum):
-    ADDITION = 'addition'
-    SUBTRACTION = 'subtraction'
-    MODIFICATION = 'modification'
-    TRANSFER = 'transfer'
-
-
 class CubeChange(Serializeable, PersistentHashable):
-    category = CubeChangeCategory.MODIFICATION
+    class Category(Enum):
+        ADDITION = 'addition'
+        SUBTRACTION = 'subtraction'
+        MODIFICATION = 'modification'
+        TRANSFER = 'transfer'
+    
+    category = Category.MODIFICATION
 
     @abstractmethod
     def explain(self) -> str:
@@ -61,7 +60,7 @@ class CubeChange(Serializeable, PersistentHashable):
 
 
 class AddGroup(CubeChange):
-    category = CubeChangeCategory.ADDITION
+    category = CubeChange.Category.ADDITION
 
     def __init__(self, group: str, value: float):
         self._group = group
@@ -107,7 +106,7 @@ class AddGroup(CubeChange):
 
 
 class GroupWeightChange(CubeChange):
-    category = CubeChangeCategory.MODIFICATION
+    category = CubeChange.Category.MODIFICATION
 
     def __init__(self, group: str, old_value: float, new_value: float):
         self._group = group
@@ -156,7 +155,7 @@ class GroupWeightChange(CubeChange):
         
         
 class RemoveGroup(CubeChange):
-    category = CubeChangeCategory.SUBTRACTION
+    category = CubeChange.Category.SUBTRACTION
 
     def __init__(self, group: str, weight: float):
         self._group = group
@@ -271,7 +270,7 @@ class CubeableCubeChange(CubeChange):
 
 
 class NewCubeable(CubeableCubeChange):
-    category = CubeChangeCategory.ADDITION
+    category = CubeChange.Category.ADDITION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -284,7 +283,7 @@ class NewCubeable(CubeableCubeChange):
 
 
 class RemovedCubeable(CubeableCubeChange):
-    category = CubeChangeCategory.SUBTRACTION
+    category = CubeChange.Category.SUBTRACTION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -343,7 +342,7 @@ class NodeCubeChange(CubeChange):
 
 
 class NewNode(NodeCubeChange):
-    category = CubeChangeCategory.ADDITION
+    category = CubeChange.Category.ADDITION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -356,7 +355,7 @@ class NewNode(NodeCubeChange):
 
 
 class RemovedNode(NodeCubeChange):
-    category = CubeChangeCategory.SUBTRACTION
+    category = CubeChange.Category.SUBTRACTION
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
@@ -369,7 +368,7 @@ class RemovedNode(NodeCubeChange):
 
 
 class PrintingsToNode(CubeChange):
-    category = CubeChangeCategory.TRANSFER
+    category = CubeChange.Category.TRANSFER
 
     def __init__(self, before: t.Iterable[Printing], after: ConstrainedNode):
         self._before = before if isinstance(before, FrozenMultiset) else FrozenMultiset(before)
@@ -454,7 +453,7 @@ class PrintingsToNode(CubeChange):
 
 
 class TrapNodeTransfer(CubeChange):
-    category = CubeChangeCategory.TRANSFER
+    category = CubeChange.Category.TRANSFER
     
     def __init__(self, trap: Trap, node: ConstrainedNode):
         self._trap = trap
@@ -548,7 +547,7 @@ class NodeToTrap(TrapNodeTransfer):
 
 
 class NodeToPrintings(CubeChange):
-    category = CubeChangeCategory.TRANSFER
+    category = CubeChange.Category.TRANSFER
 
     def __init__(self, before: ConstrainedNode, after: t.Iterable[Printing]):
         self._before = before
@@ -633,7 +632,7 @@ class NodeToPrintings(CubeChange):
 
 
 class AlteredNode(CubeChange):
-    category = CubeChangeCategory.MODIFICATION
+    category = CubeChange.Category.MODIFICATION
 
     def __init__(self, before: ConstrainedNode, after: ConstrainedNode):
         self._before = before
@@ -712,7 +711,7 @@ class AlteredNode(CubeChange):
 
 
 class PrintingChange(CubeChange):
-    category = CubeChangeCategory.MODIFICATION
+    category = CubeChange.Category.MODIFICATION
 
     def __init__(self, before: Printing, after: Printing):
         self._before = before

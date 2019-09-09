@@ -5,8 +5,6 @@ import typing as t
 import threading
 import queue
 
-from evolution.logging import LogFrame
-
 from magiccube.laps.traps.distribute.algorithm import Distributor
 
 
@@ -51,6 +49,8 @@ class DistributionWorker(threading.Thread):
         if self._terminating.is_set():
             return
         with self._communication_lock:
+            if not self._running:
+                return
             self._notify_status('pausing')
             self._pause_lock.acquire(blocking = False)
             self._running = False
@@ -59,6 +59,8 @@ class DistributionWorker(threading.Thread):
         if self._terminating.is_set():
             return
         with self._communication_lock:
+            if self._running:
+                return
             self._notify_status('resuming')
             try:
                 self._pause_lock.release()
@@ -146,7 +148,7 @@ class DistributionTask(threading.Thread):
 
     def run(self) -> None:
         self._worker.start()
-        while not self._terminating.is_set():
+        while True:
             try:
                 message = self._worker.message_queue.get(timeout = 5)
                 self._process_message(
@@ -155,4 +157,5 @@ class DistributionTask(threading.Thread):
                 if message['type'] == 'status' and message['status'] == 'stopped':
                     self._terminating.set()
             except queue.Empty:
-                pass
+                if self._terminating.is_set():
+                    break
