@@ -70,9 +70,9 @@ class DistributionWorker(threading.Thread):
 
     def run(self) -> None:
         self._running = True
-        self._notify_status('started')
         while not self._terminating.is_set():
             self._pause_lock.acquire()
+            self._notify_status('running')
             while self._running:
                 self._message_queue.put(
                     {
@@ -92,6 +92,8 @@ class DistributionWorker(threading.Thread):
                         }
                     )
                     self.stop()
+            if not self._running and not self._terminating.is_set():
+                self._notify_status('paused')
         self._notify_status('stopped')
 
 
