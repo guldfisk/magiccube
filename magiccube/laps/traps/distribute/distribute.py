@@ -5,6 +5,7 @@ import typing as t
 import threading
 import queue
 
+from evolution.logging import LogFrame
 from magiccube.laps.traps.distribute.algorithm import Distributor
 
 
@@ -21,11 +22,20 @@ class DistributionWorker(threading.Thread):
         self._communication_lock = threading.Lock()
         self._message_queue = queue.Queue()
 
+        self._status: str = 'prerun'
+
     @property
     def message_queue(self) -> queue.Queue[t.Dict[str, t.Any]]:
         return self._message_queue
 
+    @property
+    def status(self) -> str:
+        with self._communication_lock:
+            return self._status
+
     def _notify_status(self, status: str) -> None:
+        with self._communication_lock:
+            self._status = status
         self._message_queue.put(
             {
                 'type': 'status',
@@ -105,13 +115,19 @@ class DistributionTask(threading.Thread):
 
         self._running: bool = False
         self._terminating = threading.Event()
-        self._lock = threading.Lock()
+        self._frame_lock = threading.Lock()
         self._message_queue = queue.Queue()
 
         self._communication_lock = threading.Lock()
         self._subscription_lock = threading.Lock()
         self._messages = []
+        self._frames: t.List[LogFrame] = []
         self._subscribers: t.Dict[str, queue.Queue[t.Dict[str, t.Any]]] = {}
+
+    @property
+    def frames(self) -> t.List[LogFrame]:
+        with self._frame_lock:
+            return self._frames
 
     def _process_message(self, message: t.Dict[str, t.Any]) -> None:
         with self._subscription_lock:
@@ -156,6 +172,9 @@ class DistributionTask(threading.Thread):
                 self._process_message(
                     message
                 )
+                if message['type'] == 'frame':
+                    with self._frame_lock:
+                        self._frames.append(message['frame'])
                 if message['type'] == 'status' and message['status'] == 'stopped':
                     self._terminating.set()
             except queue.Empty:
