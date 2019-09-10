@@ -16,6 +16,7 @@ from yeetlong.multiset import FrozenMultiset
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
 from mtgimg.interface import ImageLoader
+from mtgimg import crop
 
 from magiccube import paths
 from magiccube.laps import imageutils
@@ -160,6 +161,7 @@ class BorderedNode(PrintingNode):
     _BORDER_TRIANGLE_COLOR = (255, 255, 255)
     _BORDER_WIDTH = 12
     _FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
+    _FULL_WIDTH = crop.CROPPED_SIZE[0]
 
     def _name_printing(self, printing: Printing) -> str:
         return (
@@ -190,7 +192,7 @@ class BorderedNode(PrintingNode):
                 ),
                 Image.LANCZOS,
             )
-            if isinstance(image, Image.Image) and image.width == width else
+            if isinstance(image, Image.Image) and image.width != width else
             image
             for image in
             Promise.all(
@@ -217,6 +219,7 @@ class BorderedNode(PrintingNode):
             sides = bordered_sides,
         )
 
+        font_size = 20 + int(20 * min(width, self._FULL_WIDTH) / self._FULL_WIDTH)
         for span, option, image, in zip(
             imageutils.section(content_height, len(pictured_printings)),
             pictured_printings,
@@ -238,7 +241,7 @@ class BorderedNode(PrintingNode):
                         stop - start,
                     ),
                     font_path = self._FONT_PATH,
-                    font_size = 40,
+                    font_size = font_size,
                 )
             else:
                 background.paste(

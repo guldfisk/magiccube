@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from evolution import logging, model
 from evolution.environment import Environment
+from magiccube.collections.laps import TrapCollection
 
 from yeetlong.multiset import FrozenMultiset
 
@@ -88,8 +89,7 @@ class TrapDistribution(model.Individual):
     def trap_amount(self):
         return self._trap_amount
 
-    @property
-    def as_trap_collection(self) -> FrozenMultiset[Trap]:
+    def as_trap_collection(self, *, intention_type: IntentionType = IntentionType.GARBAGE) -> TrapCollection:
         traps = []
 
         for trap in self.traps:
@@ -108,11 +108,11 @@ class TrapDistribution(model.Individual):
             traps.append(
                 Trap(
                     AllNode(cubeables),
-                    intention_type = IntentionType.GARBAGE,
+                    intention_type = intention_type,
                 )
             )
 
-        return FrozenMultiset(traps)
+        return TrapCollection(traps)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.traps})'
