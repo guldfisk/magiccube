@@ -1199,7 +1199,11 @@ class CubeUpdater(object):
         self._meta_cube = meta_cube
         self._patch = patch
 
-        self._new_no_garbage_cube = None
+        self._new_cube: t.Optional[Cube] = None
+        self._new_nodes: t.Optional[NodeCollection] = None
+        self._new_groups: t.Optional[GroupMap] = None
+        
+        self._new_no_garbage_cube: t.Optional[Cube] = None
         self._new_nodes = None
 
     @property
@@ -1221,6 +1225,24 @@ class CubeUpdater(object):
     @property
     def group_map(self) -> GroupMap:
         return self._meta_cube.group_map
+
+    @property
+    def new_cube(self) -> Cube:
+        if self._new_cube is None:
+            self._new_cube = self._meta_cube.cube + self._patch.cube_delta_operation
+        return self._new_cube
+
+    @property
+    def new_nodes(self) -> NodeCollection:
+        if self._new_nodes is None:
+            self._new_nodes = self._meta_cube.node_collection + self._patch.node_delta_operation
+        return self._new_nodes
+
+    @property
+    def new_groups(self) -> GroupMap:
+        if self._new_groups is None:
+            self._new_groups = self._meta_cube.group_map + self._patch.group_map_delta_operation
+        return self._new_groups
 
     @property
     def new_no_garbage_cube(self):

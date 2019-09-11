@@ -54,6 +54,9 @@ class GroupMap(Serializeable):
                 ]
             )
         )
+    
+    def __iter__(self) -> t.Iterator[str]:
+        return self._groups.__iter__()
 
     def __add__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
         groups = defaultdict(lambda : 0, self._groups)

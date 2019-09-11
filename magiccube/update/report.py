@@ -11,7 +11,7 @@ from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
 from magiccube.collections.delta import CubeDelta
 from magiccube.laps.traps.trap import Trap, IntentionType
-from yeetlong.multiset import FrozenMultiset
+from yeetlong.multiset import FrozenMultiset, Multiset
 from yeetlong.counters import FrozenCounter
 
 from magiccube.collections.nodecollection import ConstrainedNode
@@ -115,20 +115,73 @@ class NodesWithoutGroups(ReportNotification):
         )
 
 
-# class NewGroupsWithoutNodes(ReportNotification):
-#     notification_level = ReportNotificationLevel.WARNING
-# 
-#     @classmethod
-#     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-#         pass
-# 
-#     @property
-#     def title(self) -> str:
-#         pass
-# 
-#     @property
-#     def content(self) -> str:
-#         pass
+class GroupsWithOneOrLessNodes(ReportNotification):
+    notification_level = ReportNotificationLevel.WARNING
+
+    def __init__(
+        self,
+        new_groups: t.Mapping[str, Multiset[ConstrainedNode]],
+        old_groups: t.Mapping[str, Multiset[ConstrainedNode]],
+    ):
+        self._new_groups = new_groups
+        self._old_groups = old_groups
+
+    @classmethod
+    def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+        groups = {
+            group: Multiset()
+            for group in
+            updater.new_groups
+        }
+        for node in updater.new_nodes():
+            for group in node.groups:
+                groups[group].add(node)
+
+        under_populated_groups = {
+            group: nodes
+            for group, nodes in
+            groups.items()
+            if len(nodes) <= 1
+        }
+
+        if not under_populated_groups:
+            return None
+
+        return GroupsWithOneOrLessNodes(
+            {
+                key: under_populated_groups[key]
+                for key in
+                under_populated_groups.keys() - updater.group_map.groups.keys()
+            },
+            {
+                key: under_populated_groups[key]
+                for key in
+                under_populated_groups.keys() & updater.group_map.groups.keys()
+            },
+        )
+
+    @property
+    def title(self) -> str:
+        return 'Groups with one or less nodes'
+
+    @classmethod
+    def _format_groups(cls, groups: t.Mapping[str, Multiset[ConstrainedNode]]) -> str:
+        return '\n'.format(
+            group + ': ' + ', '.join(
+                node.get_minimal_string()
+                for node in
+                nodes
+            )
+            for group, nodes in
+            groups.items()
+        )
+
+    @property
+    def content(self) -> str:
+        return 'New groups:\n{}\nOld groups:\n{}'.format(
+            self._format_groups(self._new_groups),
+            self._format_groups(self._old_groups),
+        )
 
 
 # class NodesWithUnknownGroups(ReportNotification):
