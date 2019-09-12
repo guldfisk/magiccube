@@ -22,20 +22,11 @@ class DistributionWorker(threading.Thread):
         self._communication_lock = threading.Lock()
         self._message_queue = queue.Queue()
 
-        self._status: str = 'prerun'
-
     @property
     def message_queue(self) -> queue.Queue[t.Dict[str, t.Any]]:
         return self._message_queue
 
-    @property
-    def status(self) -> str:
-        with self._communication_lock:
-            return self._status
-
     def _notify_status(self, status: str) -> None:
-        with self._communication_lock:
-            self._status = status
         self._message_queue.put(
             {
                 'type': 'status',
