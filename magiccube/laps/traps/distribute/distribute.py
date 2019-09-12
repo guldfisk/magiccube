@@ -145,6 +145,11 @@ class DistributionTask(threading.Thread):
             except KeyError:
                 pass
 
+    @property
+    def subscribers(self) -> t.KeysView[str]:
+        with self._subscription_lock:
+            return self._subscribers.keys()
+
     def stop(self):
         self._terminating.set()
         self._worker.stop()
