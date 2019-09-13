@@ -25,6 +25,11 @@ class DistributionWorker(threading.Thread):
     def message_queue(self) -> queue.Queue[t.Dict[str, t.Any]]:
         return self._message_queue
 
+    @property
+    def distributor(self) -> Distributor:
+        # UNSAFE
+        return self._distributor
+
     def _notify_status(self, status: str) -> None:
         self._message_queue.put(
             {
