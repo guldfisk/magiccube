@@ -13,7 +13,7 @@ class TrapCollection(Serializeable):
         self._traps = traps if isinstance(traps, FrozenMultiset) else FrozenMultiset(traps)
 
     @property
-    def traps(self) -> t.Collection[Trap]:
+    def traps(self) -> FrozenMultiset[Trap]:
         return self._traps
 
     def serialize(self) -> serialization_model:
