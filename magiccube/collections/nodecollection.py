@@ -158,7 +158,7 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for group, weight in sorted(
             (
-                group, weight
+                (group, weight)
                 for group, weight in
                 self._groups.items()
             ),
@@ -410,7 +410,7 @@ class NodesDeltaOperation(Serializeable, PersistentHashable):
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for persistent_hash, multiplicity in sorted(
             (
-                node.persistent_hash(), multiplicity
+                (node.persistent_hash(), multiplicity)
                 for node, multiplicity in
                 self._nodes.items()
             ),

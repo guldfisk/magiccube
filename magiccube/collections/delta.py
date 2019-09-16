@@ -333,7 +333,7 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
             yield str(multiplicity).encode('ASCII')
         for persistent_hash, multiplicity in sorted(
             (
-                lap.persistent_hash(), multiplicity
+                (lap.persistent_hash(), multiplicity)
                 for lap, multiplicity in
                 self.laps
             ),
