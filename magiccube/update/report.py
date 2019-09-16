@@ -132,7 +132,7 @@ class GroupsWithOneOrLessNodes(ReportNotification):
             for group in
             updater.new_groups
         }
-        for node in updater.new_nodes():
+        for node in updater.new_nodes:
             for group in node.groups:
                 groups[group].add(node)
 
@@ -183,28 +183,28 @@ class GroupsWithOneOrLessNodes(ReportNotification):
         )
 
 
-class NodesWithUnknownGroups(ReportNotification):
-    notification_level = ReportNotificationLevel.WARNING
-
-    def __init__(
-        self,
-        new_groups: t.Mapping[str, Multiset[ConstrainedNode]],
-        old_groups: t.Mapping[str, Multiset[ConstrainedNode]],
-    ):
-        self._new_groups = new_groups
-        self._old_groups = old_groups
-
-    @classmethod
-    def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-        pass
-
-    @property
-    def title(self) -> str:
-        pass
-
-    @property
-    def content(self) -> str:
-        pass
+# class NodesWithUnknownGroups(ReportNotification):
+#     notification_level = ReportNotificationLevel.WARNING
+#
+#     def __init__(
+#         self,
+#         new_groups: t.Mapping[str, Multiset[ConstrainedNode]],
+#         old_groups: t.Mapping[str, Multiset[ConstrainedNode]],
+#     ):
+#         self._new_groups = new_groups
+#         self._old_groups = old_groups
+#
+#     @classmethod
+#     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+#         pass
+#
+#     @property
+#     def title(self) -> str:
+#         pass
+#
+#     @property
+#     def content(self) -> str:
+#         pass
 
 
 class RemoveNonExistentCubeables(ReportNotification):

@@ -1250,7 +1250,7 @@ class CubeUpdater(object):
         return self._new_groups
 
     @property
-    def new_no_garbage_cube(self):
+    def new_no_garbage_cube(self) -> Cube:
         if self._new_no_garbage_cube is None:
             self._new_no_garbage_cube = (
                 self.cube
@@ -1263,40 +1263,11 @@ class CubeUpdater(object):
         return self._new_no_garbage_cube
 
     @property
-    def new_nodes(self):
-        if self._new_nodes is None:
-            self._new_nodes = self.node_collection + self._patch.node_delta_operation
-
-        return self._new_nodes
-
-    @property
     def new_garbage_trap_amount(self):
         return len(self.cube) - len(self.new_no_garbage_cube)
-
-    # def generate_garbage_traps(
-    #     self,
-    #     nodes: NodeCollection,
-    #     amount: int,
-    #     delta: int,
-    # ) -> t.Iterable[BorderedNode]:
-    #     raise NotImplemented
 
     def old_average_trap_size(self) -> float:
         return len(self.node_collection) / len(self.cube.garbage_traps)
 
     def new_average_trap_size(self) -> float:
         return len(self.new_nodes) / self.new_garbage_trap_amount
-
-    # def update(self, delta: int = 0):
-    #     return self.new_no_garbage_cube + (
-    #         Trap(
-    #             node = node,
-    #             intention_type = IntentionType.GARBAGE,
-    #         )
-    #         for node in
-    #         self.generate_garbage_traps(
-    #             nodes=self.new_nodes,
-    #             amount=self.new_garbage_trap_amount,
-    #             delta=delta,
-    #         )
-    #     )
