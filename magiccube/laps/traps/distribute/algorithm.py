@@ -56,6 +56,9 @@ class DistributionNode(object):
 
 class TrapDistribution(model.Individual):
 
+    class InvalidDistribution(Exception):
+        pass
+
     def __init__(
         self,
         distribution_nodes: t.Iterable[DistributionNode] = (),
@@ -96,7 +99,7 @@ class TrapDistribution(model.Individual):
             cubeables = []
 
             if not trap:
-                raise Exception('Empty trap')
+                raise self.InvalidDistribution('Empty trap')
 
             for constrained_node in trap:
                 cubeable = constrained_node.node
