@@ -114,7 +114,7 @@ class GroupMap(Serializeable):
         )
 
 
-class GroupMapDeltaOperation(Serializeable):
+class GroupMapDeltaOperation(Serializeable, PersistentHashable):
 
     def __init__(
         self,
@@ -154,6 +154,18 @@ class GroupMapDeltaOperation(Serializeable):
                 ]
             )
         )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        for group, weight in sorted(
+            (
+                group, weight
+                for group, weight in
+                self._groups.items()
+            ),
+            key=lambda pair: pair[0],
+        ):
+            yield group.encode('ASCII')
+            yield str(weight).encode('ASCII')
 
     def __add__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
         groups = defaultdict(lambda : 0, self._groups)
@@ -345,7 +357,7 @@ class NodeCollection(Serializeable):
         )
 
 
-class NodesDeltaOperation(Serializeable):
+class NodesDeltaOperation(Serializeable, PersistentHashable):
 
     def __init__(
         self,
@@ -394,6 +406,18 @@ class NodesDeltaOperation(Serializeable):
                 value['nodes']
             }
         )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        for persistent_hash, multiplicity in sorted(
+            (
+                node.persistent_hash(), multiplicity
+                for node, multiplicity in
+                self._nodes.items()
+            ),
+            key=lambda pair: pair[0],
+        ):
+            yield persistent_hash.encode('ASCII')
+            yield str(multiplicity).encode('ASCII')
 
     def __hash__(self) -> int:
         return hash(self._nodes)

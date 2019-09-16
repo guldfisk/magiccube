@@ -795,7 +795,7 @@ class VerboseCubePatch(object):
         )
 
 
-class CubePatch(Serializeable):
+class CubePatch(Serializeable, PersistentHashable):
 
     def __init__(
         self,
@@ -1141,6 +1141,11 @@ class CubePatch(Serializeable):
                 GroupMapDeltaOperation()
             ),
         )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self._cube_delta_operation.persistent_hash().encode('ASCII')
+        yield self._node_delta_operation.persistent_hash().encode('ASCII')
+        yield self._group_map_delta_operation.persistent_hash().encode('ASCII')
 
     def __hash__(self) -> int:
         return hash(

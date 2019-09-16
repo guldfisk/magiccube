@@ -8,7 +8,7 @@ from yeetlong.counters import FrozenCounter
 from yeetlong.multiset import FrozenMultiset
 
 from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.serilization.serializeable import serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
 
 from magiccube.collections.cube import Cube, Cubeable
 from magiccube.collections.cubeable import CubeableCollection
@@ -99,7 +99,7 @@ class CubeDelta(object):
         )
 
 
-class CubeDeltaOperation(CubeableCollection):
+class CubeDeltaOperation(CubeableCollection, PersistentHashable):
 
     def __init__(
         self,
@@ -326,6 +326,21 @@ class CubeDeltaOperation(CubeableCollection):
                 )
             }
         )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        for printing, multiplicity in sorted(self.printings, key=lambda pair: pair[0].id):
+            yield str(printing.id).encode('ASCII')
+            yield str(multiplicity).encode('ASCII')
+        for persistent_hash, multiplicity in sorted(
+            (
+                lap.persistent_hash(), multiplicity
+                for lap, multiplicity in
+                self.laps
+            ),
+            key = lambda pair: pair[0],
+        ):
+            yield persistent_hash.encode('ASCII')
+            yield str(multiplicity).encode('ASCII')
 
     def __add__(self, other: t.Union[CubeDeltaOperation, Cube]) -> CubeDeltaOperation:
         return self.__class__(

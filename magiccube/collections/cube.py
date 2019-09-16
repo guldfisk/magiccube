@@ -26,12 +26,12 @@ class Cube(CubeableCollection, PersistentHashable):
     ):
         self._cubeables = FrozenMultiset() if cubeables is None else FrozenMultiset(cubeables)
 
-        self._printings: FrozenMultiset[Printing] = None
-        self._traps: FrozenMultiset[Trap] = None
-        self._garbage_traps: FrozenMultiset[Trap] = None
-        self._tickets: FrozenMultiset[Ticket] = None
-        self._purples: FrozenMultiset[Purple] = None
-        self._laps: FrozenMultiset[Lap] = None
+        self._printings: t.Optional[FrozenMultiset[Printing]] = None
+        self._traps: t.Optional[FrozenMultiset[Trap]] = None
+        self._garbage_traps: t.Optional[FrozenMultiset[Trap]] = None
+        self._tickets: t.Optional[FrozenMultiset[Ticket]] = None
+        self._purples: t.Optional[FrozenMultiset[Purple]] = None
+        self._laps: t.Optional[FrozenMultiset[Lap]] = None
 
     @property
     def cubeables(self) -> FrozenMultiset[Cubeable]:
