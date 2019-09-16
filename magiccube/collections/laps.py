@@ -3,11 +3,11 @@ from __future__ import annotations
 import typing as t
 
 from magiccube.laps.traps.trap import Trap
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator, PersistentHashable
 from yeetlong.multiset import FrozenMultiset
 
 
-class TrapCollection(Serializeable):
+class TrapCollection(Serializeable, PersistentHashable):
 
     def __init__(self, traps: t.Iterable[Trap]):
         self._traps = traps if isinstance(traps, FrozenMultiset) else FrozenMultiset(traps)
@@ -37,6 +37,10 @@ class TrapCollection(Serializeable):
                 }
             ),
         )
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        for trap in self._traps:
+            yield trap.persistent_hash().encode('ASCII')
 
     def __hash__(self) -> int:
         return hash(self._traps)
