@@ -439,7 +439,7 @@ DEFAULT_REPORT_BLUEPRINT = ReportBlueprint(
         NodesWithoutGroups,
         RemoveNonExistentCubeables,
         PrintingMismatch,
-        GroupsWithOneOrLessNodes,
+        # GroupsWithOneOrLessNodes,
         # Info
         TrapSize,
         CardboardChange,
