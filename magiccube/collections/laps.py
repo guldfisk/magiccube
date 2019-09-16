@@ -42,6 +42,9 @@ class TrapCollection(Serializeable, PersistentHashable):
         for trap in self._traps:
             yield trap.persistent_hash().encode('ASCII')
 
+    def __iter__(self) -> t.Iterator[Trap]:
+        return self._traps.__iter__()
+
     def __hash__(self) -> int:
         return hash(self._traps)
 
