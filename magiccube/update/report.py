@@ -9,7 +9,6 @@ from collections import defaultdict
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
-from magiccube.collections.delta import CubeDelta
 from magiccube.laps.traps.trap import Trap, IntentionType
 from yeetlong.multiset import FrozenMultiset, Multiset
 from yeetlong.counters import FrozenCounter
@@ -184,20 +183,28 @@ class GroupsWithOneOrLessNodes(ReportNotification):
         )
 
 
-# class NodesWithUnknownGroups(ReportNotification):
-#     notification_level = ReportNotificationLevel.WARNING
-# 
-#     @classmethod
-#     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-#         pass
-# 
-#     @property
-#     def title(self) -> str:
-#         pass
-# 
-#     @property
-#     def content(self) -> str:
-#         pass
+class NodesWithUnknownGroups(ReportNotification):
+    notification_level = ReportNotificationLevel.WARNING
+
+    def __init__(
+        self,
+        new_groups: t.Mapping[str, Multiset[ConstrainedNode]],
+        old_groups: t.Mapping[str, Multiset[ConstrainedNode]],
+    ):
+        self._new_groups = new_groups
+        self._old_groups = old_groups
+
+    @classmethod
+    def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+        pass
+
+    @property
+    def title(self) -> str:
+        pass
+
+    @property
+    def content(self) -> str:
+        pass
 
 
 class RemoveNonExistentCubeables(ReportNotification):
@@ -432,6 +439,7 @@ DEFAULT_REPORT_BLUEPRINT = ReportBlueprint(
         NodesWithoutGroups,
         RemoveNonExistentCubeables,
         PrintingMismatch,
+        GroupsWithOneOrLessNodes,
         # Info
         TrapSize,
         CardboardChange,
