@@ -8,6 +8,7 @@ from collections import defaultdict
 from enum import Enum
 from abc import abstractmethod
 
+from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
 from yeetlong.multiset import Multiset, FrozenMultiset
 
@@ -1271,3 +1272,9 @@ class CubeUpdater(object):
 
     def new_average_trap_size(self) -> float:
         return len(self.new_nodes) / self.new_garbage_trap_amount
+
+    def get_finale_cube(self, new_garbage: t.Optional[TrapCollection]) -> Cube:
+        if new_garbage is None:
+            return self.new_cube
+        else:
+           return self.new_cube - Cube(self.new_cube.garbage_traps) + Cube(new_garbage)
