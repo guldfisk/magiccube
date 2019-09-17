@@ -59,7 +59,7 @@ class ChangedSize(ReportNotification):
         if size_delta == 0:
             return None
 
-        return ChangedSize(
+        return cls(
             len(updater.cube.cubeables),
             size_delta,
         )
@@ -97,7 +97,7 @@ class NodesWithoutGroups(ReportNotification):
         if not nodes:
             return None
 
-        return NodesWithoutGroups(nodes)
+        return cls(nodes)
 
     @property
     def title(self) -> str:
@@ -127,11 +127,7 @@ class GroupsWithOneOrLessNodes(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-        groups = {
-            group: Multiset()
-            for group in
-            updater.new_groups
-        }
+        groups = defaultdict(lambda : Multiset())
         for node in updater.new_nodes:
             for group in node.groups:
                 groups[group].add(node)
@@ -146,7 +142,7 @@ class GroupsWithOneOrLessNodes(ReportNotification):
         if not under_populated_groups:
             return None
 
-        return GroupsWithOneOrLessNodes(
+        return cls(
             {
                 key: under_populated_groups[key]
                 for key in
@@ -165,7 +161,7 @@ class GroupsWithOneOrLessNodes(ReportNotification):
 
     @classmethod
     def _format_groups(cls, groups: t.Mapping[str, Multiset[ConstrainedNode]]) -> str:
-        return '\n'.format(
+        return '\n'.join(
             group + ': ' + ', '.join(
                 node.get_minimal_string()
                 for node in
@@ -183,28 +179,43 @@ class GroupsWithOneOrLessNodes(ReportNotification):
         )
 
 
-# class NodesWithUnknownGroups(ReportNotification):
-#     notification_level = ReportNotificationLevel.WARNING
-#
-#     def __init__(
-#         self,
-#         new_groups: t.Mapping[str, Multiset[ConstrainedNode]],
-#         old_groups: t.Mapping[str, Multiset[ConstrainedNode]],
-#     ):
-#         self._new_groups = new_groups
-#         self._old_groups = old_groups
-#
-#     @classmethod
-#     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-#         pass
-#
-#     @property
-#     def title(self) -> str:
-#         pass
-#
-#     @property
-#     def content(self) -> str:
-#         pass
+class NodesWithUnknownGroups(ReportNotification):
+    notification_level = ReportNotificationLevel.WARNING
+
+    def __init__(
+        self,
+        groups: t.Mapping[str, Multiset[ConstrainedNode]],
+    ):
+        self._groups = groups
+
+    @classmethod
+    def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
+        unknown_map = defaultdict(lambda : Multiset())
+        for node in updater.new_nodes:
+            for group in node.groups:
+                if not group in updater.new_groups.groups:
+                    unknown_map[group].add(node)
+
+        if not unknown_map:
+            return None
+
+        return cls(unknown_map)
+
+    @property
+    def title(self) -> str:
+        return 'Unknown groups'
+
+    @property
+    def content(self) -> str:
+        return '\n'.join(
+            group + ': ' + ', '.join(
+                node.get_minimal_string()
+                for node in
+                nodes
+            )
+            for group, nodes in
+            self._groups.items()
+        )
 
 
 class RemoveNonExistentCubeables(ReportNotification):
@@ -269,7 +280,7 @@ class PrintingMismatch(ReportNotification):
         if not mismatches:
             return None
 
-        return PrintingMismatch(
+        return cls(
             mismatches
         )
 
@@ -439,7 +450,8 @@ DEFAULT_REPORT_BLUEPRINT = ReportBlueprint(
         NodesWithoutGroups,
         RemoveNonExistentCubeables,
         PrintingMismatch,
-        # GroupsWithOneOrLessNodes,
+        GroupsWithOneOrLessNodes,
+        NodesWithUnknownGroups,
         # Info
         TrapSize,
         CardboardChange,
