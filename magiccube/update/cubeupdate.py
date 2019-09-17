@@ -40,7 +40,8 @@ class CubeChange(Serializeable, PersistentHashable):
         SUBTRACTION = 'subtraction'
         MODIFICATION = 'modification'
         TRANSFER = 'transfer'
-    
+
+
     category = Category.MODIFICATION
 
     @abstractmethod
@@ -81,7 +82,7 @@ class AddGroup(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            group_map_delta_operation = GroupMapDeltaOperation(
+            group_map_delta_operation=GroupMapDeltaOperation(
                 {
                     self._group: self._value,
                 }
@@ -128,7 +129,7 @@ class GroupWeightChange(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            group_map_delta_operation = GroupMapDeltaOperation(
+            group_map_delta_operation=GroupMapDeltaOperation(
                 {
                     self._group: self._new_value - self._old_value,
                 }
@@ -145,16 +146,16 @@ class GroupWeightChange(CubeChange):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupWeightChange:
         return cls(
-            group = value['group'],
-            old_value = value['old_value'],
-            new_value = value['new_value'],
+            group=value['group'],
+            old_value=value['old_value'],
+            new_value=value['new_value'],
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
         yield self._group.encode('UTF-8')
-        
-        
+
+
 class RemoveGroup(CubeChange):
     category = CubeChange.Category.SUBTRACTION
 
@@ -176,7 +177,7 @@ class RemoveGroup(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            group_map_delta_operation = GroupMapDeltaOperation(
+            group_map_delta_operation=GroupMapDeltaOperation(
                 {
                     self._group: self._weight,
                 }
@@ -425,7 +426,7 @@ class PrintingsToNode(CubeChange):
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and other ._before == self._before
+            and other._before == self._before
             and other._after == self._after
         )
 
@@ -455,7 +456,7 @@ class PrintingsToNode(CubeChange):
 
 class TrapNodeTransfer(CubeChange):
     category = CubeChange.Category.TRANSFER
-    
+
     def __init__(self, trap: Trap, node: ConstrainedNode):
         self._trap = trap
         self._node = node
@@ -493,23 +494,23 @@ class TrapNodeTransfer(CubeChange):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
         return cls(
-            trap = Trap.deserialize(value['trap'], inflator),
-            node = ConstrainedNode.deserialize(value['node'], inflator),
+            trap=Trap.deserialize(value['trap'], inflator),
+            node=ConstrainedNode.deserialize(value['node'], inflator),
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
         yield self._trap.persistent_hash().encode('ASCII')
         yield self._node.persistent_hash().encode('ASCII')
-        
-        
+
+
 class TrapToNode(TrapNodeTransfer):
-    
+
     def explain(self) -> str:
         return 'trap -> {}'.format(
             self._node.get_minimal_string()
         )
-    
+
     def as_patch(self) -> CubePatch:
         return CubePatch(
             CubeDeltaOperation(
@@ -522,16 +523,16 @@ class TrapToNode(TrapNodeTransfer):
                     self._node: 1,
                 }
             ),
-        ) 
-    
-    
+        )
+
+
 class NodeToTrap(TrapNodeTransfer):
-    
+
     def explain(self) -> str:
         return '{} -> Trap'.format(
             self._node.get_minimal_string()
         )
-    
+
     def as_patch(self) -> CubePatch:
         return CubePatch(
             CubeDeltaOperation(
@@ -544,7 +545,7 @@ class NodeToTrap(TrapNodeTransfer):
                     self._node: -1,
                 }
             ),
-        ) 
+        )
 
 
 class NodeToPrintings(CubeChange):
@@ -689,7 +690,7 @@ class AlteredNode(CubeChange):
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and other ._before == self._before
+            and other._before == self._before
             and other._after == self._after
         )
 
@@ -702,7 +703,7 @@ class AlteredNode(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            node_delta_operation = NodesDeltaOperation(
+            node_delta_operation=NodesDeltaOperation(
                 {
                     self._before: -1,
                     self._after: 1,
@@ -826,7 +827,7 @@ class CubePatch(Serializeable, PersistentHashable):
 
     def as_verbose(self, meta_cube: MetaCube) -> VerboseCubePatch:
         group_updates = set()
-        
+
         for group, new_weight in self.group_map_delta_operation.groups.items():
             current_weight = meta_cube.group_map.groups.get(group)
             if current_weight is None:
@@ -849,7 +850,7 @@ class CubePatch(Serializeable, PersistentHashable):
                             current_weight + new_weight,
                         )
                     )
-        
+
         new_laps: Multiset[Lap] = Multiset(
             {
                 lap: multiplicity
@@ -902,12 +903,12 @@ class CubePatch(Serializeable, PersistentHashable):
             }
         )
 
-        new_printings_cardboard_map = defaultdict(lambda : [])
+        new_printings_cardboard_map = defaultdict(lambda: [])
 
         for printing in new_printings:
             new_printings_cardboard_map[printing.cardboard].append(printing)
 
-        removed_printings_cardboard_map = defaultdict(lambda : [])
+        removed_printings_cardboard_map = defaultdict(lambda: [])
 
         for printing in removed_printings:
             removed_printings_cardboard_map[printing.cardboard].append(printing)
@@ -935,18 +936,18 @@ class CubePatch(Serializeable, PersistentHashable):
                 node
                 for node in
                 new_nodes
-                    if all(
-                    isinstance(child, Printing)
-                    for child in
-                    node.node.children
-                )
+                if all(
+                isinstance(child, Printing)
+                for child in
+                node.node.children
+            )
             ),
-            key = lambda node: len(node.node.children),
-            reverse = True,
+            key=lambda node: len(node.node.children),
+            reverse=True,
         )
 
         printings_moved_to_nodes = Multiset()
-        
+
         for node in new_unnested_nodes:
             if node.node.children <= removed_printings:
                 printings_moved_to_nodes.add(
@@ -974,9 +975,9 @@ class CubePatch(Serializeable, PersistentHashable):
             key=lambda node: len(node.node.children),
             reverse=True,
         )
-        
+
         nodes_moved_to_printings = Multiset()
-        
+
         for node in removed_unnested_nodes:
             if node.node.children <= new_printings:
                 nodes_moved_to_printings.add(
@@ -989,18 +990,17 @@ class CubePatch(Serializeable, PersistentHashable):
 
         for _, node in nodes_moved_to_printings:
             removed_nodes.remove(node, 1)
-            
-        
+
         removed_nodes_by_node: t.Dict[PrintingNode, t.List[ConstrainedNode]] = {}
-        
+
         for node in removed_nodes:
             try:
                 removed_nodes_by_node[node.node].append(node)
             except KeyError:
                 removed_nodes_by_node[node.node] = [node]
-            
+
         nodes_to_traps: Multiset[t.Tuple[Trap, ConstrainedNode]] = Multiset()
-            
+
         for lap in new_laps:
             if isinstance(lap, Trap) and lap.node in removed_nodes_by_node:
                 nodes_to_traps.add(
@@ -1011,22 +1011,21 @@ class CubePatch(Serializeable, PersistentHashable):
                 )
                 if not removed_nodes_by_node[lap.node]:
                     del removed_nodes_by_node[lap.node]
-                
+
         for trap, node in nodes_to_traps:
             new_laps.remove(trap, 1)
             removed_nodes.remove(node, 1)
-            
-       
+
         new_nodes_by_node: t.Dict[PrintingNode, t.List[ConstrainedNode]] = {}
-        
+
         for node in new_nodes:
             try:
                 new_nodes_by_node[node.node].append(node)
             except KeyError:
                 new_nodes_by_node[node.node] = [node]
-            
+
         traps_to_nodes: Multiset[t.Tuple[Trap, ConstrainedNode]] = Multiset()
-            
+
         for lap in removed_laps:
             if isinstance(lap, Trap) and lap.node in new_nodes_by_node:
                 traps_to_nodes.add(
@@ -1037,7 +1036,7 @@ class CubePatch(Serializeable, PersistentHashable):
                 )
                 if not new_nodes_by_node[lap.node]:
                     del new_nodes_by_node[lap.node]
-                
+
         for trap, node in traps_to_nodes:
             removed_laps.remove(trap, 1)
             new_nodes.remove(node, 1)
@@ -1130,13 +1129,13 @@ class CubePatch(Serializeable, PersistentHashable):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> CubePatch:
         return cls(
-            cube_delta_operation = CubeDeltaOperation.deserialize(value['cube_delta'], inflator),
-            node_delta_operation = (
+            cube_delta_operation=CubeDeltaOperation.deserialize(value['cube_delta'], inflator),
+            node_delta_operation=(
                 NodesDeltaOperation.deserialize(value['nodes_delta'], inflator)
                 if 'nodes_delta' in value else
                 NodesDeltaOperation()
             ),
-            group_map_delta_operation = (
+            group_map_delta_operation=(
                 GroupMapDeltaOperation.deserialize(value['groups_delta'], inflator)
                 if 'groups_delta' in value else
                 GroupMapDeltaOperation()
@@ -1208,7 +1207,7 @@ class CubeUpdater(object):
         self._new_cube: t.Optional[Cube] = None
         self._new_nodes: t.Optional[NodeCollection] = None
         self._new_groups: t.Optional[GroupMap] = None
-        
+
         self._new_no_garbage_cube: t.Optional[Cube] = None
         self._new_nodes = None
 
@@ -1256,8 +1255,8 @@ class CubeUpdater(object):
             self._new_no_garbage_cube = (
                 self.cube
                 + ~CubeDeltaOperation(
-                    self.cube.garbage_traps.elements()
-                )
+                self.cube.garbage_traps.elements()
+            )
                 + self._patch.cube_delta_operation
             )
 
@@ -1277,4 +1276,4 @@ class CubeUpdater(object):
         if new_garbage is None:
             return self.new_cube
         else:
-           return self.new_cube - Cube(self.new_cube.garbage_traps) + Cube(new_garbage)
+            return self.new_cube - Cube(self.new_cube.garbage_traps) + Cube(new_garbage)

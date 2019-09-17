@@ -228,7 +228,7 @@ class Cube(CubeableCollection, PersistentHashable):
     def __sub__(self, other: t.Union[CubeableCollection, t.Iterable[Cubeable]]) -> Cube:
         if isinstance(other, CubeableCollection):
             return self.__class__(
-                self._cubeables + other.cubeables
+                self._cubeables - other.cubeables
             )
         return self.__class__(
             self._cubeables - other
