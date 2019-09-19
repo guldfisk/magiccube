@@ -829,16 +829,16 @@ class CubePatch(Serializeable, PersistentHashable):
     def from_meta_delta(cls, from_meta: MetaCube, to_meta: MetaCube) -> CubePatch:
         return cls(
             cube_delta_operation = (
-                CubeDeltaOperation(from_meta.cube.cubeables.elements())
-                - CubeDeltaOperation(to_meta.cube.cubeables.elements())
+                CubeDeltaOperation(to_meta.cube.cubeables.elements())
+                - CubeDeltaOperation(from_meta.cube.cubeables.elements())
             ),
             node_delta_operation = (
-                NodesDeltaOperation(from_meta.node_collection.nodes.elements())
-                - NodesDeltaOperation(to_meta.node_collection.nodes.elements())
+                NodesDeltaOperation(to_meta.node_collection.nodes.elements())
+                - NodesDeltaOperation(from_meta.node_collection.nodes.elements())
             ),
             group_map_delta_operation = (
-                GroupMapDeltaOperation(from_meta.group_map.groups)
-                - GroupMapDeltaOperation(to_meta.group_map.groups)
+                GroupMapDeltaOperation(to_meta.group_map.groups)
+                - GroupMapDeltaOperation(from_meta.group_map.groups)
             ),
         )
 
