@@ -19,6 +19,9 @@ from magiccube.laps.traps.trap import Trap
 
 
 class CubeDelta(object):
+    """
+    Deprecated
+    """
     
     def __init__(self, original: Cube, current: Cube):
         self._original = original

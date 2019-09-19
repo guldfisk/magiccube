@@ -825,6 +825,23 @@ class CubePatch(Serializeable, PersistentHashable):
     def group_map_delta_operation(self) -> GroupMapDeltaOperation:
         return self._group_map_delta_operation
 
+    @classmethod
+    def from_meta_delta(cls, from_meta: MetaCube, to_meta: MetaCube) -> CubePatch:
+        return cls(
+            cube_delta_operation = (
+                CubeDeltaOperation(from_meta.cube.cubeables.elements())
+                - CubeDeltaOperation(to_meta.cube.cubeables.elements())
+            ),
+            node_delta_operation = (
+                NodesDeltaOperation(from_meta.node_collection.nodes.elements())
+                - NodesDeltaOperation(to_meta.node_collection.nodes.elements())
+            ),
+            group_map_delta_operation = (
+                GroupMapDeltaOperation(from_meta.group_map.groups)
+                - GroupMapDeltaOperation(to_meta.group_map.groups)
+            ),
+        )
+
     def as_verbose(self, meta_cube: MetaCube) -> VerboseCubePatch:
         group_updates = set()
 
