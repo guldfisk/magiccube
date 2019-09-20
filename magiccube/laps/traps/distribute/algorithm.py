@@ -13,8 +13,6 @@ from evolution import logging, model
 from evolution.environment import Environment
 from magiccube.collections.laps import TrapCollection
 
-from yeetlong.multiset import FrozenMultiset
-
 from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
 from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.collections.nodecollection import ConstrainedNode
@@ -30,6 +28,10 @@ class DistributionNode(object):
     @property
     def value(self) -> float:
         return self._value
+
+    @value.setter
+    def value(self, value: float) -> None:
+        self._value = value
 
     @property
     def node(self) -> PrintingNode:
@@ -335,17 +337,14 @@ class Distributor(Environment[TrapDistribution]):
 
     def __init__(
         self,
-        nodes: t.Iterable[ConstrainedNode],
+        distribution_nodes: t.Iterable[DistributionNode],
         trap_amount: int,
         initial_population_size: int,
         constraints: model.ConstraintSet,
         **kwargs,
     ):
         self._distribution_nodes: t.List[DistributionNode] = list(
-            map(
-                DistributionNode,
-                nodes,
-            )
+            distribution_nodes
         )
         self._trap_amount = trap_amount
 
