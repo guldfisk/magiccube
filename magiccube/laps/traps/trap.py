@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 
 from enum import Enum
@@ -14,15 +16,15 @@ from magiccube.laps.traps.tree.printingtree import BorderedNode
 from magiccube.laps import imageutils
 
 
-class IntentionType(Enum):
-    SYNERGY = 'synergy'
-    OR = 'or'
-    GARBAGE = 'garbage'
-    LAND_GARBAGE = 'land_garbage'
-    NO_INTENTION = 'no_intention'
-
-
 class Trap(Lap):
+
+    class IntentionType(Enum):
+        SYNERGY = 'synergy'
+        OR = 'or'
+        GARBAGE = 'garbage'
+        LAND_GARBAGE = 'land_garbage'
+        NO_INTENTION = 'no_intention'
+
 
     def __init__(self, node: BorderedNode, intention_type: IntentionType = IntentionType.NO_INTENTION):
         self._node = node
@@ -43,7 +45,7 @@ class Trap(Lap):
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Trap':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> Trap:
         if not 'node' in value:
             return cls(
                 BorderedNode.deserialize(
@@ -56,7 +58,7 @@ class Trap(Lap):
                 value['node'],
                 inflator,
             ),
-            IntentionType[value['intention_type']] if 'intention_type' in value else None,
+            cls.IntentionType[value['intention_type']] if 'intention_type' in value else None,
         )
 
     def get_image(

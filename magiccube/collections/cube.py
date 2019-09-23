@@ -12,7 +12,7 @@ from mtgorp.models.persistent.printing import Printing
 from mtgorp.tools.search.pattern import Pattern
 
 from magiccube.laps.lap import Lap
-from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.laps.traps.trap import Trap
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
 from magiccube.collections.cubeable import Cubeable, CubeableCollection
@@ -67,7 +67,7 @@ class Cube(CubeableCollection, PersistentHashable):
                 for cubeable in
                 self._cubeables
                 if isinstance(cubeable, Trap)
-                and cubeable.intention_type == IntentionType.GARBAGE
+                and cubeable.intention_type == Trap.IntentionType.GARBAGE
             )
         return self._garbage_traps
 

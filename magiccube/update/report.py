@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
-from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.laps.traps.trap import Trap
 from yeetlong.multiset import FrozenMultiset, Multiset
 from yeetlong.counters import FrozenCounter
 
@@ -355,7 +355,7 @@ class CardboardChange(ReportNotification):
                 updater.cube.cubeables
                 if not (
                     isinstance(cubeable, Trap)
-                    and cubeable.intention_type == IntentionType.GARBAGE
+                    and cubeable.intention_type == Trap.IntentionType.GARBAGE
                 )
             )
         )
@@ -367,7 +367,7 @@ class CardboardChange(ReportNotification):
                 (updater.cube + updater.patch.cube_delta_operation).cubeables
                 if not (
                     isinstance(cubeable, Trap)
-                    and cubeable.intention_type == IntentionType.GARBAGE
+                    and cubeable.intention_type == Trap.IntentionType.GARBAGE
                 )
             )
         )

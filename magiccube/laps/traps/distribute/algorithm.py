@@ -14,7 +14,7 @@ from evolution.environment import Environment
 from magiccube.collections.laps import TrapCollection
 
 from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
-from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.laps.traps.trap import Trap
 from magiccube.collections.nodecollection import ConstrainedNode
 
 
@@ -94,7 +94,11 @@ class TrapDistribution(model.Individual):
     def trap_amount(self):
         return self._trap_amount
 
-    def as_trap_collection(self, *, intention_type: IntentionType = IntentionType.GARBAGE) -> TrapCollection:
+    def as_trap_collection(
+        self,
+        *,
+        intention_type: Trap.IntentionType = Trap.IntentionType.GARBAGE,
+    ) -> TrapCollection:
         traps = []
 
         for trap in self.traps:
