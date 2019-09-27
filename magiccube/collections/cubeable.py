@@ -25,7 +25,7 @@ class CubeableCollection(Serializeable):
 
     @classmethod
     @abstractmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> CubeableCollection:
         pass
 
     @abstractmethod
