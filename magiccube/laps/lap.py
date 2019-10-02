@@ -7,10 +7,19 @@ from mtgimg.interface import Imageable
 
 class Lap(Serializeable, Imageable, PersistentHashable):
 
-	@abstractmethod
-	def __hash__(self) -> int:
-		pass
+    @property
+    def id(self):
+        return self.persistent_hash()
 
-	@abstractmethod
-	def __eq__(self, other: object) -> bool:
-		pass
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        pass
+
+    @abstractmethod
+    def __hash__(self) -> int:
+        pass
+
+    @abstractmethod
+    def __eq__(self, other: object) -> bool:
+        pass

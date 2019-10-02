@@ -38,6 +38,10 @@ class Trap(Lap):
     def intention_type(self) -> t.Optional[IntentionType]:
         return self._intention_type
 
+    @property
+    def description(self) -> str:
+        return self._node.get_minimal_string(identified_by_id = False)
+
     def serialize(self) -> serialization_model:
         return {
             'node': self._node.serialize(),

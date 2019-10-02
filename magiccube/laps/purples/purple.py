@@ -28,7 +28,7 @@ class Purple(Lap):
 
     @property
     def description(self) -> str:
-        return self._description
+        return 'Purple'
 
     def __hash__(self) -> int:
         return hash(self._name)
