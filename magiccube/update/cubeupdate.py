@@ -82,7 +82,7 @@ class AddGroup(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            group_map_delta_operation=GroupMapDeltaOperation(
+            group_map_delta_operation = GroupMapDeltaOperation(
                 {
                     self._group: self._value,
                 }
@@ -129,7 +129,7 @@ class GroupWeightChange(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            group_map_delta_operation=GroupMapDeltaOperation(
+            group_map_delta_operation = GroupMapDeltaOperation(
                 {
                     self._group: self._new_value - self._old_value,
                 }
@@ -146,9 +146,9 @@ class GroupWeightChange(CubeChange):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupWeightChange:
         return cls(
-            group=value['group'],
-            old_value=value['old_value'],
-            new_value=value['new_value'],
+            group = value['group'],
+            old_value = value['old_value'],
+            new_value = value['new_value'],
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
@@ -177,7 +177,7 @@ class RemoveGroup(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            group_map_delta_operation=GroupMapDeltaOperation(
+            group_map_delta_operation = GroupMapDeltaOperation(
                 {
                     self._group: self._weight,
                 }
@@ -261,7 +261,7 @@ class CubeableCubeChange(CubeChange):
         if isinstance(self._cubeable, Printing):
             return self._cubeable.full_name()
         if isinstance(self._cubeable, Trap):
-            return self._cubeable.node.get_minimal_string(identified_by_id=False)
+            return self._cubeable.node.get_minimal_string(identified_by_id = False)
         if isinstance(self._cubeable, Ticket):
             return 'Ticket'
         return 'Purple'
@@ -348,7 +348,7 @@ class NewNode(NodeCubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            node_delta_operation=NodesDeltaOperation(
+            node_delta_operation = NodesDeltaOperation(
                 {
                     self._node: 1,
                 }
@@ -361,7 +361,7 @@ class RemovedNode(NodeCubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            node_delta_operation=NodesDeltaOperation(
+            node_delta_operation = NodesDeltaOperation(
                 {
                     self._node: -1,
                 }
@@ -494,8 +494,8 @@ class TrapNodeTransfer(CubeChange):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
         return cls(
-            trap=Trap.deserialize(value['trap'], inflator),
-            node=ConstrainedNode.deserialize(value['node'], inflator),
+            trap = Trap.deserialize(value['trap'], inflator),
+            node = ConstrainedNode.deserialize(value['node'], inflator),
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
@@ -651,7 +651,7 @@ class AlteredNode(CubeChange):
     def explain(self) -> str:
         added_groups = self._after.groups - self._before.groups
         removed_groups = self._before.groups - self._after.groups
-        s = self._after.node.get_minimal_string(identified_by_id=False)
+        s = self._after.node.get_minimal_string(identified_by_id = False)
         for group in added_groups:
             s += ' +' + group
         for group in removed_groups:
@@ -703,7 +703,7 @@ class AlteredNode(CubeChange):
 
     def as_patch(self) -> CubePatch:
         return CubePatch(
-            node_delta_operation=NodesDeltaOperation(
+            node_delta_operation = NodesDeltaOperation(
                 {
                     self._before: -1,
                     self._after: 1,
@@ -749,7 +749,7 @@ class PrintingChange(CubeChange):
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> PrintingChange:
         return cls(
             inflator.inflate(Printing, value['before']),
             inflator.inflate(Printing, value['after']),
@@ -768,7 +768,27 @@ class PrintingChange(CubeChange):
         )
 
 
-class VerboseCubePatch(object):
+CUBE_CHANGE_MAP: t.Dict[str, t.Type[CubeChange]] = {
+    klass.__name__: klass
+    for klass in
+    (
+        AddGroup,
+        RemoveGroup,
+        GroupWeightChange,
+        NewCubeable,
+        RemovedCubeable,
+        NewNode,
+        RemovedNode,
+        PrintingsToNode,
+        NodeToPrintings,
+        TrapToNode,
+        NodeToTrap,
+        AlteredNode,
+    )
+}
+
+
+class VerboseCubePatch(Serializeable):
 
     def __init__(self, changes: t.Iterable[CubeChange]):
         self._changes = Multiset(changes)
@@ -776,6 +796,29 @@ class VerboseCubePatch(object):
     @property
     def changes(self) -> Multiset[CubeChange]:
         return self._changes
+
+    def serialize(self) -> serialization_model:
+        return {
+            'changes': [
+                (
+                    change.serialize(),
+                    multiplicity,
+                    change.__class__.__name__,
+                )
+                for change, multiplicity in
+                self._changes.items()
+            ]
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> VerboseCubePatch:
+        return cls(
+            {
+                CUBE_CHANGE_MAP[klass].deserialize(change, inflator): multiplicity
+                for change, multiplicity, klass in
+                value['changes']
+            }
+        )
 
     def __hash__(self) -> int:
         return hash(self._changes)
@@ -934,7 +977,7 @@ class CubePatch(Serializeable, PersistentHashable):
             new_printings_cardboard_map.values(),
             removed_printings_cardboard_map.values(),
         ):
-            printings.sort(key=lambda p: p.expansion.code)
+            printings.sort(key = lambda p: p.expansion.code)
 
         printing_changes: Multiset[t.Tuple[Printing, Printing]] = Multiset()
 
@@ -959,8 +1002,8 @@ class CubePatch(Serializeable, PersistentHashable):
                 node.node.children
             )
             ),
-            key=lambda node: len(node.node.children),
-            reverse=True,
+            key = lambda node: len(node.node.children),
+            reverse = True,
         )
 
         printings_moved_to_nodes = Multiset()
@@ -989,8 +1032,8 @@ class CubePatch(Serializeable, PersistentHashable):
                 node.node.children
             )
             ),
-            key=lambda node: len(node.node.children),
-            reverse=True,
+            key = lambda node: len(node.node.children),
+            reverse = True,
         )
 
         nodes_moved_to_printings = Multiset()
@@ -1146,13 +1189,13 @@ class CubePatch(Serializeable, PersistentHashable):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> CubePatch:
         return cls(
-            cube_delta_operation=CubeDeltaOperation.deserialize(value['cube_delta'], inflator),
-            node_delta_operation=(
+            cube_delta_operation = CubeDeltaOperation.deserialize(value['cube_delta'], inflator),
+            node_delta_operation = (
                 NodesDeltaOperation.deserialize(value['nodes_delta'], inflator)
                 if 'nodes_delta' in value else
                 NodesDeltaOperation()
             ),
-            group_map_delta_operation=(
+            group_map_delta_operation = (
                 GroupMapDeltaOperation.deserialize(value['groups_delta'], inflator)
                 if 'groups_delta' in value else
                 GroupMapDeltaOperation()
