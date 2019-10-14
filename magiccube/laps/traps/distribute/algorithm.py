@@ -345,6 +345,7 @@ class Distributor(Environment[TrapDistribution]):
         trap_amount: int,
         initial_population_size: int,
         constraints: model.ConstraintSet,
+        logger: t.Optional[logging.Logger] = None,
         **kwargs,
     ):
         self._distribution_nodes: t.List[DistributionNode] = list(
@@ -376,7 +377,8 @@ class Distributor(Environment[TrapDistribution]):
                         ),
                     )
                 )
-            ),
+            ) if logger is None else
+            logger,
             mutate = mutate_trap_distribution,
             mate = mate_distributions,
             **kwargs,
