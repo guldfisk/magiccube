@@ -10,20 +10,26 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 
 from evolution import logging, model
+from evolution import environment
 from evolution.environment import Environment
 from magiccube.collections.laps import TrapCollection
 
 from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
 from magiccube.laps.traps.trap import Trap
 from magiccube.collections.nodecollection import ConstrainedNode
+from mtgorp.models.persistent.printing import Printing
 
 
 class DistributionNode(object):
-    
-    def __init__(self, node: ConstrainedNode):
+
+    def __init__(self, node: ConstrainedNode, *, auto_add_color: bool = True):
         self._value = node.value
         self._node = node.node
         self._groups = frozenset(group for group in node.groups if group)
+        if auto_add_color and len(self._node.children.distinct_elements()) == 1:
+            child = self._node.children.__iter__().__next__()
+            if isinstance(child, Printing) and len(child.cardboard.front_card.color) == 1:
+                self._groups |= frozenset(color.name for color in child.cardboard.front_card.color)
 
     @property
     def value(self) -> float:
@@ -48,7 +54,7 @@ class DistributionNode(object):
             node = self._node,
             groups = self._groups,
         )
-  
+
     def __repr__(self):
         return f'DN({self.node}, {self.groups}, {self.value})'
 
@@ -57,9 +63,9 @@ class DistributionNode(object):
 
 
 class TrapDistribution(model.Individual):
-
     class InvalidDistribution(Exception):
         pass
+
 
     def __init__(
         self,
@@ -87,7 +93,7 @@ class TrapDistribution(model.Individual):
                     trap.append(constrained_node)
 
         else:
-            self.traps = traps #type: t.List[t.List[DistributionNode]]
+            self.traps = traps  # type: t.List[t.List[DistributionNode]]
             self._trap_amount = len(self.traps)
 
     @property
@@ -128,7 +134,7 @@ class TrapDistribution(model.Individual):
 
 
 def mutate_trap_distribution(distribution: TrapDistribution, distributor: Distributor) -> TrapDistribution:
-    for i in range(3):
+    for i in range(random.randint(1, 5)):
         selected_group = random.choice(
             [
                 group
@@ -162,7 +168,6 @@ def mate_distributions(
     distribution_2: TrapDistribution,
     distributor: 'Distributor',
 ) -> t.Tuple[TrapDistribution, TrapDistribution]:
-
     locations = {
         node: []
         for node in
@@ -187,7 +192,6 @@ def mate_distributions(
         distribution.traps = traps
 
     return distribution_1, distribution_2
-
 
 
 def logistic(x: float, max_value: float, mid: float, slope: float) -> float:
@@ -249,7 +253,7 @@ class GroupExclusivityConstraint(model.Constraint):
         self,
         nodes: t.Iterable[DistributionNode],
         trap_amount: int,
-        group_weights: t. Mapping[str, float],
+        group_weights: t.Mapping[str, float],
     ):
         self._group_weights = {} if group_weights is None else group_weights
 
@@ -287,8 +291,8 @@ class GroupExclusivityConstraint(model.Constraint):
             for nodes, groups in
             collisions.items()
         )
-        
-    def _group_collision_factor(self, distribution: TrapDistribution) -> int:
+
+    def group_collision_factor(self, distribution: TrapDistribution) -> int:
         return sum(
             self._get_nodes_collision_factor(trap) ** 2
             for trap in
@@ -297,12 +301,12 @@ class GroupExclusivityConstraint(model.Constraint):
 
     def score(self, distribution: TrapDistribution) -> float:
         return logistic(
-            x = self._group_collision_factor(
+            x = self.group_collision_factor(
                 distribution
             ) / self._relator,
             max_value = 2,
             mid = 0,
-            slope = 8,
+            slope = 100,
         )
 
 
@@ -354,16 +358,20 @@ class Distributor(Environment[TrapDistribution]):
         self._trap_amount = trap_amount
 
         super().__init__(
-            individual_factory = (
-                lambda:
+            environment.SimpleModel(
+                individual_factory = (
+                    lambda:
                     TrapDistribution(
                         distribution_nodes = self._distribution_nodes,
                         trap_amount = self._trap_amount,
                         random_initialization = True,
                     )
+                ),
+                initial_population_size = initial_population_size,
+                constraints = constraints,
+                mutate = mutate_trap_distribution,
+                mate = mate_distributions,
             ),
-            initial_population_size = initial_population_size,
-            constraints = constraints,
             logger = logging.Logger(
                 OrderedDict(
                     (
@@ -379,8 +387,6 @@ class Distributor(Environment[TrapDistribution]):
                 )
             ) if logger is None else
             logger,
-            mutate = mutate_trap_distribution,
-            mate = mate_distributions,
             **kwargs,
         )
 
@@ -401,247 +407,11 @@ class Distributor(Environment[TrapDistribution]):
 
         colors = ('r', 'g', 'b', 'c', 'm', 'y')
 
-        # lines = functools.reduce(
-        #     operator.add,
-        #     (
-        #         ax1.plot(
-        #             generations,
-        #             self._logbook.select(constraint.description),
-        #             color,
-        #             label=f'Max {constraint.description} score',
-        #         )
-        #         for constraint, color in
-        #         zip(self._constraint_set, colors)
-        #     ),
-        # )
-
-        # ax2 = ax1.twinx()
-
-        max_line = ax1.plot(generations, fit_maxes, 'k', label='Maximum Fitness')
-        average_line = ax1.plot(generations, fit_averages, '.75', label='Average Fitness')
+        max_line = ax1.plot(generations, fit_maxes, 'k', label = 'Maximum Fitness')
+        average_line = ax1.plot(generations, fit_averages, '.75', label = 'Average Fitness')
 
         lns = max_line + average_line
         labs = [l.get_label() for l in lns]
-        ax1.legend(lns, labs, loc="lower right")
+        ax1.legend(lns, labs, loc = "lower right")
 
         plt.show()
-        
-
-
-# class _Distributor(object):
-#
-#     def __init__(
-#         self,
-#         constrained_nodes: t.Iterable[ConstrainedNode],
-#         trap_amount: int,
-#         constraint_set_blue_print: ConstraintSetBluePrint,
-#         mate_chance: float = .5,
-#         mutate_chance: float = .2,
-#         tournament_size: int = 3,
-#         population_size: int = 300,
-#     ):
-#         # TODO wtf is happening with these two
-#         self._unique_constrained_nodes = frozenset(constrained_nodes)
-#         self._constrained_nodes = FrozenMultiset(constrained_nodes)
-#
-#         self._trap_amount = trap_amount
-#         self._constraint_set_blue_print = constraint_set_blue_print
-#         self._mate_chance = mate_chance
-#         self._mutate_chance = mutate_chance
-#         self._tournament_size = tournament_size
-#         self._population_size = population_size
-#
-#         self._toolbox = base.Toolbox()
-#
-#         self._initialize_toolbox(self._toolbox)
-#
-#         self._toolbox.register('population', tools.initRepeat, list, self._toolbox.individual)
-#
-#         self._population = self._toolbox.population(n=self._population_size) #type: t.List[TrapDistribution]
-#
-#         self._sample_random_population = [
-#             TrapDistribution(self._unique_constrained_nodes, self._trap_amount, random_initialization=True)
-#             for _ in
-#             range(self._population_size)
-#         ]
-#
-#         self._constraint_set = self._constraint_set_blue_print.realise(
-#             self._unique_constrained_nodes,
-#             self._trap_amount,
-#             self._sample_random_population,
-#         )
-#
-#         self._toolbox.register('select', tools.selTournament, tournsize=self._tournament_size)
-#
-#         self._best = None
-#
-#         self._statistics = tools.Statistics(key=lambda ind: ind)
-#         self._statistics.register('avg', lambda s: statistics.mean(e.fitness.values[0] for e in s))
-#         self._statistics.register('max', lambda s: max(e.fitness.values[0] for e in s))
-#
-#         class _MaxMap(object):
-#
-#             def __init__(self, _index: int):
-#                 self._index = _index
-#
-#             def __call__(self, population: t.Collection[TrapDistribution]):
-#                 return sorted(
-#                     (
-#                         individual
-#                         for individual in
-#                         population
-#                     ),
-#                     key = lambda individual:
-#                         individual.fitness.values[0]
-#                 )[-1].fitness.values[self._index]
-#
-#         for index, constraint in enumerate(self._constraint_set):
-#             self._statistics.register(
-#                 constraint.description,
-#                 _MaxMap(index + 1),
-#             )
-#
-#         self._logbook = None #type: tools.Logbook
-#
-#     def _initialize_toolbox(self, toolbox: base.Toolbox):
-#         toolbox.register(
-#             'individual',
-#             TrapDistribution,
-#             constrained_nodes = self._unique_constrained_nodes,
-#             trap_amount = self._trap_amount,
-#             random_initialization = True,
-#         )
-#
-#         toolbox.register('evaluate', lambda d: self._constraint_set.score(d))
-#         toolbox.register('mate', mate_distributions, distributor=self)
-#         toolbox.register('mutate', mutate_trap_distribution)
-#
-#     @property
-#     def population(self) -> t.List[TrapDistribution]:
-#         return self._population
-#
-#     @property
-#     def sample_random_population(self) -> t.List[TrapDistribution]:
-#         return self._sample_random_population
-#
-#     @property
-#     def best(self) -> TrapDistribution:
-#         if self._best is None:
-#             self._best = tools.selBest(self._population, 1)[0]
-#
-#         return self._best
-#
-#     @property
-#     def constrained_nodes(self) -> t.FrozenSet[ConstrainedNode]:
-#         return self._unique_constrained_nodes
-#
-#     @property
-#     def trap_amount(self) -> int:
-#         return self._trap_amount
-#
-#     @property
-#     def constraint_set(self) -> ConstraintSet:
-#         return self._constraint_set
-#
-#     @classmethod
-#     def trap_collection_to_trap_distribution(
-#         cls,
-#         traps: t.Collection[Trap],
-#         constrained_nodes: t.Iterable[ConstrainedNode],
-#     ) -> t.Tuple[TrapDistribution, t.List[ConstrainedNode], t.List[t.Tuple[PrintingNode, int]]]:
-#
-#         constraint_map = {} #type: t.Dict[PrintingNode, t.List[ConstrainedNode]]
-#
-#         for constrained_node in constrained_nodes:
-#             try:
-#                 constraint_map[constrained_node.node].append(constrained_node)
-#             except KeyError:
-#                 constraint_map[constrained_node.node] = [constrained_node]
-#
-#         distribution = [[] for _ in range(len(traps))] #type: t.List[t.List[ConstrainedNode]]
-#         removed = [] #type: t.List[t.Tuple[PrintingNode, int]]
-#
-#         for index, trap in enumerate(traps):
-#
-#             for child in trap.node.children:
-#                 printing_node = child if isinstance(child, PrintingNode) else AllNode((child,))
-#
-#                 try:
-#                     distribution[index].append(constraint_map[printing_node].pop())
-#                 except (KeyError, IndexError):
-#                     removed.append((printing_node, index))
-#
-#         added = list(
-#             itertools.chain(
-#                 *(
-#                     nodes
-#                     for nodes in
-#                     constraint_map.values()
-#                 )
-#             )
-#         )
-#
-#         return TrapDistribution(traps=distribution), added, removed
-#
-#     def evaluate_cube(self, traps: t.Collection[Trap]) -> float:
-#         distribution, added, removed = self.trap_collection_to_trap_distribution(
-#             traps,
-#             self._constrained_nodes,
-#         )
-#         if added or removed:
-#             raise ValueError(f'Collection does not match distribution. Added: "{added}", removed: "{removed}".')
-#
-#         return self._constraint_set.score(distribution)[0]
-#
-#     def show_plot(self) -> 'Distributor':
-#         generations = self._logbook.select("gen")
-#         fit_maxes = self._logbook.select('max')
-#         fit_averages = self._logbook.select('avg')
-#
-#         fig, ax1 = plt.subplots()
-#
-#         colors = ('r', 'g', 'b', 'c', 'm', 'y')
-#
-#         lines = functools.reduce(
-#             operator.add,
-#             (
-#                 ax1.plot(
-#                     generations,
-#                     self._logbook.select(constraint.description),
-#                     color,
-#                     label = f'Max {constraint.description} score',
-#                 )
-#                 for constraint, color in
-#                 zip(self._constraint_set, colors)
-#             ),
-#         )
-#
-#         ax2 = ax1.twinx()
-#
-#         max_line = ax2.plot(generations, fit_maxes, 'k', label='Maximum Fitness')
-#         average_line = ax2.plot(generations, fit_averages, '.75', label='Average Fitness')
-#
-#         lns = max_line + average_line + lines
-#         labs = [l.get_label() for l in lns]
-#         ax1.legend(lns, labs, loc="lower right")
-#
-#         plt.show()
-#
-#         return self
-#
-#     def evaluate(self, generations: int) -> 'Distributor':
-#         population, logbook = algorithms.eaSimple(
-#             self._population,
-#             self._toolbox,
-#             self._mate_chance,
-#             self._mutate_chance,
-#             generations,
-#             stats = self._statistics,
-#         )
-#
-#         self._population = population
-#         self._logbook = logbook
-#         self._best = None
-#
-#         return self
-
