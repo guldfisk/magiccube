@@ -28,7 +28,7 @@ class DistributionNode(object):
         self._groups = frozenset(group for group in node.groups if group)
         if auto_add_color and len(self._node.children.distinct_elements()) == 1:
             child = self._node.children.__iter__().__next__()
-            if isinstance(child, Printing) and len(child.cardboard.front_card.color) == 1:
+            if isinstance(child, Printing) and len(child.cardboard.front_card.color) <= 2:
                 self._groups |= frozenset(color.name for color in child.cardboard.front_card.color)
 
     @property
