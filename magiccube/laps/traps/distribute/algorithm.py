@@ -134,31 +134,69 @@ class TrapDistribution(model.Individual):
 
 
 def mutate_trap_distribution(distribution: TrapDistribution, distributor: Distributor) -> TrapDistribution:
-    for i in range(random.randint(1, 5)):
-        selected_group = random.choice(
-            [
-                group
-                for group in
-                distribution.traps
-                if group
-            ]
-        )
-        target_group = random.choice(
-            [
-                group
-                for group in
-                distribution.traps
-                if group != selected_group
-            ]
-        )
-        target_group.append(
-            selected_group.pop(
-                random.randint(
-                    0,
-                    len(selected_group) - 1,
+    if random.random() > .3:
+        for i in range(random.randint(1, 5)):
+            selected_group = random.choice(
+                [
+                    group
+                    for group in
+                    distribution.traps
+                    if group
+                ]
+            )
+            target_group = random.choice(
+                [
+                    group
+                    for group in
+                    distribution.traps
+                    if group != selected_group
+                ]
+            )
+            target_group.append(
+                selected_group.pop(
+                    random.randint(
+                        0,
+                        len(selected_group) - 1,
+                    )
                 )
             )
-        )
+    else:
+        for i in range(random.randint(1, 2)):
+            first_group = random.choice(
+                [
+                    group
+                    for group in
+                    distribution.traps
+                    if group
+                ]
+            )
+            possible_second_groups = [
+                group
+                for group in
+                distribution.traps
+                if group != first_group and group
+            ]
+            if not possible_second_groups:
+                continue
+            second_group = random.choice(
+                possible_second_groups
+            )
+
+            first = first_group.pop(
+                random.randint(
+                    0,
+                    len(first_group) - 1,
+                )
+            )
+            second = second_group.pop(
+                random.randint(
+                    0,
+                    len(second_group) - 1,
+                )
+            )
+
+            first_group.append(second)
+            second_group.append(first)
 
     return distribution
 
@@ -258,10 +296,10 @@ class GroupExclusivityConstraint(model.Constraint):
         self._group_weights = {} if group_weights is None else group_weights
 
         self._relator = (
-            self._get_nodes_collision_factor(
-                nodes
-            ) / trap_amount
-        ) ** 2
+                            self._get_nodes_collision_factor(
+                                nodes
+                            ) / trap_amount
+                        ) ** 2
 
     def _get_nodes_collision_factor(self, nodes: t.Iterable[DistributionNode]) -> float:
         groups = {}  # type: t.Dict[str, t.List[DistributionNode]]
@@ -285,7 +323,7 @@ class GroupExclusivityConstraint(model.Constraint):
 
         return sum(
             (
-                1 - 1 / (1 + sum(node.value for node in nodes))
+                (1 - 1 / (1 + sum(node.value for node in nodes)))
                 * max(self._group_weights.get(group, .1) for group in groups)
             )
             for nodes, groups in
