@@ -113,7 +113,7 @@ class Trap(Lap):
         return False
 
     def __hash__(self):
-        return hash(self._node)
+        return hash((self._node, self._intention_type))
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self._node.persistent_hash().encode('ASCII')
@@ -123,6 +123,7 @@ class Trap(Lap):
         return (
             isinstance(other, self.__class__)
             and self._node == other._node
+            and self._intention_type == other._intention_type
         )
 
     def __iter__(self) -> t.Iterator[Printing]:
