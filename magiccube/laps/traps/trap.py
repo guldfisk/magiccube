@@ -103,7 +103,7 @@ class Trap(Lap):
         )
 
     def get_image_name(self, back: bool = False, crop: bool = False) -> str:
-        return self.persistent_hash()
+        return self._node.persistent_hash()
 
     @classmethod
     def get_image_dir_name(cls) -> str:
@@ -118,6 +118,7 @@ class Trap(Lap):
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self._node.persistent_hash().encode('ASCII')
         yield self.__class__.__name__.encode('UTF-8')
+        yield self._intention_type.name.encode('UTF-8')
 
     def __eq__(self, other):
         return (
