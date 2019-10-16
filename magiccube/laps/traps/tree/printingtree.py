@@ -5,7 +5,6 @@ import os
 
 from abc import abstractmethod
 
-
 from lazy_property import LazyProperty
 from PIL import Image, ImageDraw
 from promise import Promise
@@ -23,8 +22,8 @@ from magiccube.laps import imageutils
 
 
 class PrintingNode(Serializeable, PersistentHashable):
-    _MINIMAL_STRING_CONNECTOR = None #type: str
-    
+    _MINIMAL_STRING_CONNECTOR: str = None
+
     def __init__(
         self,
         children: t.Union[
@@ -40,12 +39,17 @@ class PrintingNode(Serializeable, PersistentHashable):
 
     def get_minimal_string(self, identified_by_id: bool = True) -> str:
         return self._MINIMAL_STRING_CONNECTOR.join(
-            (f'{multiplicity}# ' if multiplicity > 1 else '')
-            + f'{child.cardboard.name}|{child.id if identified_by_id else child.expansion.code}'
-            if isinstance(child, Printing) else
-            f'({child.get_minimal_string(identified_by_id)})'
-            for child, multiplicity in
-            self.sorted_items
+            (
+                (
+                    '({})'.format(
+                        f'{multiplicity}# ' if multiplicity > 1 else '')
+                    + f'{child.cardboard.name}|{child.id if identified_by_id else child.expansion.code}'
+                    if isinstance(child, Printing) else
+                    f'{child.get_minimal_string(identified_by_id)}'
+                )
+                for child, multiplicity in
+                self.sorted_items
+            )
         )
 
     @LazyProperty
@@ -84,9 +88,9 @@ class PrintingNode(Serializeable, PersistentHashable):
         return sorted(
             self._children.items(),
             key = lambda p:
-                p[0].cardboard.name
-                if isinstance(p[0], Printing) else
-                p[0].name
+            p[0].cardboard.name
+            if isinstance(p[0], Printing) else
+            p[0].name
         )
 
     @LazyProperty
@@ -94,9 +98,9 @@ class PrintingNode(Serializeable, PersistentHashable):
         return sorted(
             self._children.distinct_elements(),
             key = lambda p:
-                p.cardboard.name
-                if isinstance(p, Printing) else
-                p.name
+            p.cardboard.name
+            if isinstance(p, Printing) else
+            p.name
         )
 
     @abstractmethod
@@ -197,7 +201,7 @@ class BorderedNode(PrintingNode):
             for image in
             Promise.all(
                 tuple(
-                    loader.get_image(option, crop=True)
+                    loader.get_image(option, crop = True)
                     if isinstance(option, Printing) else
                     Promise.resolve(option)
                     for option in
@@ -215,7 +219,7 @@ class BorderedNode(PrintingNode):
             y = 0,
             w = width,
             h = height,
-            shrink =self._BORDER_WIDTH - 1,
+            shrink = self._BORDER_WIDTH - 1,
             sides = bordered_sides,
         )
 
@@ -280,7 +284,7 @@ class BorderedNode(PrintingNode):
         return background
 
 
-ALL_COLOR = (50, 50 , 50)
+ALL_COLOR = (50, 50, 50)
 ANY_COLOR = (170, 170, 170)
 
 
