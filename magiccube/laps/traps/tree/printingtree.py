@@ -40,9 +40,8 @@ class PrintingNode(Serializeable, PersistentHashable):
     def get_minimal_string(self, identified_by_id: bool = True) -> str:
         return self._MINIMAL_STRING_CONNECTOR.join(
             (
-                (
-                    '({})'.format(
-                        f'{multiplicity}# ' if multiplicity > 1 else '')
+                '({})'.format(
+                    f'{multiplicity}# ' if multiplicity > 1 else ''
                     + f'{child.cardboard.name}|{child.id if identified_by_id else child.expansion.code}'
                     if isinstance(child, Printing) else
                     f'{child.get_minimal_string(identified_by_id)}'
