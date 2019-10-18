@@ -222,7 +222,7 @@ class BorderedNode(PrintingNode):
             sides = bordered_sides,
         )
 
-        font_size = 20 + int(20 * min(width, self._FULL_WIDTH) / self._FULL_WIDTH)
+        font_size = 27 + int(27 * min(width, self._FULL_WIDTH) / self._FULL_WIDTH)
         for span, option, image, in zip(
             imageutils.section(content_height, len(pictured_printings)),
             pictured_printings,
