@@ -103,7 +103,7 @@ class Trap(Lap):
         )
 
     def get_image_name(self, back: bool = False, crop: bool = False) -> str:
-        return self._node.persistent_hash()
+        return self.persistent_hash()
 
     @classmethod
     def get_image_dir_name(cls) -> str:
