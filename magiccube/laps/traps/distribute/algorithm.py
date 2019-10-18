@@ -63,9 +63,11 @@ class DistributionNode(object):
 
 
 class TrapDistribution(model.Individual):
+
     class InvalidDistribution(Exception):
         pass
 
+    traps: t.List[t.List[DistributionNode]]
 
     def __init__(
         self,
@@ -79,7 +81,7 @@ class TrapDistribution(model.Individual):
         self._trap_amount = trap_amount
 
         if traps is None:
-            self.traps: t.List[t.List[DistributionNode]] = [[] for _ in range(trap_amount)]
+            self.traps = [[] for _ in range(trap_amount)]
 
             if random_initialization:
                 for constrained_node in distribution_nodes:
@@ -93,7 +95,7 @@ class TrapDistribution(model.Individual):
                     trap.append(constrained_node)
 
         else:
-            self.traps = traps  # type: t.List[t.List[DistributionNode]]
+            self.traps = traps
             self._trap_amount = len(self.traps)
 
     @property
