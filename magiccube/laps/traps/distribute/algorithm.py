@@ -5,6 +5,7 @@ import typing as t
 import math
 import random
 import itertools
+from abc import abstractmethod
 from collections import OrderedDict
 
 import matplotlib.pyplot as plt
@@ -62,10 +63,21 @@ class DistributionNode(object):
         return self
 
 
-class TrapDistribution(model.Individual):
+class TrapCollectionIndividual(model.Individual):
 
     class InvalidDistribution(Exception):
         pass
+
+    @abstractmethod
+    def as_trap_collection(
+        self,
+        *,
+        intention_type: Trap.IntentionType = Trap.IntentionType.GARBAGE,
+    ) -> TrapCollection:
+        pass
+
+
+class TrapDistribution(TrapCollectionIndividual):
 
     traps: t.List[t.List[DistributionNode]]
 
