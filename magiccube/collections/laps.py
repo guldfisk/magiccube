@@ -45,6 +45,9 @@ class TrapCollection(Serializeable, PersistentHashable):
     def __iter__(self) -> t.Iterator[Trap]:
         return self._traps.__iter__()
 
+    def __len__(self):
+        return self._traps.__len__()
+
     def __hash__(self) -> int:
         return hash(self._traps)
 
