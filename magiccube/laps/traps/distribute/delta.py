@@ -3,12 +3,15 @@ import itertools
 import random
 import typing as t
 
-from magiccube.collections.laps import TrapCollection
-from magiccube.laps.traps.trap import Trap
-from yeetlong.multiset import FrozenMultiset
+from collections import OrderedDict, defaultdict
 
-from evolution import model
+from evolution import model, logging, environment
+
 from magiccube.laps.traps.distribute.algorithm import TrapDistribution, DistributionNode, TrapCollectionIndividual
+from magiccube.laps.traps.tree.printingtree import PrintingNode, AllNode
+from magiccube.collections.laps import TrapCollection
+from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
+from magiccube.laps.traps.trap import Trap
 
 
 class DistributionDelta(TrapCollectionIndividual):
@@ -180,9 +183,6 @@ class DistributionDelta(TrapCollectionIndividual):
 
     def as_trap_collection(self, *, intention_type: Trap.IntentionType = Trap.IntentionType.GARBAGE) -> TrapCollection:
         return self.trap_distribution.as_trap_collection()
-
-    # def as_trap_collection(self) -> TrapCollection:
-    #     return self.trap_distribution.as_trap_collection()
 
 
 def mutate_distribution_delta(delta: DistributionDelta) -> t.Tuple[DistributionDelta]:
@@ -395,6 +395,131 @@ def mate_distribution_deltas(
             delta.evacuate_removed_trap(index)
 
     return delta_1, delta_2
+
+
+def trap_collection_to_trap_distribution(
+    traps: TrapCollection,
+    nodes: NodeCollection,
+) -> t.Tuple[TrapDistribution, t.List[ConstrainedNode], t.List[t.Tuple[PrintingNode, int]]]:
+
+    constraint_map: t.Dict[PrintingNode, t.List[ConstrainedNode]] = defaultdict(list)
+
+    for distribution_node in nodes:
+        constraint_map[distribution_node.node].append(distribution_node)
+
+    print(constraint_map)
+
+    distribution: t.List[t.List[DistributionNode]] = [[] for _ in range(len(traps))]
+    removed: t.List[t.Tuple[PrintingNode, int]] = []
+
+    print(list(traps))
+
+    for index, trap in enumerate(traps):
+
+        for child in trap.node.children:
+            printing_node = child if isinstance(child, PrintingNode) else AllNode((child,))
+
+            try:
+                distribution[index].append(
+                    DistributionNode(
+                        constraint_map[printing_node].pop()
+                    )
+                )
+            except (KeyError, IndexError):
+                removed.append((printing_node, index))
+
+    added = list(
+        itertools.chain(
+            *(
+                nodes
+                for nodes in
+                constraint_map.values()
+            )
+        )
+    )
+
+    return TrapDistribution(traps = distribution), added, removed
+
+
+
+class DeltaDistributor(environment.Environment[DistributionDelta]):
+
+    def __init__(
+        self,
+        distribution_nodes: t.Iterable[DistributionNode],
+        trap_amount: int,
+        initial_population_size: int,
+        constraints: model.ConstraintSet,
+        original_distribution: TrapDistribution,
+        max_trap_delta: int,
+        logger: t.Optional[logging.Logger] = None,
+        **kwargs,
+    ):
+        self._distribution_nodes: t.List[DistributionNode] = list(
+            distribution_nodes
+        )
+        self._trap_amount = trap_amount
+        self._original_distribution = original_distribution
+        self._max_trap_delta = max_trap_delta
+
+        super().__init__(
+            environment.SimpleModel(
+                individual_factory = (
+                    lambda:
+                    DistributionDelta(
+                        distribution_nodes = self._distribution_nodes,
+                        trap_amount = self._trap_amount,
+                        random_initialization = True,
+                    )
+                ),
+                initial_population_size = initial_population_size,
+                constraints = constraints,
+                mutate = mutate_distribution_delta,
+                mate =  mate_distribution_deltas,
+            ),
+            logger = logging.Logger(
+                OrderedDict(
+                    (
+                        (
+                            'max',
+                            logging.LogMax(),
+                        ),
+                        (
+                            'mean',
+                            logging.LogAverage(),
+                        ),
+                    )
+                )
+            ) if logger is None else
+            logger,
+            **kwargs,
+        )
+
+    @property
+    def distribution_nodes(self) -> t.List[DistributionNode]:
+        return self._distribution_nodes
+
+    @property
+    def trap_amount(self):
+        return self._trap_amount
+
+    def show_plot(self) -> None:
+        generations = range(len(self._logger.values))
+        fit_maxes = [frame[0] for frame in self._logger.values]
+        fit_averages = [frame[1] for frame in self._logger.values]
+
+        fig, ax1 = plt.subplots()
+
+        colors = ('r', 'g', 'b', 'c', 'm', 'y')
+
+        max_line = ax1.plot(generations, fit_maxes, 'k', label = 'Maximum Fitness')
+        average_line = ax1.plot(generations, fit_averages, '.75', label = 'Average Fitness')
+
+        lns = max_line + average_line
+        labs = [l.get_label() for l in lns]
+        ax1.legend(lns, labs, loc = "lower right")
+
+        plt.show()
 
 
 
