@@ -108,11 +108,11 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
         self,
         cubeables: t.Optional[t.Mapping[Cubeable, int]] = None,
     ):
-        self._cubeables = (
+        self._cubeables: FrozenCounter[Cubeable] = (
             FrozenCounter()
             if cubeables is None else
             FrozenCounter(cubeables)
-        ) #type: FrozenCounter[Cubeable]
+        )
 
     @property
     def printings(self) -> t.Iterator[t.Tuple[Printing, int]]:
