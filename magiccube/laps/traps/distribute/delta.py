@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import copy
 import itertools
 import random
 import typing as t
 
 from collections import OrderedDict, defaultdict
+
+import matplotlib.pyplot as plt
 
 from evolution import model, logging, environment
 
@@ -185,7 +189,7 @@ class DistributionDelta(TrapCollectionIndividual):
         return self.trap_distribution.as_trap_collection()
 
 
-def mutate_distribution_delta(delta: DistributionDelta) -> t.Tuple[DistributionDelta]:
+def mutate_distribution_delta(delta: DistributionDelta) -> DistributionDelta:
     for i in range(5):
 
         if random.random() < .8:
@@ -288,16 +292,23 @@ def mutate_distribution_delta(delta: DistributionDelta) -> t.Tuple[DistributionD
                 ]
                 trap[random.randint(0, len(trap) - 1)] = delta.get_available_trap_index()
 
-    return delta,
+    return delta
 
 
 def mate_distribution_deltas(
     delta_1: DistributionDelta,
     delta_2: DistributionDelta,
+    distributor: DeltaDistributor,
 ) -> t.Tuple[DistributionDelta, DistributionDelta]:
 
     moves = copy.copy(delta_1.node_moves)
     moves.update(delta_2.node_moves)
+
+    # TODO apparently this part depends on it being cns and not dns? yikes.
+    print(delta_1.added_node_indexes)
+    print(list(map(id, delta_1.added_node_indexes.keys())))
+    print(delta_2.added_node_indexes)
+    print(list(map(id, delta_2.added_node_indexes.keys())))
 
     adds = {
         node:
@@ -407,12 +418,8 @@ def trap_collection_to_trap_distribution(
     for distribution_node in nodes:
         constraint_map[distribution_node.node].append(distribution_node)
 
-    print(constraint_map)
-
     distribution: t.List[t.List[DistributionNode]] = [[] for _ in range(len(traps))]
     removed: t.List[t.Tuple[PrintingNode, int]] = []
-
-    print(list(traps))
 
     for index, trap in enumerate(traps):
 
@@ -450,7 +457,7 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
         trap_amount: int,
         initial_population_size: int,
         constraints: model.ConstraintSet,
-        original_distribution: TrapDistribution,
+        original_collection: TrapCollection,
         max_trap_delta: int,
         logger: t.Optional[logging.Logger] = None,
         **kwargs,
@@ -459,23 +466,35 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
             distribution_nodes
         )
         self._trap_amount = trap_amount
-        self._original_distribution = original_distribution
+        self._original_distribution = original_collection
         self._max_trap_delta = max_trap_delta
+        
+        original_distribution, added, removed = trap_collection_to_trap_distribution(
+            original_collection,
+            NodeCollection(
+                node.as_constrained_node
+                for node in
+                distribution_nodes
+            ),
+        )
 
         super().__init__(
             environment.SimpleModel(
                 individual_factory = (
                     lambda:
                     DistributionDelta(
-                        distribution_nodes = self._distribution_nodes,
-                        trap_amount = self._trap_amount,
-                        random_initialization = True,
+                        origin = original_distribution,
+                        added_nodes = list(map(DistributionNode, added)),
+                        removed_node_indexes = frozenset(_index for _, _index in removed),
+                        max_trap_difference = self._max_trap_delta,
+                        trap_amount_delta = trap_amount - len(original_collection),
                     )
                 ),
                 initial_population_size = initial_population_size,
                 constraints = constraints,
                 mutate = mutate_distribution_delta,
                 mate =  mate_distribution_deltas,
+                score_transformer = lambda i: i.trap_distribution,
             ),
             logger = logging.Logger(
                 OrderedDict(

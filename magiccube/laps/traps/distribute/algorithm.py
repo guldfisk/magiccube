@@ -218,7 +218,7 @@ def mutate_trap_distribution(distribution: TrapDistribution, distributor: Distri
 def mate_distributions(
     distribution_1: TrapDistribution,
     distribution_2: TrapDistribution,
-    distributor: 'Distributor',
+    distributor: Distributor,
 ) -> t.Tuple[TrapDistribution, TrapDistribution]:
     locations = {
         node: []

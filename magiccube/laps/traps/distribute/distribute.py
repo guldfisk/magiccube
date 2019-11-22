@@ -5,14 +5,17 @@ import typing as t
 import threading
 import queue
 
-from magiccube.laps.traps.distribute.algorithm import Distributor
+from evolution.environment import Environment
 
 
-class DistributionWorker(threading.Thread):
+E = t.TypeVar('E', bound = Environment)
 
-    def __init__(self, distributor: Distributor, *, max_generations: int = 0, **kwargs):
+
+class DistributionWorker(threading.Thread, t.Generic[E]):
+
+    def __init__(self, distributor: E, *, max_generations: int = 0, **kwargs):
         super().__init__(**kwargs)
-        self._distributor: Distributor = distributor
+        self._distributor: E = distributor
         self._max_generations = max_generations
 
         self._running: bool = False
@@ -26,7 +29,7 @@ class DistributionWorker(threading.Thread):
         return self._message_queue
 
     @property
-    def distributor(self) -> Distributor:
+    def distributor(self) -> E:
         # UNSAFE
         return self._distributor
 
