@@ -10,6 +10,7 @@ from collections import OrderedDict, defaultdict
 import matplotlib.pyplot as plt
 
 from evolution import model, logging, environment
+from evolution.model import ConstraintSet
 
 from magiccube.laps.traps.distribute.algorithm import TrapDistribution, DistributionNode, TrapCollectionIndividual
 from magiccube.laps.traps.tree.printingtree import PrintingNode, AllNode
@@ -67,6 +68,24 @@ class DistributionDelta(TrapCollectionIndividual):
                 ),
                 1,
             )[0]
+            
+    def __deepcopy__(self, memodict={}):
+        delta = DistributionDelta.__new__(DistributionDelta)
+        delta._origin = self._origin
+        delta._added_nodes = self._added_nodes
+        delta._removed_node_indexes = self._removed_node_indexes
+        delta._max_trap_difference = self._max_trap_difference
+        delta.node_moves = copy.copy(self.node_moves)
+        delta.added_node_indexes = copy.copy(self.added_node_indexes)
+        delta._trap_amount_delta = self._trap_amount_delta
+        delta._all_index_set = self._all_index_set
+        delta.removed_trap_redistribution = copy.copy(self.removed_trap_redistributions)
+        return delta
+
+    def score(self, constraints: ConstraintSet) -> t.Tuple[float, ...]:
+        return self.trap_distribution.score(
+            constraints
+        )
 
     @property
     def origin(self) -> TrapDistribution:
@@ -494,7 +513,6 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
                 constraints = constraints,
                 mutate = mutate_distribution_delta,
                 mate =  mate_distribution_deltas,
-                score_transformer = lambda i: i.trap_distribution,
             ),
             logger = logging.Logger(
                 OrderedDict(
