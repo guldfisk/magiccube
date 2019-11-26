@@ -56,3 +56,17 @@ class TrapCollection(Serializeable, PersistentHashable):
             isinstance(other, self.__class__)
             and self._traps == other._traps
         )
+    
+    def __sub__(self, other: TrapCollection) -> TrapCollection:
+        return TrapCollection(
+            self._traps - other._traps
+        )
+    
+    __rsub__ = __sub__
+    
+    def __add__(self, other: TrapCollection) -> TrapCollection:
+        return TrapCollection(
+            self._traps + other._traps
+        )
+    
+    __radd__ = __add__
