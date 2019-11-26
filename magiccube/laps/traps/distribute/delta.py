@@ -33,6 +33,8 @@ class DistributionDelta(TrapCollectionIndividual):
 
         self._origin = origin
         self._added_nodes = added_nodes
+
+        # print(sorted(map(id, self._added_nodes)))
         self._removed_node_indexes = removed_node_indexes
         self._max_trap_difference = max_trap_difference
 
@@ -69,19 +71,6 @@ class DistributionDelta(TrapCollectionIndividual):
                 1,
             )[0]
             
-    def __deepcopy__(self, memodict={}):
-        delta = DistributionDelta.__new__(DistributionDelta)
-        delta._origin = self._origin
-        delta._added_nodes = self._added_nodes
-        delta._removed_node_indexes = self._removed_node_indexes
-        delta._max_trap_difference = self._max_trap_difference
-        delta.node_moves = copy.copy(self.node_moves)
-        delta.added_node_indexes = copy.copy(self.added_node_indexes)
-        delta._trap_amount_delta = self._trap_amount_delta
-        delta._all_index_set = self._all_index_set
-        delta.removed_trap_redistribution = copy.copy(self.removed_trap_redistributions)
-        return delta
-
     def score(self, constraints: ConstraintSet) -> t.Tuple[float, ...]:
         return self.trap_distribution.score(
             constraints
@@ -208,7 +197,7 @@ class DistributionDelta(TrapCollectionIndividual):
         return self.trap_distribution.as_trap_collection()
 
 
-def mutate_distribution_delta(delta: DistributionDelta) -> DistributionDelta:
+def mutate_distribution_delta(delta: DistributionDelta, distributor: DeltaDistributor) -> DistributionDelta:
     for i in range(5):
 
         if random.random() < .8:
@@ -322,12 +311,6 @@ def mate_distribution_deltas(
 
     moves = copy.copy(delta_1.node_moves)
     moves.update(delta_2.node_moves)
-
-    # TODO apparently this part depends on it being cns and not dns? yikes.
-    print(delta_1.added_node_indexes)
-    print(list(map(id, delta_1.added_node_indexes.keys())))
-    print(delta_2.added_node_indexes)
-    print(list(map(id, delta_2.added_node_indexes.keys())))
 
     adds = {
         node:
@@ -481,11 +464,7 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
         logger: t.Optional[logging.Logger] = None,
         **kwargs,
     ):
-        self._distribution_nodes: t.List[DistributionNode] = list(
-            distribution_nodes
-        )
         self._trap_amount = trap_amount
-        self._original_distribution = original_collection
         self._max_trap_delta = max_trap_delta
         
         original_distribution, added, removed = trap_collection_to_trap_distribution(
@@ -497,13 +476,15 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
             ),
         )
 
+        added = list(map(DistributionNode, added))
+
         super().__init__(
             environment.SimpleModel(
                 individual_factory = (
                     lambda:
                     DistributionDelta(
                         origin = original_distribution,
-                        added_nodes = list(map(DistributionNode, added)),
+                        added_nodes = added,
                         removed_node_indexes = frozenset(_index for _, _index in removed),
                         max_trap_difference = self._max_trap_delta,
                         trap_amount_delta = trap_amount - len(original_collection),
@@ -533,10 +514,6 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
         )
 
     @property
-    def distribution_nodes(self) -> t.List[DistributionNode]:
-        return self._distribution_nodes
-
-    @property
     def trap_amount(self):
         return self._trap_amount
 
@@ -557,68 +534,3 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
         ax1.legend(lns, labs, loc = "lower right")
 
         plt.show()
-
-
-
-
-
-
-# class DeltaDistributor(Distributor):
-#
-#     def __init__(
-#         self,
-#         constrained_nodes: t.Iterable[ConstrainedNode],
-#         origin_trap_collection: t.Collection[Trap],
-#         constraint_set_blue_print: ConstraintSetBluePrint,
-#         max_trap_delta: int,
-#         trap_amount: t.Optional[int] = None,
-#         mate_chance: float = .5,
-#         mutate_chance: float = .2,
-#         tournament_size: int = 3,
-#         population_size: int = 300,
-#     ):
-#         self._origin_trap_collection = origin_trap_collection
-#         self._max_trap_delta = max_trap_delta
-#
-#         distribution, added, removed = self.trap_collection_to_trap_distribution(
-#             self._origin_trap_collection,
-#             constrained_nodes,
-#         )
-#
-#         self._origin_trap_distribution = distribution
-#         self._added = added
-#         self._removed_trap_indexes = frozenset(
-#             index
-#             for node, index in
-#             removed
-#         )
-#
-#         super().__init__(
-#             constrained_nodes,
-#             (
-#                 len(origin_trap_collection)
-#                 if trap_amount is None else
-#                 trap_amount
-#             ),
-#             constraint_set_blue_print,
-#             mate_chance,
-#             mutate_chance,
-#             tournament_size,
-#             population_size,
-#         )
-#
-#     def _initialize_toolbox(self, toolbox: base.Toolbox):
-#         toolbox.register(
-#             'individual',
-#             DistributionDelta,
-#             origin = self._origin_trap_distribution,
-#             added_nodes = self._added,
-#             removed_node_indexes = self._removed_trap_indexes,
-#             max_trap_difference = self._max_trap_delta,
-#             trap_amount_delta = self.trap_amount - self._origin_trap_distribution.trap_amount,
-#         )
-#
-#         toolbox.register('evaluate', lambda d: self._constraint_set.score(d.trap_distribution))
-#         toolbox.register('mate', mate_distribution_deltas)
-#         toolbox.register('mutate', mutate_distribution_delta)
-

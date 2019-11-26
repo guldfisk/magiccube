@@ -59,6 +59,9 @@ class DistributionNode(object):
     def __repr__(self):
         return f'DN({self.node}, {self.groups}, {self.value})'
 
+    def __copy__(self):
+        return self
+
     def __deepcopy__(self, memodict: t.Dict):
         return self
 
