@@ -34,7 +34,6 @@ class DistributionDelta(TrapCollectionIndividual):
         self._origin = origin
         self._added_nodes = added_nodes
 
-        # print(sorted(map(id, self._added_nodes)))
         self._removed_node_indexes = removed_node_indexes
         self._max_trap_difference = max_trap_difference
 
@@ -112,7 +111,7 @@ class DistributionDelta(TrapCollectionIndividual):
                 if len(modifications) < self.max_trap_difference else
                 modifications - self.removed_trap_redistributions.keys()
             ),
-            1
+            1,
         )[0]
 
     def evacuate_removed_trap(self, index: int) -> None:
@@ -135,11 +134,9 @@ class DistributionDelta(TrapCollectionIndividual):
 
         for removed_index, target_indexes in self.removed_trap_redistributions.items():
             if not removed_index == index:
-                continue
-
-            for target_index_index, target_index in enumerate(target_indexes):
-                if target_index in self.removed_trap_redistributions:
-                    target_indexes[target_index_index] = self.get_available_trap_index()
+                for target_index_index, target_index in enumerate(target_indexes):
+                    if target_index == index:
+                        target_indexes[target_index_index] = self.get_available_trap_index()
 
     @property
     def modified_trap_indexes(self) -> t.FrozenSet[int]:
@@ -278,20 +275,30 @@ def mutate_distribution_delta(delta: DistributionDelta, distributor: DeltaDistri
     if delta.removed_trap_redistributions:
         for _ in range(2):
             if random.random() < .05:
-                unremoved_index = random.choice(list(delta.removed_trap_redistributions))
+                unremove_choices = list(
+                    delta.removed_trap_redistributions
+                    if len(delta.modified_trap_indexes) < delta.max_trap_difference else
+                    delta.removed_trap_redistributions.keys() - delta.removed_node_indexes
+                )
 
-                new_removed_index = random.sample(delta.valid_trap_indexes, 1)[0]
+                if not unremove_choices:
+                    break
 
+                unremoved_index = random.choice(list(unremove_choices))
+
+                new_removed_index = random.sample(
+                    delta.valid_trap_indexes,
+                    1,
+                )[0]
                 del delta.removed_trap_redistributions[unremoved_index]
                 delta.removed_trap_redistributions[new_removed_index] = []
 
-                delta.removed_trap_redistributions[new_removed_index] = [
-                    delta.get_available_trap_index()
-                    for _ in delta.origin.traps[new_removed_index]
-                ]
+                for _ in delta.origin.traps[new_removed_index]:
+                    delta.removed_trap_redistributions[new_removed_index].append(
+                        delta.get_available_trap_index()
+                    )
 
-                for index in delta.removed_trap_redistributions:
-                    delta.evacuate_removed_trap(index)
+                delta.evacuate_removed_trap(new_removed_index)
 
         for _ in range(5):
             if random.random() < .1:
@@ -299,6 +306,7 @@ def mutate_distribution_delta(delta: DistributionDelta, distributor: DeltaDistri
                     random.choice(list(delta.removed_trap_redistributions))
                 ]
                 trap[random.randint(0, len(trap) - 1)] = delta.get_available_trap_index()
+
 
     return delta
 
@@ -328,23 +336,18 @@ def mate_distribution_deltas(
     min_moves = min(move_amounts)
     max_moves = max(move_amounts)
 
-    removed_distributions: t.Dict[int, t.List[t.List[int]]] = {}
+    removed_distributions: t.Dict[int, t.List[t.List[int]]] = defaultdict(list)
 
     deltas = (delta_1, delta_2)
 
     for delta in deltas:
         for index, indexes in delta.removed_trap_redistributions.items():
-            try:
-                removed_distributions[index].append(indexes)
-            except KeyError:
-                removed_distributions[index] = [indexes]
-
+            removed_distributions[index].append(indexes)
 
     for delta in deltas:
 
         modified = set()
         modified.update(delta.removed_node_indexes)
-
         delta.removed_trap_redistributions = {}
         for index, distribution_options in random.sample(removed_distributions.items(), delta.removed_trap_amount):
             delta.removed_trap_redistributions[index] = []
@@ -389,20 +392,15 @@ def mate_distribution_deltas(
 
         delta.node_moves = node_moves
 
-        added_nodes = {}
-
         for added_node in delta.added_node_indexes:
             possible_indexes = adds[added_node]
 
             if len(modified) >= delta.max_trap_difference:
-                possible_indexes -= modified
-
-                if not possible_indexes:
-                    possible_indexes = modified
+                possible_indexes = modified
 
             index = random.sample(possible_indexes, 1)[0]
-            added_nodes[added_node] = index
             modified.add(index)
+            delta.added_node_indexes[added_node] = index
 
         for index in delta.removed_trap_redistributions:
             delta.evacuate_removed_trap(index)
@@ -465,8 +463,7 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
         **kwargs,
     ):
         self._trap_amount = trap_amount
-        self._max_trap_delta = max_trap_delta
-        
+
         original_distribution, added, removed = trap_collection_to_trap_distribution(
             original_collection,
             NodeCollection(
@@ -486,7 +483,7 @@ class DeltaDistributor(environment.Environment[DistributionDelta]):
                         origin = original_distribution,
                         added_nodes = added,
                         removed_node_indexes = frozenset(_index for _, _index in removed),
-                        max_trap_difference = self._max_trap_delta,
+                        max_trap_difference = max_trap_delta,
                         trap_amount_delta = trap_amount - len(original_collection),
                     )
                 ),
