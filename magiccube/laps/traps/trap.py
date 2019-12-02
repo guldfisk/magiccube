@@ -46,6 +46,7 @@ class Trap(Lap):
         return {
             'node': self._node.serialize(),
             'intention_type': self._intention_type.name,
+            **super().serialize(),
         }
 
     @classmethod

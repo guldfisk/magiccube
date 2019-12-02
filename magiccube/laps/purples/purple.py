@@ -43,6 +43,7 @@ class Purple(Lap):
         return {
             'name': self._name,
             'description': self._description,
+            **super().serialize(),
         }
 
     @classmethod

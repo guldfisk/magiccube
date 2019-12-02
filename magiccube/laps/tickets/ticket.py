@@ -45,6 +45,7 @@ class Ticket(Lap):
         return {
             'options': self._options,
             'name': self._name,
+            **super().serialize(),
         }
 
     @classmethod
