@@ -135,6 +135,14 @@ class PrintingNode(Serializeable, PersistentHashable):
                 in value['options']
             }
         )
+    
+    @property
+    def flattened(self) -> t.Iterator[t.Union[Printing, AnyNode]]:
+        for child in self._children:
+            if isinstance(child, Printing) or isinstance(child, AnyNode):
+                yield child
+            else:
+                yield from child 
 
     def __hash__(self):
         return hash((self.__class__, self._children))

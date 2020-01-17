@@ -69,7 +69,7 @@ class Trap(Lap):
     def get_image(
         self,
         size: t.Tuple[int, int],
-        loader: 'ImageLoader',
+        loader: ImageLoader,
         back: bool = False,
         crop: bool = False,
     ) -> Image.Image:
