@@ -331,10 +331,14 @@ class TrapSize(ReportNotification):
     @property
     def content(self) -> str:
         return 'Old average node pr trap: {} ({} / {})\nNew average node pr trap: {} ({} / {})'.format(
-            round(self._old_node_amount / self._old_trap_amount, 2),
+            round(self._old_node_amount / self._old_trap_amount, 2)
+            if self._old_node_amount else
+            '(previously no traps)',
             self._old_node_amount,
             self._old_trap_amount,
-            round(self._new_node_amount / self._new_trap_amount, 2),
+            round(self._new_node_amount / self._new_trap_amount, 2)
+            if self._new_trap_amount else
+            '(no traps after update)',
             self._new_node_amount,
             self._new_trap_amount,
         )
