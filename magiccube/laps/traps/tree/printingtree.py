@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import typing as t
 import os
 
@@ -10,7 +11,7 @@ from PIL import Image, ImageDraw
 from promise import Promise
 import aggdraw
 
-from yeetlong.multiset import FrozenMultiset
+from yeetlong.multiset import FrozenMultiset, Multiset
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
@@ -138,11 +139,45 @@ class PrintingNode(Serializeable, PersistentHashable):
     
     @property
     def flattened(self) -> t.Iterator[t.Union[Printing, AnyNode]]:
-        for child in self._children:
-            if isinstance(child, Printing) or isinstance(child, AnyNode):
-                yield child
-            else:
-                yield from child 
+        if isinstance(self, AnyNode):
+            yield self
+        else:
+            for child in self._children:
+                if isinstance(child, Printing):
+                    yield child
+                else:
+                    yield from child.flattened
+
+    @property
+    def flattened_options(self) -> t.Iterator[FrozenMultiset[Printing]]:
+        if isinstance(self, AnyNode):
+            for child in self._children:
+                if isinstance(child, Printing):
+                    yield FrozenMultiset((child,))
+                else:
+                    yield from child.flattened_options
+        else:
+            accumulated = []
+            anys = []
+            for child in self.flattened:
+                if isinstance(child, Printing):
+                    accumulated.append(child)
+                else:
+                    anys.append(child)
+
+            for combination in itertools.product(
+                *(
+                    _any.flattened_options
+                    for _any in 
+                    anys
+                )
+            ):
+                yield FrozenMultiset(
+                    itertools.chain(
+                        accumulated,
+                        *combination,
+                    )
+                )
 
     def __hash__(self):
         return hash((self.__class__, self._children))
