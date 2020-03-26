@@ -25,7 +25,6 @@ class Trap(Lap):
         LAND_GARBAGE = 'land_garbage'
         NO_INTENTION = 'no_intention'
 
-
     def __init__(self, node: BorderedNode, intention_type: IntentionType = IntentionType.NO_INTENTION):
         self._node = node
         self._intention_type = intention_type
@@ -51,7 +50,7 @@ class Trap(Lap):
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> Trap:
-        if not 'node' in value:
+        if 'node' not in value:
             return cls(
                 BorderedNode.deserialize(
                     value,

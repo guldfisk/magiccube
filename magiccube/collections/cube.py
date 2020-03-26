@@ -22,7 +22,7 @@ class Cube(CubeableCollection, PersistentHashable):
 
     def __init__(
         self,
-        cubeables: t.Optional[t.Iterable[Cubeable]] = None,
+        cubeables: t.Union[t.Iterable[Cubeable], t.Mapping[Cubeable, int], None] = None,
     ):
         self._cubeables = FrozenMultiset() if cubeables is None else FrozenMultiset(cubeables)
 
