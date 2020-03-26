@@ -85,17 +85,6 @@ class CubeDelta(object):
             )
         )
 
-    # @staticmethod
-    # def _cardboard_to_intended_string(ms: FrozenMultiset[Cardboard]) -> str:
-    #     return '\n'.join(
-    #         f'\t{multiplicity}x {printing}'
-    #         for printing, multiplicity in
-    #         sorted(
-    #             ms.items(),
-    #             key = lambda item: str(item[0])
-    #         )
-    #     )
-
     @property
     def report(self) -> str:
         return f'New cubeables ({len(self.new_cubeables)}):\n{self.new_cubeables.pp_string}\n------\n' \

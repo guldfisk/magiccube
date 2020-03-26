@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import typing as t
+from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.nodecollection import NodeCollection, GroupMap
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 
 
 class MetaCube(Serializeable):
