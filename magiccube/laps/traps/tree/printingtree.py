@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 from promise import Promise
 import aggdraw
 
-from yeetlong.multiset import FrozenMultiset, Multiset
+from yeetlong.multiset import FrozenMultiset
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
@@ -38,6 +38,15 @@ class PrintingNode(Serializeable, PersistentHashable):
     def children(self) -> FrozenMultiset[NodeChild]:
         return self._children
 
+    # def get_printing_at(self, width_fraction: float, height_fraction: float) -> Printing:
+    #     floating_index = height_fraction * len(self.sorted_uniques)
+    #     _index = int(floating_index)
+    #     remainder = floating_index - _index
+    #     item = self.sorted_uniques[_index]
+    #     if isinstance(item, Printing):
+    #         return item
+    #     return item.get_printing_at(width_fraction, remainder)
+
     def get_minimal_string(self, identified_by_id: bool = True) -> str:
         return self._MINIMAL_STRING_CONNECTOR.join(
             (
@@ -51,7 +60,7 @@ class PrintingNode(Serializeable, PersistentHashable):
                 self.sorted_items
             )
         )
-
+        
     @LazyProperty
     def name(self):
         return ''.join(
@@ -218,6 +227,32 @@ class BorderedNode(PrintingNode):
             )
             + printing.cardboard.name
         )
+    
+    def get_printing_at(self, x: float, y: float, width: float, height: float, bordered_sides: int) -> Printing:
+        top_offset = self._BORDER_WIDTH if bordered_sides & imageutils.TOP_SIDE else 0
+        bottom_offset = self._BORDER_WIDTH if bordered_sides & imageutils.BOTTOM_SIDE else 0
+
+        content_height = height - top_offset - bottom_offset
+        item_height = content_height / len(self.sorted_uniques)
+
+        if y <= top_offset:
+            item = self.sorted_uniques[0]
+            remainder = 0
+            
+        elif y >= height - bottom_offset:
+            item = self.sorted_uniques[-1]
+            remainder = item_height
+        
+        else:
+            floating_index = (y - top_offset) / content_height * len(self.sorted_uniques)
+            _index = int(floating_index)
+            remainder = (floating_index - _index) * content_height
+            item = self.sorted_uniques[_index]
+            
+        if isinstance(item, Printing):
+            return item
+        
+        return item.get_printing_at(x, remainder, width, content_height, imageutils.LEFT_SIDE)
 
     def get_image(
         self,

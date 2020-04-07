@@ -65,6 +65,9 @@ class Trap(Lap):
             cls.IntentionType[value['intention_type']] if 'intention_type' in value else None,
         )
 
+    def get_printing_at(self, x: float, y: float, width: float, height: float) -> Printing:
+        return self._node.get_printing_at(x, y, width, height, imageutils.HORIZONTAL_SIDES)
+
     def get_image(
         self,
         size: t.Tuple[int, int],
