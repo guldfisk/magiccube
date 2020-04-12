@@ -4,7 +4,6 @@ from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.strategy import Strategy
 
 
-
 class CubeParseStrategy(Strategy):
 
     @classmethod
