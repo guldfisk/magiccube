@@ -13,60 +13,58 @@ from magiccube.laps.traps.tree.visitor import PTVisitor, All, PrintingCollection
 
 
 class PrintingTreeParserException(Exception):
-	pass
+    pass
 
 
 class PrintingTreeListener(ErrorListener):
 
-	def syntaxError(self, recognizer, offending_symbol, line, column, msg, e):
-		raise PrintingTreeParserException(f'Syntax error {[offending_symbol, line, column, msg, e]}')
+    def syntaxError(self, recognizer, offending_symbol, line, column, msg, e):
+        raise PrintingTreeParserException(f'Syntax error {[offending_symbol, line, column, msg, e]}')
 
-	def reportContextSensitivity(self, recognizer, dfa, start_index, stop_index, prediction, configs):
-		raise PrintingTreeParserException('Context sensitivity')
-
+    def reportContextSensitivity(self, recognizer, dfa, start_index, stop_index, prediction, configs):
+        raise PrintingTreeParserException('Context sensitivity')
 
 
 class PrintingTreeParser(object):
 
-	def __init__(self, db: CardDatabase):
-		self._db = db
+    def __init__(self, db: CardDatabase):
+        self._db = db
 
-		self._visitor = PTVisitor(self._db)
+        self._visitor = PTVisitor(self._db)
 
-	def _convert_to_printing_node(
-		self,
-		element: t.Union[PrintingCollection, Printing]
-	) -> t.Union[BorderedNode, Printing]:
-		if isinstance(element, Printing):
-			return element
+    def _convert_to_printing_node(
+        self,
+        element: t.Union[PrintingCollection, Printing]
+    ) -> t.Union[BorderedNode, Printing]:
+        if isinstance(element, Printing):
+            return element
 
-		return (
-			(
-				AllNode
-				if isinstance(element, All) else
-				AnyNode
-			)(
-				map(self._convert_to_printing_node, element)
-			)
-		)
+        return (
+            (
+                AllNode
+                if isinstance(element, All) else
+                AnyNode
+            )(
+                map(self._convert_to_printing_node, element)
+            )
+        )
 
-	def parse(self, s: str) -> BorderedNode:
-		parser = pt_grammarParser(
-			CommonTokenStream(
-				pt_grammarLexer(
-					InputStream(s)
-				)
-			)
-		)
+    def parse(self, s: str) -> BorderedNode:
+        parser = pt_grammarParser(
+            CommonTokenStream(
+                pt_grammarLexer(
+                    InputStream(s)
+                )
+            )
+        )
 
-		parser._listeners = [PrintingTreeListener()]
+        parser._listeners = [PrintingTreeListener()]
 
-		try:
-			return self._convert_to_printing_node(
-				self._visitor.visit(
-					parser.start()
-				)
-			)
-		except CardboardParseException as e:
-			raise PrintingTreeParserException(e)
-
+        try:
+            return self._convert_to_printing_node(
+                self._visitor.visit(
+                    parser.start()
+                )
+            )
+        except CardboardParseException as e:
+            raise PrintingTreeParserException(e)

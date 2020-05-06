@@ -1,13 +1,17 @@
-# Generated from /home/biggenerals/PycharmProjects/magiccube/magiccube/laps/traps/tree/pt_grammar.g4 by ANTLR 4.7
+# Generated from /home/phdk/PycharmProjects/magiccube/magiccube/laps/traps/tree/pt_grammar.g4 by ANTLR 4.8
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
-from typing.io import TextIO
 import sys
+if sys.version_info[1] > 5:
+	from typing import TextIO
+else:
+	from typing.io import TextIO
+
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\r")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\f")
         buf.write("/\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\3\2\3\2\3\2\3\3\3\3")
         buf.write("\3\3\3\3\3\3\3\3\5\3\24\n\3\3\3\3\3\3\3\3\3\3\3\3\3\7")
         buf.write("\3\34\n\3\f\3\16\3\37\13\3\3\4\3\4\3\4\3\4\5\4%\n\4\3")
@@ -20,8 +24,8 @@ def serializedATN():
         buf.write("\31\32\7\6\2\2\32\34\5\4\3\4\33\25\3\2\2\2\33\30\3\2\2")
         buf.write("\2\34\37\3\2\2\2\35\33\3\2\2\2\35\36\3\2\2\2\36\5\3\2")
         buf.write("\2\2\37\35\3\2\2\2 %\5\b\5\2!\"\7\t\2\2\"#\7\7\2\2#%\5")
-        buf.write("\b\5\2$ \3\2\2\2$!\3\2\2\2%\7\3\2\2\2&\'\7\f\2\2\'(\7")
-        buf.write("\b\2\2(-\7\13\2\2)*\7\f\2\2*+\7\b\2\2+-\7\n\2\2,&\3\2")
+        buf.write("\b\5\2$ \3\2\2\2$!\3\2\2\2%\7\3\2\2\2&\'\7\13\2\2\'(\7")
+        buf.write("\b\2\2(-\7\n\2\2)*\7\13\2\2*+\7\b\2\2+-\7\t\2\2,&\3\2")
         buf.write("\2\2,)\3\2\2\2-\t\3\2\2\2\7\23\33\35$,")
         return buf.getvalue()
 
@@ -39,8 +43,8 @@ class pt_grammarParser ( Parser ):
     literalNames = [ "<INVALID>", "'('", "')'", "';'", "'||'", "'#'", "'|'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "<INVALID>", "<INVALID>", "<INVALID>", "MULTIPLICITY", 
-                      "PRINTING_ID", "EXPANSION", "CARDBOARD", "WHITESPACE" ]
+                      "<INVALID>", "<INVALID>", "<INVALID>", "NUMBER", "EXPANSION", 
+                      "CARDBOARD", "WHITESPACE" ]
 
     RULE_start = 0
     RULE_operation = 1
@@ -56,17 +60,17 @@ class pt_grammarParser ( Parser ):
     T__3=4
     T__4=5
     T__5=6
-    MULTIPLICITY=7
-    PRINTING_ID=8
-    EXPANSION=9
-    CARDBOARD=10
-    WHITESPACE=11
+    NUMBER=7
+    EXPANSION=8
+    CARDBOARD=9
+    WHITESPACE=10
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.7")
+        self.checkVersion("4.8")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
+
 
 
 
@@ -120,6 +124,7 @@ class pt_grammarParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class OperationContext(ParserRuleContext):
 
@@ -255,7 +260,7 @@ class pt_grammarParser ( Parser ):
             self.state = 17
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [pt_grammarParser.MULTIPLICITY, pt_grammarParser.CARDBOARD]:
+            if token in [pt_grammarParser.NUMBER, pt_grammarParser.CARDBOARD]:
                 localctx = pt_grammarParser.OptionContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
@@ -328,6 +333,7 @@ class pt_grammarParser ( Parser ):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
+
     class PrintingsContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -338,8 +344,8 @@ class pt_grammarParser ( Parser ):
             return self.getTypedRuleContext(pt_grammarParser.PrintingContext,0)
 
 
-        def MULTIPLICITY(self):
-            return self.getToken(pt_grammarParser.MULTIPLICITY, 0)
+        def NUMBER(self):
+            return self.getToken(pt_grammarParser.NUMBER, 0)
 
         def getRuleIndex(self):
             return pt_grammarParser.RULE_printings
@@ -374,10 +380,10 @@ class pt_grammarParser ( Parser ):
                 self.state = 30
                 self.printing()
                 pass
-            elif token in [pt_grammarParser.MULTIPLICITY]:
+            elif token in [pt_grammarParser.NUMBER]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 31
-                self.match(pt_grammarParser.MULTIPLICITY)
+                self.match(pt_grammarParser.NUMBER)
                 self.state = 32
                 self.match(pt_grammarParser.T__4)
                 self.state = 33
@@ -393,6 +399,7 @@ class pt_grammarParser ( Parser ):
         finally:
             self.exitRule()
         return localctx
+
 
     class PrintingContext(ParserRuleContext):
 
@@ -418,8 +425,8 @@ class pt_grammarParser ( Parser ):
 
         def CARDBOARD(self):
             return self.getToken(pt_grammarParser.CARDBOARD, 0)
-        def PRINTING_ID(self):
-            return self.getToken(pt_grammarParser.PRINTING_ID, 0)
+        def NUMBER(self):
+            return self.getToken(pt_grammarParser.NUMBER, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterCardboardPrintingId" ):
@@ -490,7 +497,7 @@ class pt_grammarParser ( Parser ):
                 self.state = 40
                 self.match(pt_grammarParser.T__5)
                 self.state = 41
-                self.match(pt_grammarParser.PRINTING_ID)
+                self.match(pt_grammarParser.NUMBER)
                 pass
 
 

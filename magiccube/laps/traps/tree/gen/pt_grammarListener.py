@@ -1,4 +1,4 @@
-# Generated from /home/biggenerals/PycharmProjects/magiccube/magiccube/laps/traps/tree/pt_grammar.g4 by ANTLR 4.7
+# Generated from /home/phdk/PycharmProjects/magiccube/magiccube/laps/traps/tree/pt_grammar.g4 by ANTLR 4.8
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .pt_grammarParser import pt_grammarParser
@@ -80,3 +80,5 @@ class pt_grammarListener(ParseTreeListener):
         pass
 
 
+
+del pt_grammarParser

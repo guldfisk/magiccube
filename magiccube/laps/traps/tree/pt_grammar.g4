@@ -12,16 +12,15 @@ operation :
 
 printings :
     printing
-    | MULTIPLICITY '#' printing
+    | NUMBER '#' printing
 ;
 
 printing :
     CARDBOARD '|' EXPANSION #CardboardExpansion
-    | CARDBOARD '|' PRINTING_ID #CardboardPrintingId
+    | CARDBOARD '|' NUMBER #CardboardPrintingId
 ;
 
-MULTIPLICITY : [0-9];
-PRINTING_ID : [0-9]+;
+NUMBER : [0-9]+;
 EXPANSION : [A-Z0-9]+;
 CARDBOARD : ~[();|# \n\t\r](~[();|#])*~[();|# \n\t\r];
 
