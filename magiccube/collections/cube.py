@@ -109,12 +109,12 @@ class Cube(CubeableCollection, PersistentHashable):
         return '\n'.join(
             f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
             for pickable_type, pickables in
-            OrderedDict(
-                printings = self.printings,
-                traps = self.traps,
-                tickets = self.tickets,
-                purples = self.purples,
-            ).items()
+            (
+                ('printings', self.printings),
+                ('traps', self.traps),
+                ('tickets', self.tickets),
+                ('purples', self.purples)
+            )
         )
 
     @property

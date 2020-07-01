@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from evolution import logging, model
 from evolution import environment
-from evolution.environment import Environment
+from evolution.environment import Environment, EvolutionModelBlueprint
 from magiccube.collections.laps import TrapCollection
 
 from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
@@ -67,7 +67,6 @@ class DistributionNode(object):
 
 
 class TrapCollectionIndividual(model.Individual):
-
     class InvalidDistribution(Exception):
         pass
 
@@ -80,8 +79,10 @@ class TrapCollectionIndividual(model.Individual):
         pass
 
 
-class TrapDistribution(TrapCollectionIndividual):
+T = t.TypeVar('T', bound = TrapCollectionIndividual)
 
+
+class TrapDistribution(TrapCollectionIndividual):
     traps: t.List[t.List[DistributionNode]]
 
     def __init__(
@@ -150,105 +151,6 @@ class TrapDistribution(TrapCollectionIndividual):
         return f'{self.__class__.__name__}({self.traps})'
 
 
-def mutate_trap_distribution(distribution: TrapDistribution, distributor: Distributor) -> TrapDistribution:
-    if random.random() > .3:
-        for i in range(random.randint(1, 5)):
-            selected_group = random.choice(
-                [
-                    group
-                    for group in
-                    distribution.traps
-                    if group
-                ]
-            )
-            target_group = random.choice(
-                [
-                    group
-                    for group in
-                    distribution.traps
-                    if group != selected_group
-                ]
-            )
-            target_group.append(
-                selected_group.pop(
-                    random.randint(
-                        0,
-                        len(selected_group) - 1,
-                    )
-                )
-            )
-    else:
-        for i in range(random.randint(1, 2)):
-            first_group = random.choice(
-                [
-                    group
-                    for group in
-                    distribution.traps
-                    if group
-                ]
-            )
-            possible_second_groups = [
-                group
-                for group in
-                distribution.traps
-                if group != first_group and group
-            ]
-            if not possible_second_groups:
-                continue
-            second_group = random.choice(
-                possible_second_groups
-            )
-
-            first = first_group.pop(
-                random.randint(
-                    0,
-                    len(first_group) - 1,
-                )
-            )
-            second = second_group.pop(
-                random.randint(
-                    0,
-                    len(second_group) - 1,
-                )
-            )
-
-            first_group.append(second)
-            second_group.append(first)
-
-    return distribution
-
-
-def mate_distributions(
-    distribution_1: TrapDistribution,
-    distribution_2: TrapDistribution,
-    distributor: Distributor,
-) -> t.Tuple[TrapDistribution, TrapDistribution]:
-    locations = {
-        node: []
-        for node in
-        distributor.distribution_nodes
-    }
-
-    for distribution in (distribution_1, distribution_2):
-        for i, traps in enumerate(distribution.traps):
-            for node in traps:
-                locations[node].append(i)
-
-    for distribution in (distribution_1, distribution_2):
-        traps = [
-            []
-            for _ in
-            range(distributor.trap_amount)
-        ]
-
-        for node, possibilities in locations.items():
-            traps[random.choice(possibilities)].append(node)
-
-        distribution.traps = traps
-
-    return distribution_1, distribution_2
-
-
 def logistic(x: float, max_value: float, mid: float, slope: float) -> float:
     try:
         return max_value / (1 + math.e ** (slope * (x - mid)))
@@ -281,8 +183,8 @@ class ValueDistributionHomogeneityConstraint(model.Constraint):
                 (
                     sum(
                         node.value
-                        for node in
-                        trap
+                            for node in
+                            trap
                     ) - self._average_trap_value
                 ) ** 2
                 for trap in
@@ -319,8 +221,8 @@ class GroupExclusivityConstraint(model.Constraint):
                         ) ** 2
 
     def _get_nodes_collision_factor(self, nodes: t.Iterable[DistributionNode]) -> float:
-        groups = {}  # type: t.Dict[str, t.List[DistributionNode]]
-        collisions = {}  # type: t.Dict[t.FrozenSet[DistributionNode], t.List[str]]
+        groups: t.Dict[str, t.List[DistributionNode]] = {}
+        collisions: t.Dict[t.FrozenSet[DistributionNode], t.List[str]] = {}
 
         for constrained_node in nodes:
             for group in constrained_node.groups:
@@ -343,15 +245,15 @@ class GroupExclusivityConstraint(model.Constraint):
                 (1 - 1 / (1 + sum(node.value for node in nodes)))
                 * max(self._group_weights.get(group, .1) for group in groups)
             )
-            for nodes, groups in
-            collisions.items()
+                for nodes, groups in
+                collisions.items()
         )
 
     def group_collision_factor(self, distribution: TrapDistribution) -> int:
         return sum(
             self._get_nodes_collision_factor(trap) ** 2
-            for trap in
-            distribution.traps
+                for trap in
+                distribution.traps
         )
 
     def score(self, distribution: TrapDistribution) -> float:
@@ -381,8 +283,8 @@ class SizeHomogeneityConstraint(model.Constraint):
             (
                 len(trap) - self._average_trap_size
             ) ** 2
-            for trap in
-            distribution.traps
+                for trap in
+                distribution.traps
         )
 
     def score(self, distribution: TrapDistribution) -> float:
@@ -396,38 +298,32 @@ class SizeHomogeneityConstraint(model.Constraint):
         )
 
 
-class Distributor(Environment[TrapDistribution]):
+class BaseDistributor(Environment[T]):
 
     def __init__(
         self,
         distribution_nodes: t.Iterable[DistributionNode],
         trap_amount: int,
-        initial_population_size: int,
         constraints: model.ConstraintSet,
+        model_blue_print: t.Optional[EvolutionModelBlueprint] = None,
         logger: t.Optional[logging.Logger] = None,
         **kwargs,
     ):
-        self._distribution_nodes: t.List[DistributionNode] = list(
-            distribution_nodes
+        self._model_blue_print = (
+            model_blue_print or
+            EvolutionModelBlueprint(environment.SimpleModel, initial_population_size = 300)
         )
+        self._distribution_nodes: t.List[DistributionNode] = list(distribution_nodes)
         self._trap_amount = trap_amount
 
         super().__init__(
-            environment.SimpleModel(
-                individual_factory = (
-                    lambda:
-                    TrapDistribution(
-                        distribution_nodes = self._distribution_nodes,
-                        trap_amount = self._trap_amount,
-                        random_initialization = True,
-                    )
-                ),
-                initial_population_size = initial_population_size,
+            self._model_blue_print.realise(
+                individual_factory = self.create_individual,
                 constraints = constraints,
-                mutate = mutate_trap_distribution,
-                mate = mate_distributions,
+                mutate = lambda i, d: self.mutate(i),
+                mate = lambda f, s, d: self.mate(f, s),
             ),
-            logger = logging.Logger(
+            logger = logger or logging.Logger(
                 OrderedDict(
                     (
                         (
@@ -440,10 +336,21 @@ class Distributor(Environment[TrapDistribution]):
                         ),
                     )
                 )
-            ) if logger is None else
-            logger,
+            ),
             **kwargs,
         )
+
+    @abstractmethod
+    def mutate(self, distribution: T) -> T:
+        pass
+
+    @abstractmethod
+    def mate(self, first: T, second: T) -> t.Tuple[T, T]:
+        pass
+
+    @abstractmethod
+    def create_individual(self) -> T:
+        pass
 
     @property
     def distribution_nodes(self) -> t.List[DistributionNode]:
@@ -460,8 +367,6 @@ class Distributor(Environment[TrapDistribution]):
 
         fig, ax1 = plt.subplots()
 
-        colors = ('r', 'g', 'b', 'c', 'm', 'y')
-
         max_line = ax1.plot(generations, fit_maxes, 'k', label = 'Maximum Fitness')
         average_line = ax1.plot(generations, fit_averages, '.75', label = 'Average Fitness')
 
@@ -470,3 +375,110 @@ class Distributor(Environment[TrapDistribution]):
         ax1.legend(lns, labs, loc = "lower right")
 
         plt.show()
+
+
+class Distributor(BaseDistributor[TrapDistribution]):
+
+    def create_individual(self) -> TrapCollectionIndividual:
+        return TrapDistribution(
+            distribution_nodes = self._distribution_nodes,
+            trap_amount = self._trap_amount,
+            random_initialization = True,
+        )
+
+    def mutate(self, distribution: TrapDistribution) -> TrapDistribution:
+        if random.random() > .3:
+            for i in range(random.randint(1, 5)):
+                selected_group = random.choice(
+                    [
+                        group
+                        for group in
+                        distribution.traps
+                        if group
+                    ]
+                )
+                target_group = random.choice(
+                    [
+                        group
+                        for group in
+                        distribution.traps
+                        if group != selected_group
+                    ]
+                )
+                target_group.append(
+                    selected_group.pop(
+                        random.randint(
+                            0,
+                            len(selected_group) - 1,
+                        )
+                    )
+                )
+        else:
+            for i in range(random.randint(1, 2)):
+                first_group = random.choice(
+                    [
+                        group
+                        for group in
+                        distribution.traps
+                        if group
+                    ]
+                )
+                possible_second_groups = [
+                    group
+                    for group in
+                    distribution.traps
+                    if group != first_group and group
+                ]
+                if not possible_second_groups:
+                    continue
+                second_group = random.choice(
+                    possible_second_groups
+                )
+
+                first = first_group.pop(
+                    random.randint(
+                        0,
+                        len(first_group) - 1,
+                    )
+                )
+                second = second_group.pop(
+                    random.randint(
+                        0,
+                        len(second_group) - 1,
+                    )
+                )
+
+                first_group.append(second)
+                second_group.append(first)
+
+        return distribution
+
+    def mate(
+        self,
+        first: TrapDistribution,
+        second: TrapDistribution,
+    ) -> t.Tuple[TrapDistribution, TrapDistribution]:
+        locations = {
+            node: []
+            for node in
+            self.distribution_nodes
+        }
+
+        for distribution in (first, second):
+            for i, traps in enumerate(distribution.traps):
+                for node in traps:
+                    locations[node].append(i)
+
+        for distribution in (first, second):
+            traps = [
+                []
+                for _ in
+                range(self.trap_amount)
+            ]
+
+            for node, possibilities in locations.items():
+                traps[random.choice(possibilities)].append(node)
+
+            distribution.traps = traps
+
+        return first, second
