@@ -950,6 +950,10 @@ class CubePatch(Serializeable, PersistentHashable):
     def group_map_delta_operation(self) -> GroupMapDeltaOperation:
         return self._group_map_delta_operation
 
+    @property
+    def infinites_delta_operation(self) -> InfinitesDeltaOperation:
+        return self._infinites_delta_operation
+
     @classmethod
     def from_meta_delta(cls, from_meta: MetaCube, to_meta: MetaCube) -> CubePatch:
         return cls(
@@ -1426,6 +1430,10 @@ class CubeUpdater(object):
         if self._new_groups is None:
             self._new_groups = self._meta_cube.group_map + self._patch.group_map_delta_operation
         return self._new_groups
+
+    @property
+    def new_infinites(self):
+        return self._meta_cube.infinites + self._patch.infinites_delta_operation
 
     @property
     def new_no_garbage_cube(self) -> Cube:
