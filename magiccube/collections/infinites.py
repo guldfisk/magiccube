@@ -71,9 +71,9 @@ class InfinitesDeltaOperation(Serializeable, PersistentHashable):
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for n in sorted((c.name for c in self._added)):
-            yield n
+            yield n.encode('UTF-8')
         for n in sorted((c.name for c in self._removed)):
-            yield n
+            yield n.encode('UTF-8')
 
     def __repr__(self) -> str:
         return '{}({}, {})'.format(

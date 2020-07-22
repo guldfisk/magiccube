@@ -96,7 +96,7 @@ class AddInfinite(CubeChange):
         return cls(inflator.inflate(Cardboard, value['cardboard']))
 
     def _calc_persistent_hash(self) -> t.Iterator[t.ByteString]:
-        yield self._cardboard.name
+        yield self._cardboard.name.encode('UTF-8')
 
 
 class RemoveInfinite(CubeChange):
@@ -132,7 +132,7 @@ class RemoveInfinite(CubeChange):
         return cls(inflator.inflate(Cardboard, value['cardboard']))
 
     def _calc_persistent_hash(self) -> t.Iterator[t.ByteString]:
-        yield self._cardboard.name
+        yield self._cardboard.name.encode('UTF-8')
 
 
 class AddGroup(CubeChange):
