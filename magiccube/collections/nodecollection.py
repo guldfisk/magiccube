@@ -356,6 +356,9 @@ class NodeCollection(Serializeable):
             self._nodes - other.nodes
         )
 
+    def __repr__(self) -> str:
+        return self._nodes.__repr__()
+
 
 class NodesDeltaOperation(Serializeable, PersistentHashable):
 

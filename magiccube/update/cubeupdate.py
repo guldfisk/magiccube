@@ -8,8 +8,11 @@ from collections import defaultdict
 from enum import Enum
 from abc import abstractmethod
 
+from magiccube.collections.infinites import InfinitesDeltaOperation
 from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
+from mtgorp.models.collections.cardboardset import CardboardSet
+from mtgorp.models.persistent.cardboard import Cardboard
 from yeetlong.multiset import Multiset, FrozenMultiset
 
 from orp.database import Model
@@ -41,7 +44,6 @@ class CubeChange(Serializeable, PersistentHashable):
         MODIFICATION = 'modification'
         TRANSFER = 'transfer'
 
-
     category = Category.MODIFICATION
 
     @abstractmethod
@@ -59,6 +61,78 @@ class CubeChange(Serializeable, PersistentHashable):
     @abstractmethod
     def as_patch(self) -> CubePatch:
         pass
+
+
+class AddInfinite(CubeChange):
+    category = CubeChange.Category.ADDITION
+
+    def __init__(self, cardboard: Cardboard):
+        self._cardboard = cardboard
+
+    def explain(self) -> str:
+        return f'add new infinite: {self._cardboard.name}'
+
+    def __hash__(self) -> int:
+        return hash(self._cardboard.name)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._cardboard == other._cardboard
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            infinites_delta_operation = InfinitesDeltaOperation(added = CardboardSet((self._cardboard,))),
+        )
+
+    def serialize(self) -> serialization_model:
+        return {
+            'cardboard': self._cardboard,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> AddInfinite:
+        return cls(inflator.inflate(Cardboard, value['cardboard']))
+
+    def _calc_persistent_hash(self) -> t.Iterator[t.ByteString]:
+        yield self._cardboard.name
+
+
+class RemoveInfinite(CubeChange):
+    category = CubeChange.Category.ADDITION
+
+    def __init__(self, cardboard: Cardboard):
+        self._cardboard = cardboard
+
+    def explain(self) -> str:
+        return f'remove infinite: {self._cardboard.name}'
+
+    def __hash__(self) -> int:
+        return hash(self._cardboard.name)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._cardboard == other._cardboard
+        )
+
+    def as_patch(self) -> CubePatch:
+        return CubePatch(
+            infinites_delta_operation = InfinitesDeltaOperation(removed = CardboardSet((self._cardboard,))),
+        )
+
+    def serialize(self) -> serialization_model:
+        return {
+            'cardboard': self._cardboard,
+        }
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> RemoveInfinite:
+        return cls(inflator.inflate(Cardboard, value['cardboard']))
+
+    def _calc_persistent_hash(self) -> t.Iterator[t.ByteString]:
+        yield self._cardboard.name
 
 
 class AddGroup(CubeChange):
@@ -316,7 +390,7 @@ class NodeCubeChange(CubeChange):
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> NodeCubeChange:
         return cls(ConstrainedNode.deserialize(value['node'], inflator))
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
@@ -847,6 +921,7 @@ class CubePatch(Serializeable, PersistentHashable):
         cube_delta_operation: t.Optional[CubeDeltaOperation] = None,
         node_delta_operation: t.Optional[NodesDeltaOperation] = None,
         group_map_delta_operation: t.Optional[GroupMapDeltaOperation] = None,
+        infinites_delta_operation: t.Optional[InfinitesDeltaOperation] = None,
     ):
         self._cube_delta_operation = CubeDeltaOperation() if cube_delta_operation is None else cube_delta_operation
         self._node_delta_operation = NodesDeltaOperation() if node_delta_operation is None else node_delta_operation
@@ -854,6 +929,11 @@ class CubePatch(Serializeable, PersistentHashable):
             GroupMapDeltaOperation()
             if group_map_delta_operation is None else
             group_map_delta_operation
+        )
+        self._infinites_delta_operation = (
+            InfinitesDeltaOperation()
+            if infinites_delta_operation is None else
+            infinites_delta_operation
         )
 
     @property
@@ -883,6 +963,10 @@ class CubePatch(Serializeable, PersistentHashable):
                 GroupMapDeltaOperation(to_meta.group_map.groups)
                 - GroupMapDeltaOperation(from_meta.group_map.groups)
             ),
+            infinites_delta_operation = InfinitesDeltaOperation.from_change(
+                from_meta.infinites,
+                to_meta.infinites,
+            ),
         )
 
     def as_verbose(self, meta_cube: MetaCube) -> VerboseCubePatch:
@@ -910,7 +994,7 @@ class CubePatch(Serializeable, PersistentHashable):
                             current_weight + new_weight,
                         )
                     )
-
+        
         new_laps: Multiset[Lap] = Multiset(
             {
                 lap: multiplicity
@@ -998,8 +1082,8 @@ class CubePatch(Serializeable, PersistentHashable):
                 new_nodes
                 if all(
                 isinstance(child, Printing)
-                for child in
-                node.node.children
+                    for child in
+                    node.node.children
             )
             ),
             key = lambda node: len(node.node.children),
@@ -1028,8 +1112,8 @@ class CubePatch(Serializeable, PersistentHashable):
                 removed_nodes
                 if all(
                 isinstance(child, Printing)
-                for child in
-                node.node.children
+                    for child in
+                    node.node.children
             )
             ),
             key = lambda node: len(node.node.children),
@@ -1115,6 +1199,16 @@ class CubePatch(Serializeable, PersistentHashable):
 
         return VerboseCubePatch(
             itertools.chain(
+                (
+                    AddInfinite(cardboard)
+                    for cardboard in
+                    self._infinites_delta_operation.added
+                ),
+                (
+                    RemoveInfinite(cardboard)
+                    for cardboard in
+                    self._infinites_delta_operation.removed
+                ),
                 group_updates,
                 (
                     PrintingChange(before, after)
@@ -1184,6 +1278,7 @@ class CubePatch(Serializeable, PersistentHashable):
             'cube_delta': self._cube_delta_operation,
             'nodes_delta': self._node_delta_operation,
             'groups_delta': self._group_map_delta_operation,
+            'infinites_delta': self._infinites_delta_operation,
         }
 
     @classmethod
@@ -1200,12 +1295,18 @@ class CubePatch(Serializeable, PersistentHashable):
                 if 'groups_delta' in value else
                 GroupMapDeltaOperation()
             ),
+            infinites_delta_operation = (
+                InfinitesDeltaOperation.deserialize(value['infinites_delta'], inflator)
+                if 'infinites_delta' in value else
+                InfinitesDeltaOperation()
+            ),
         )
 
-    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+    def _calc_persistent_hash(self) -> t.Iterator[t.ByteString]:
         yield self._cube_delta_operation.persistent_hash().encode('ASCII')
         yield self._node_delta_operation.persistent_hash().encode('ASCII')
         yield self._group_map_delta_operation.persistent_hash().encode('ASCII')
+        yield self._infinites_delta_operation.persistent_hash().encode('ASCII')
 
     def __hash__(self) -> int:
         return hash(
@@ -1213,6 +1314,7 @@ class CubePatch(Serializeable, PersistentHashable):
                 self._cube_delta_operation,
                 self._node_delta_operation,
                 self._group_map_delta_operation,
+                self._infinites_delta_operation,
             )
         )
 
@@ -1222,14 +1324,16 @@ class CubePatch(Serializeable, PersistentHashable):
             and self._cube_delta_operation == other._cube_delta_operation
             and self._node_delta_operation == other._node_delta_operation
             and self._group_map_delta_operation == other.group_map_delta_operation
+            and self._infinites_delta_operation == other._infinites_delta_operation
         )
 
     def __repr__(self):
-        return '{}({}, {}, {})'.format(
+        return '{}({}, {}, {}, {})'.format(
             self.__class__.__name__,
             self._cube_delta_operation,
             self._node_delta_operation,
             self._group_map_delta_operation,
+            self._infinites_delta_operation,
         )
 
     def __mul__(self, other: int) -> CubePatch:
@@ -1237,20 +1341,32 @@ class CubePatch(Serializeable, PersistentHashable):
             self._cube_delta_operation * other,
             self._node_delta_operation * other,
             self._group_map_delta_operation * other,
+            self._infinites_delta_operation,
         )
 
-    def __add__(self, other: CubePatch) -> CubePatch:
+    def __add__(self, other: t.Union[CubePatch, MetaCube]) -> t.Union[CubePatch, MetaCube]:
+        if isinstance(other, MetaCube):
+            return MetaCube(
+                other.cube + self._cube_delta_operation,
+                other.node_collection + self._node_delta_operation,
+                other.group_map + self._group_map_delta_operation,
+                other.infinites + self._infinites_delta_operation,
+            )
         return self.__class__(
             self._cube_delta_operation + other._cube_delta_operation,
             self._node_delta_operation + other._node_delta_operation,
             self._group_map_delta_operation + other._group_map_delta_operation,
+            self._infinites_delta_operation + other._infinites_delta_operation,
         )
+
+    __radd__ = __add__
 
     def __sub__(self, other: CubePatch) -> CubePatch:
         return self.__class__(
             self._cube_delta_operation - other._cube_delta_operation,
             self._node_delta_operation - other._node_delta_operation,
             self._group_map_delta_operation - other._group_map_delta_operation,
+            self._infinites_delta_operation - other._infinites_delta_operation,
         )
 
 

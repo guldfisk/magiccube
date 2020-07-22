@@ -3,8 +3,6 @@ from __future__ import annotations
 import typing as t
 import itertools
 
-from collections import OrderedDict
-
 from yeetlong.multiset import FrozenMultiset
 
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import logging
 import typing as t
 
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -19,14 +20,13 @@ from magiccube.laps.traps.trap import Trap
 
 
 class CubeDelta(object):
-    """
-    Deprecated
-    """
-    
+
     def __init__(self, original: Cube, current: Cube):
+        logging.warn(f'{self.__class__.__name__} is deprecated')
+
         self._original = original
         self._current = current
-        
+
         self._new_cubeables = None
         self._removed_cubeables = None
         self._new_printings = None
@@ -36,7 +36,7 @@ class CubeDelta(object):
     def new_cubeables(self) -> Cube:
         if self._new_cubeables is None:
             self._new_cubeables = self._current - self._original
-        
+
         return self._new_cubeables
 
     @property
@@ -45,7 +45,7 @@ class CubeDelta(object):
             self._removed_cubeables = self._original - self._current
 
         return self._removed_cubeables
-    
+
     @property
     def new_printings(self) -> FrozenMultiset[Printing]:
         if self._new_printings is None:
@@ -78,21 +78,21 @@ class CubeDelta(object):
     def _multiset_to_indented_string(ms: FrozenMultiset[t.Union[Cardboard, Printing]]) -> str:
         return '\n'.join(
             f'\t{multiplicity}x {printing}'
-            for printing, multiplicity in
-            sorted(
-                ms.items(),
-                key = lambda item: str(item[0])
-            )
+                for printing, multiplicity in
+                sorted(
+                    ms.items(),
+                    key = lambda item: str(item[0])
+                )
         )
 
     @property
     def report(self) -> str:
         return f'New cubeables ({len(self.new_cubeables)}):\n{self.new_cubeables.pp_string}\n------\n' \
-               f'Removed cubeables ({len(self.removed_cubeables)}):\n{self.removed_cubeables.pp_string}\n------\n' \
-               f'New cardboards ({len(self.new_cardboards)}):\n' \
-               f'{self._multiset_to_indented_string(self.new_cardboards)}\n' \
-               f'Removed cardboards ({len(self.removed_cardboards)}):\n' \
-               f'{self._multiset_to_indented_string(self.removed_cardboards)}'
+            f'Removed cubeables ({len(self.removed_cubeables)}):\n{self.removed_cubeables.pp_string}\n------\n' \
+            f'New cardboards ({len(self.new_cardboards)}):\n' \
+            f'{self._multiset_to_indented_string(self.new_cardboards)}\n' \
+            f'Removed cardboards ({len(self.removed_cardboards)}):\n' \
+            f'{self._multiset_to_indented_string(self.removed_cardboards)}'
 
     def as_operation(self) -> CubeDeltaOperation:
         return CubeDeltaOperation(
@@ -250,7 +250,7 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
     @property
     def cubeables(self) -> FrozenCounter[Cubeable]:
         return self._cubeables
-    
+
     @property
     def new_cubeables(self) -> t.Iterator[t.Tuple[Cubeable, int]]:
         return (
@@ -259,7 +259,7 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
             self._cubeables.items()
             if multiplicity > 0
         )
-    
+
     @property
     def removed_cubeables(self) -> t.Iterator[t.Tuple[Cubeable, int]]:
         return (
@@ -331,7 +331,7 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        for printing, multiplicity in sorted(self.printings, key=lambda pair: pair[0].id):
+        for printing, multiplicity in sorted(self.printings, key = lambda pair: pair[0].id):
             yield str(printing.id).encode('ASCII')
             yield str(multiplicity).encode('ASCII')
         for persistent_hash, multiplicity in sorted(
@@ -385,4 +385,3 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
             self.__class__.__name__,
             self._cubeables,
         )
-

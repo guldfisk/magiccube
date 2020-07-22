@@ -183,8 +183,8 @@ class ValueDistributionHomogeneityConstraint(model.Constraint):
                 (
                     sum(
                         node.value
-                            for node in
-                            trap
+                        for node in
+                        trap
                     ) - self._average_trap_value
                 ) ** 2
                 for trap in
@@ -215,10 +215,10 @@ class GroupExclusivityConstraint(model.Constraint):
         self._group_weights = {} if group_weights is None else group_weights
 
         self._relator = (
-                            self._get_nodes_collision_factor(
-                                nodes
-                            ) / trap_amount
-                        ) ** 2
+            self._get_nodes_collision_factor(
+                nodes
+            ) / trap_amount
+        ) ** 2
 
     def _get_nodes_collision_factor(self, nodes: t.Iterable[DistributionNode]) -> float:
         groups: t.Dict[str, t.List[DistributionNode]] = {}
@@ -245,15 +245,15 @@ class GroupExclusivityConstraint(model.Constraint):
                 (1 - 1 / (1 + sum(node.value for node in nodes)))
                 * max(self._group_weights.get(group, .1) for group in groups)
             )
-                for nodes, groups in
-                collisions.items()
+            for nodes, groups in
+            collisions.items()
         )
 
     def group_collision_factor(self, distribution: TrapDistribution) -> int:
         return sum(
             self._get_nodes_collision_factor(trap) ** 2
-                for trap in
-                distribution.traps
+            for trap in
+            distribution.traps
         )
 
     def score(self, distribution: TrapDistribution) -> float:
@@ -283,8 +283,8 @@ class SizeHomogeneityConstraint(model.Constraint):
             (
                 len(trap) - self._average_trap_size
             ) ** 2
-                for trap in
-                distribution.traps
+            for trap in
+            distribution.traps
         )
 
     def score(self, distribution: TrapDistribution) -> float:
