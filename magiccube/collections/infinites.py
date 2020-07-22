@@ -10,14 +10,14 @@ class Infinites(CardboardSet):
 
     def __or__(self, other: t.Union[Infinites, InfinitesDeltaOperation]) -> Infinites:
         if isinstance(other, InfinitesDeltaOperation):
-            return self.__class__(self._cardboards | other.added - other.removed)
+            return self.__class__(self._cardboards | other.added.cardboards - other.removed.cardboards)
         return super().__or__(other)
 
     __add__ = __or__
 
     def __sub__(self, other: t.Union[Infinites, InfinitesDeltaOperation]) -> Infinites:
         if isinstance(other, InfinitesDeltaOperation):
-            return self.__class__(self._cardboards | other.removed - other.added)
+            return self.__class__(self._cardboards | other.removed.cardboards - other.added.cardboards)
         return super().__sub__(other)
 
 
