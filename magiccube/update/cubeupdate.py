@@ -100,7 +100,7 @@ class AddInfinite(CubeChange):
 
 
 class RemoveInfinite(CubeChange):
-    category = CubeChange.Category.ADDITION
+    category = CubeChange.Category.SUBTRACTION
 
     def __init__(self, cardboard: Cardboard):
         self._cardboard = cardboard
@@ -846,6 +846,8 @@ CUBE_CHANGE_MAP: t.Dict[str, t.Type[CubeChange]] = {
     klass.__name__: klass
     for klass in
     (
+        AddInfinite,
+        RemoveInfinite,
         AddGroup,
         RemoveGroup,
         GroupWeightChange,
@@ -994,7 +996,7 @@ class CubePatch(Serializeable, PersistentHashable):
                             current_weight + new_weight,
                         )
                     )
-        
+
         new_laps: Multiset[Lap] = Multiset(
             {
                 lap: multiplicity
