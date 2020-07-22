@@ -85,15 +85,19 @@ class InfinitesDeltaOperation(Serializeable, PersistentHashable):
         )
 
     def __add__(self, other: InfinitesDeltaOperation) -> InfinitesDeltaOperation:
-        removed = self._removed | other.removed
+        add = self._added | other.added
+        remove = self._removed | other.removed
+        intersection = add & remove
         return self.__class__(
-            (self._added | other.added) - removed,
-            removed,
+            add - intersection,
+            remove - intersection,
         )
 
     def __sub__(self, other: InfinitesDeltaOperation) -> InfinitesDeltaOperation:
-        removed = self._removed - other.removed
+        add = self._added | other.removed
+        remove = self._removed | other.added
+        intersection = add & remove
         return self.__class__(
-            (self._added - other.added) - removed,
-            removed,
+            add - intersection,
+            remove - intersection,
         )
