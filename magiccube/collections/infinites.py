@@ -9,15 +9,17 @@ from mtgorp.models.serilization.serializeable import Serializeable, serializatio
 class Infinites(CardboardSet):
 
     def __or__(self, other: t.Union[Infinites, InfinitesDeltaOperation]) -> Infinites:
+        print('inf add', other)
         if isinstance(other, InfinitesDeltaOperation):
-            return self.__class__(self._cardboards | other.added.cardboards - other.removed.cardboards)
+            return self.__class__((self._cardboards | other.added.cardboards) - other.removed.cardboards)
         return super().__or__(other)
 
     __add__ = __or__
 
     def __sub__(self, other: t.Union[Infinites, InfinitesDeltaOperation]) -> Infinites:
+        print('inf sub')
         if isinstance(other, InfinitesDeltaOperation):
-            return self.__class__(self._cardboards | other.removed.cardboards - other.added.cardboards)
+            return self.__class__((self._cardboards | other.removed.cardboards) - other.added.cardboards)
         return super().__sub__(other)
 
 
@@ -85,13 +87,13 @@ class InfinitesDeltaOperation(Serializeable, PersistentHashable):
     def __add__(self, other: InfinitesDeltaOperation) -> InfinitesDeltaOperation:
         removed = self._removed | other.removed
         return self.__class__(
-            self._added | other.added - removed,
+            (self._added | other.added) - removed,
             removed,
         )
 
     def __sub__(self, other: InfinitesDeltaOperation) -> InfinitesDeltaOperation:
         removed = self._removed - other.removed
         return self.__class__(
-            self._added - other.added - removed,
+            (self._added - other.added) - removed,
             removed,
         )
