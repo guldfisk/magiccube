@@ -9,7 +9,6 @@ from mtgorp.models.serilization.serializeable import Serializeable, serializatio
 class Infinites(CardboardSet):
 
     def __or__(self, other: t.Union[Infinites, InfinitesDeltaOperation]) -> Infinites:
-        print('inf add', other)
         if isinstance(other, InfinitesDeltaOperation):
             return self.__class__((self._cardboards | other.added.cardboards) - other.removed.cardboards)
         return super().__or__(other)
@@ -17,7 +16,6 @@ class Infinites(CardboardSet):
     __add__ = __or__
 
     def __sub__(self, other: t.Union[Infinites, InfinitesDeltaOperation]) -> Infinites:
-        print('inf sub')
         if isinstance(other, InfinitesDeltaOperation):
             return self.__class__((self._cardboards | other.removed.cardboards) - other.added.cardboards)
         return super().__sub__(other)

@@ -52,7 +52,7 @@ def check_deck_subset_pool(
             printing: multiplicity
             for printing, multiplicity in
             deck.items()
-            if not printing.cardboard in exempt_cardboards
+            if printing.cardboard not in exempt_cardboards
         }
     ) - printings
 
@@ -98,9 +98,9 @@ def check_deck_subset_pool(
 
     contested_printings = Multiset(
         printing
-        for printing in
-        unaccounted_printings - uncontested_options
-        if not printing in printings_in_tickets
+            for printing in
+            unaccounted_printings - uncontested_options
+            if not printing in printings_in_tickets
     )
 
     combination_printings = Multiset()
@@ -160,8 +160,8 @@ def check_deck_subset_pool(
             for printing, tickets in _printings_to_tickets.items():
                 if _amount_printing_to_required_tickets(unaccounted_printings[printing]) <= sum(
                     pool.tickets[ticket]
-                    for ticket in
-                    tickets
+                        for ticket in
+                        tickets
                 ):
                     solution_found = True
                     break
