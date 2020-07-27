@@ -3,7 +3,11 @@ from __future__ import annotations
 import typing as t
 import itertools
 
-from yeetlong.multiset import FrozenMultiset
+from collections import OrderedDict
+
+from numpy.random import choice
+
+from yeetlong.multiset import FrozenMultiset, Multiset
 
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
 from mtgorp.models.persistent.printing import Printing
@@ -107,11 +111,14 @@ class Cube(CubeableCollection, PersistentHashable):
         return '\n'.join(
             f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
             for pickable_type, pickables in
-            (
-                ('printings', self.printings),
-                ('traps', self.traps),
-                ('tickets', self.tickets),
-                ('purples', self.purples)
+            filter(
+                lambda p: p[1],
+                (
+                    ('printings', self.printings),
+                    ('traps', self.traps),
+                    ('tickets', self.tickets),
+                    ('purples', self.purples)
+                )
             )
         )
 
@@ -153,6 +160,37 @@ class Cube(CubeableCollection, PersistentHashable):
                     and any(pattern.matches(cubeable))
                 )
             ),
+        )
+
+    def scale(self, amount: int) -> Cube:
+        current_size = len(self)
+        remaining = amount - current_size
+        if remaining <= 0:
+            return self
+        factor = (amount / current_size) - 1
+        additionals: Multiset[Cubeable] = Multiset()
+        factored = OrderedDict()
+
+        for cubeable, multiplicity in self.cubeables.items():
+            amount = multiplicity * factor
+            whole = int(amount)
+            if whole:
+                additionals.add(cubeable, whole)
+            remainder = amount - whole
+            if remainder:
+                factored[cubeable] = remainder
+
+        s = sum(factored.values())
+
+        return self + Cube(additionals) + (
+            Cube(
+                choice(
+                    list(factored.keys()),
+                    remaining - len(additionals),
+                    replace = False,
+                    p = [v / s for v in factored.values()],
+                )
+            ) if s else Cube()
         )
 
     def __iter__(self) -> t.Iterator[Cubeable]:
