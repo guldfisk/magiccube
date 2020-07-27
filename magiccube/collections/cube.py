@@ -182,15 +182,15 @@ class Cube(CubeableCollection, PersistentHashable):
 
         s = sum(factored.values())
 
-        return self + Cube(additionals) + (
-            Cube(
+        return self + self.__class__(additionals) + (
+            self.__class__(
                 choice(
                     list(factored.keys()),
                     remaining - len(additionals),
                     replace = False,
                     p = [v / s for v in factored.values()],
                 )
-            ) if s else Cube()
+            ) if s else self.__class__()
         )
 
     def __iter__(self) -> t.Iterator[Cubeable]:
