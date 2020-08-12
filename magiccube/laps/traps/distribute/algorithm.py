@@ -32,6 +32,8 @@ class DistributionNode(object):
             if isinstance(child, Printing) and len(child.cardboard.front_card.color) <= 2:
                 self._groups |= frozenset(color.name for color in child.cardboard.front_card.color)
 
+        self._image_amount = self.node.image_amount
+
     @property
     def value(self) -> float:
         return self._value
@@ -47,6 +49,10 @@ class DistributionNode(object):
     @property
     def groups(self) -> t.FrozenSet[str]:
         return self._groups
+
+    @property
+    def image_amount(self) -> int:
+        return self._image_amount
 
     @property
     def as_constrained_node(self):
@@ -183,8 +189,8 @@ class ValueDistributionHomogeneityConstraint(model.Constraint):
                 (
                     sum(
                         node.value
-                        for node in
-                        trap
+                            for node in
+                            trap
                     ) - self._average_trap_value
                 ) ** 2
                 for trap in
@@ -215,10 +221,10 @@ class GroupExclusivityConstraint(model.Constraint):
         self._group_weights = {} if group_weights is None else group_weights
 
         self._relator = (
-            self._get_nodes_collision_factor(
-                nodes
-            ) / trap_amount
-        ) ** 2
+                            self._get_nodes_collision_factor(
+                                nodes
+                            ) / trap_amount
+                        ) ** 2
 
     def _get_nodes_collision_factor(self, nodes: t.Iterable[DistributionNode]) -> float:
         groups: t.Dict[str, t.List[DistributionNode]] = {}
@@ -245,15 +251,15 @@ class GroupExclusivityConstraint(model.Constraint):
                 (1 - 1 / (1 + sum(node.value for node in nodes)))
                 * max(self._group_weights.get(group, .1) for group in groups)
             )
-            for nodes, groups in
-            collisions.items()
+                for nodes, groups in
+                collisions.items()
         )
 
     def group_collision_factor(self, distribution: TrapDistribution) -> int:
         return sum(
             self._get_nodes_collision_factor(trap) ** 2
-            for trap in
-            distribution.traps
+                for trap in
+                distribution.traps
         )
 
     def score(self, distribution: TrapDistribution) -> float:
@@ -280,9 +286,7 @@ class SizeHomogeneityConstraint(model.Constraint):
 
     def _size_heterogeneity_factor(self, distribution: TrapDistribution) -> float:
         return sum(
-            (
-                len(trap) - self._average_trap_size
-            ) ** 2
+            (len(trap) - self._average_trap_size) ** 2
             for trap in
             distribution.traps
         )
@@ -290,6 +294,35 @@ class SizeHomogeneityConstraint(model.Constraint):
     def score(self, distribution: TrapDistribution) -> float:
         return logistic(
             x = self._size_heterogeneity_factor(
+                distribution
+            ) / self._relator,
+            max_value = 2,
+            mid = 0,
+            slope = 5,
+        )
+
+
+class ImageAmountHomogeneity(model.Constraint):
+    description = 'Image amount homogeneity'
+
+    def __init__(
+        self,
+        nodes: t.List[DistributionNode],
+        trap_amount: int,
+    ):
+        self._average_trap_image_amount = sum(node.image_amount for node in nodes) / trap_amount
+        self._relator = self._average_trap_image_amount ** 2 * trap_amount
+
+    def _image_amount_heterogeneity_factor(self, distribution: TrapDistribution) -> float:
+        return sum(
+            (sum(node.image_amount for node in trap) - self._average_trap_image_amount) ** 2
+            for trap in
+            distribution.traps
+        )
+
+    def score(self, distribution: TrapDistribution) -> float:
+        return logistic(
+            x = self._image_amount_heterogeneity_factor(
                 distribution
             ) / self._relator,
             max_value = 2,

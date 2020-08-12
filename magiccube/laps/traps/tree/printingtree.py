@@ -38,15 +38,6 @@ class PrintingNode(Serializeable, PersistentHashable):
     def children(self) -> FrozenMultiset[NodeChild]:
         return self._children
 
-    # def get_printing_at(self, width_fraction: float, height_fraction: float) -> Printing:
-    #     floating_index = height_fraction * len(self.sorted_uniques)
-    #     _index = int(floating_index)
-    #     remainder = floating_index - _index
-    #     item = self.sorted_uniques[_index]
-    #     if isinstance(item, Printing):
-    #         return item
-    #     return item.get_printing_at(width_fraction, remainder)
-
     def get_minimal_string(self, identified_by_id: bool = True) -> str:
         return self._MINIMAL_STRING_CONNECTOR.join(
             (
@@ -60,7 +51,7 @@ class PrintingNode(Serializeable, PersistentHashable):
                 self.sorted_items
             )
         )
-        
+
     @LazyProperty
     def name(self):
         return ''.join(
@@ -77,8 +68,8 @@ class PrintingNode(Serializeable, PersistentHashable):
                     option.__class__.__name__,
                 )
             )
-            for option, multiplicity in
-            self.sorted_items
+                for option, multiplicity in
+                self.sorted_items
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
@@ -87,8 +78,8 @@ class PrintingNode(Serializeable, PersistentHashable):
             str(child.id)
             if isinstance(child, Printing)
             else child.persistent_hash()
-            for child in
-            self._children
+                for child in
+                self._children
         ):
             yield s.encode('ASCII')
 
@@ -100,6 +91,26 @@ class PrintingNode(Serializeable, PersistentHashable):
             p[0].cardboard.name
             if isinstance(p[0], Printing) else
             p[0].name
+        )
+
+    @property
+    def imaged(self) -> t.Iterator[t.Union[Printing, PrintingNode]]:
+        return itertools.chain(
+            *(
+                itertools.repeat(item, 1 if isinstance(item, Printing) else multiplicity)
+                for item, multiplicity in
+                self._children.items()
+            )
+        )
+
+    @LazyProperty
+    def sorted_imaged(self) -> t.List[NodeChild]:
+        return sorted(
+            list(self.imaged),
+            key = lambda p:
+            p.cardboard.name
+            if isinstance(p, Printing) else
+            p.name
         )
 
     @LazyProperty
@@ -145,7 +156,7 @@ class PrintingNode(Serializeable, PersistentHashable):
                 in value['options']
             }
         )
-    
+
     @property
     def flattened(self) -> t.Iterator[t.Union[Printing, AnyNode]]:
         if isinstance(self, AnyNode):
@@ -177,7 +188,7 @@ class PrintingNode(Serializeable, PersistentHashable):
             for combination in itertools.product(
                 *(
                     _any.flattened_options
-                    for _any in 
+                    for _any in
                     anys
                 )
             ):
@@ -187,6 +198,14 @@ class PrintingNode(Serializeable, PersistentHashable):
                         *combination,
                     )
                 )
+
+    @property
+    def image_amount(self) -> int:
+        return sum(
+            1 if isinstance(child, Printing) else multiplicity * child.image_amount
+            for child, multiplicity in
+            self._children.items()
+        )
 
     def __hash__(self):
         return hash((self.__class__, self._children))
@@ -227,31 +246,31 @@ class BorderedNode(PrintingNode):
             )
             + printing.cardboard.name
         )
-    
+
     def get_printing_at(self, x: float, y: float, width: float, height: float, bordered_sides: int) -> Printing:
         top_offset = self._BORDER_WIDTH if bordered_sides & imageutils.TOP_SIDE else 0
         bottom_offset = self._BORDER_WIDTH if bordered_sides & imageutils.BOTTOM_SIDE else 0
 
         content_height = height - top_offset - bottom_offset
-        item_height = content_height / len(self.sorted_uniques)
+        item_height = content_height / len(self.sorted_imaged)
 
         if y <= top_offset:
-            item = self.sorted_uniques[0]
+            item = self.sorted_imaged[0]
             remainder = 0
-            
+
         elif y >= height - bottom_offset:
-            item = self.sorted_uniques[-1]
+            item = self.sorted_imaged[-1]
             remainder = item_height
-        
+
         else:
-            floating_index = (y - top_offset) / content_height * len(self.sorted_uniques)
+            floating_index = (y - top_offset) / content_height * len(self.sorted_imaged)
             _index = int(floating_index)
             remainder = (floating_index - _index) * content_height
-            item = self.sorted_uniques[_index]
-            
+            item = self.sorted_imaged[_index]
+
         if isinstance(item, Printing):
             return item
-        
+
         return item.get_printing_at(x, remainder, width, content_height, imageutils.LEFT_SIDE)
 
     def get_image(
@@ -263,7 +282,7 @@ class BorderedNode(PrintingNode):
         triangled = True,
     ) -> Image.Image:
 
-        pictured_printings = self.sorted_uniques
+        pictured_printings = self.sorted_imaged
 
         images = [
             image.resize(
@@ -281,8 +300,8 @@ class BorderedNode(PrintingNode):
                     loader.get_image(option, crop = True)
                     if isinstance(option, Printing) else
                     Promise.resolve(option)
-                    for option in
-                    pictured_printings
+                        for option in
+                        pictured_printings
                 )
             ).get()
         ]

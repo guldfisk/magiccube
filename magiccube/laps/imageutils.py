@@ -411,18 +411,24 @@ def filled_rounded_box(
 def section(value: int, partitions: int) -> t.Iterable[t.Tuple[int, int]]:
     """
     Divide length into n int partitions. The total length of the partitions
-    correspond to the divided length, with any leftover given to the last partition
+    correspond to the divided length, with any leftover distributed to the front.
     :param value: length to divide
     :param partitions: Number of partitions
     :return: iterable of start_offset, end_offset
     """
     offset, leftover = value // partitions, value % partitions
 
+    previous_value = 0
+
     if partitions > 1:
         for i in range(partitions-1):
-            yield offset * i, offset * (i+1)
-
-    yield value - offset - leftover, value
+            span = offset
+            if i < leftover:
+                span += 1
+            yield previous_value, previous_value + span
+            previous_value += span
+                
+    yield previous_value, value
 
 
 def fit_image(image: Image.Image, width: int, height: int) -> Image.Image:
