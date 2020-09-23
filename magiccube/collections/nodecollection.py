@@ -296,7 +296,7 @@ class NodeCollection(Serializeable):
 
     def __init__(self, nodes: t.Iterable[ConstrainedNode]):
         self._nodes = nodes if isinstance(nodes, FrozenMultiset) else FrozenMultiset(nodes)
-        self._nodes_map = t.Optional[t.Mapping[PrintingNode, ConstrainedNode]]
+        self._nodes_map: t.Optional[t.Mapping[PrintingNode, ConstrainedNode]] = None
 
     @property
     def nodes(self) -> FrozenMultiset[ConstrainedNode]:

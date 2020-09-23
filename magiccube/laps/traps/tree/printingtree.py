@@ -23,7 +23,7 @@ from magiccube.laps import imageutils
 
 
 class BaseNode(Serializeable, PersistentHashable):
-    _MINIMAL_STRING_CONNECTOR: str = None
+    _MINIMAL_STRING_CONNECTOR: str
     _children: FrozenMultiset[BaseNodeChild]
 
     @property
