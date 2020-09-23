@@ -54,12 +54,12 @@ class GroupMap(Serializeable):
                 ]
             )
         )
-    
+
     def __iter__(self) -> t.Iterator[str]:
         return self._groups.__iter__()
 
     def __add__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
-        groups = defaultdict(lambda : 0, self._groups)
+        groups = defaultdict(lambda: 0, self._groups)
         for group, weight in other._groups.items():
             groups[group] += weight
             if not groups[group]:
@@ -70,7 +70,7 @@ class GroupMap(Serializeable):
     __radd__ = __add__
 
     def __sub__(self, other: t.Union[GroupMap, GroupMapDeltaOperation]) -> GroupMap:
-        groups = defaultdict(lambda : 0, self._groups)
+        groups = defaultdict(lambda: 0, self._groups)
         for group, weight in other._groups.items():
             groups[group] -= weight
             if not groups[group]:
@@ -162,13 +162,13 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
                 for group, weight in
                 self._groups.items()
             ),
-            key=lambda pair: pair[0],
+            key = lambda pair: pair[0],
         ):
             yield group.encode('ASCII')
             yield str(weight).encode('ASCII')
 
     def __add__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
-        groups = defaultdict(lambda : 0, self._groups)
+        groups = defaultdict(lambda: 0, self._groups)
         for group, weight in other._groups.items():
             groups[group] += weight
             if not groups[group]:
@@ -179,7 +179,7 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
     __radd__ = __add__
 
     def __sub__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
-        groups = defaultdict(lambda : 0, self._groups)
+        groups = defaultdict(lambda: 0, self._groups)
         for group, weight in other._groups.items():
             groups[group] -= weight
             if not groups[group]:
@@ -296,10 +296,21 @@ class NodeCollection(Serializeable):
 
     def __init__(self, nodes: t.Iterable[ConstrainedNode]):
         self._nodes = nodes if isinstance(nodes, FrozenMultiset) else FrozenMultiset(nodes)
+        self._nodes_map = t.Optional[t.Mapping[PrintingNode, ConstrainedNode]]
 
     @property
     def nodes(self) -> FrozenMultiset[ConstrainedNode]:
         return self._nodes
+
+    def node_for_node(self, node: PrintingNode) -> t.Optional[ConstrainedNode]:
+        if self._nodes_map is None:
+            self._nodes_map = {
+                constrained_node.node: constrained_node
+                for constrained_node in
+                self._nodes.distinct_elements()
+            }
+
+        return self._nodes_map.get(node)
 
     def serialize(self) -> serialization_model:
         return {
@@ -417,7 +428,7 @@ class NodesDeltaOperation(Serializeable, PersistentHashable):
                 for node, multiplicity in
                 self._nodes.items()
             ),
-            key=lambda pair: pair[0],
+            key = lambda pair: pair[0],
         ):
             yield persistent_hash.encode('ASCII')
             yield str(multiplicity).encode('ASCII')

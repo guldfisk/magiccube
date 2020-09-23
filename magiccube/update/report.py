@@ -7,16 +7,16 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
-from magiccube.collections.cube import Cube
-from magiccube.collections.cubeable import Cubeable
-from magiccube.laps.traps.trap import Trap
 from yeetlong.multiset import FrozenMultiset, Multiset
 from yeetlong.counters import FrozenCounter
 
-from magiccube.collections.nodecollection import ConstrainedNode
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
 
+from magiccube.collections.cube import Cube
+from magiccube.collections.cubeable import Cubeable
+from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.collections.nodecollection import ConstrainedNode
 from magiccube.update.cubeupdate import CubeUpdater
 
 
@@ -127,7 +127,7 @@ class GroupsWithOneOrLessNodes(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-        groups = defaultdict(lambda : Multiset())
+        groups = defaultdict(lambda: Multiset())
         for node in updater.new_nodes:
             for group in node.groups:
                 groups[group].add(node)
@@ -190,7 +190,7 @@ class NodesWithUnknownGroups(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-        unknown_map = defaultdict(lambda : Multiset())
+        unknown_map = defaultdict(lambda: Multiset())
         for node in updater.new_nodes:
             for group in node.groups:
                 if not group in updater.new_groups.groups:
@@ -358,24 +358,24 @@ class CardboardChange(ReportNotification):
                 for cubeable in
                 updater.cube.cubeables
                 if not (
-                    isinstance(cubeable, Trap)
-                    and cubeable.intention_type == Trap.IntentionType.GARBAGE
-                )
+                isinstance(cubeable, Trap)
+                and cubeable.intention_type == IntentionType.GARBAGE
+            )
             )
         )
-        
+
         new_no_garbage_cube = Cube(
             (
                 cubeable
                 for cubeable in
                 (updater.cube + updater.patch.cube_delta_operation).cubeables
                 if not (
-                    isinstance(cubeable, Trap)
-                    and cubeable.intention_type == Trap.IntentionType.GARBAGE
-                )
+                isinstance(cubeable, Trap)
+                and cubeable.intention_type == IntentionType.GARBAGE
+            )
             )
         )
-        
+
         old_cardboards = FrozenMultiset(
             printing.cardboard
             for printing in
@@ -384,7 +384,7 @@ class CardboardChange(ReportNotification):
                 updater.node_collection.all_printings,
             )
         )
-        
+
         new_cardboards = FrozenMultiset(
             printing.cardboard
             for printing in
@@ -393,7 +393,7 @@ class CardboardChange(ReportNotification):
                 (updater.node_collection + updater.patch.node_delta_operation).all_printings,
             )
         )
-        
+
         return CardboardChange(
             FrozenCounter(
                 new_cardboards.elements()

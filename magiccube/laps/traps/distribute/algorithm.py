@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 from evolution import logging, model
 from evolution import environment
 from evolution.environment import Environment, EvolutionModelBlueprint
-from magiccube.collections.laps import TrapCollection
 
+from magiccube.collections.laps import TrapCollection
 from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
-from magiccube.laps.traps.trap import Trap
+from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.collections.nodecollection import ConstrainedNode
 from mtgorp.models.persistent.printing import Printing
 
@@ -80,7 +80,7 @@ class TrapCollectionIndividual(model.Individual):
     def as_trap_collection(
         self,
         *,
-        intention_type: Trap.IntentionType = Trap.IntentionType.GARBAGE,
+        intention_type: IntentionType = IntentionType.GARBAGE,
     ) -> TrapCollection:
         pass
 
@@ -127,7 +127,7 @@ class TrapDistribution(TrapCollectionIndividual):
     def as_trap_collection(
         self,
         *,
-        intention_type: Trap.IntentionType = Trap.IntentionType.GARBAGE,
+        intention_type: IntentionType = IntentionType.GARBAGE,
     ) -> TrapCollection:
         traps = []
 

@@ -72,7 +72,7 @@ class FitnessDifferentialAutoPause(AutoPauseCheck):
                ) / self._generations_lookback < self._threshold
 
     def resume(self, worker: DistributionWorker) -> None:
-        self._threshold *= self._backoff
+        self._threshold *= self._backoffgatherer
 
 
 class DistributionWorker(threading.Thread, t.Generic[E]):

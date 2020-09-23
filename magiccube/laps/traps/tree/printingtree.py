@@ -4,7 +4,7 @@ import itertools
 import typing as t
 import os
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 from lazy_property import LazyProperty
 from PIL import Image, ImageDraw
@@ -22,21 +22,151 @@ from magiccube import paths
 from magiccube.laps import imageutils
 
 
-class PrintingNode(Serializeable, PersistentHashable):
+class BaseNode(Serializeable, PersistentHashable):
     _MINIMAL_STRING_CONNECTOR: str = None
+    _children: FrozenMultiset[BaseNodeChild]
+
+    @property
+    @abstractmethod
+    def children(self) -> FrozenMultiset[BaseNodeChild]:
+        pass
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    def serialize(self) -> serialization_model:
+        return {
+            'options': [
+                (child, multiplicity)
+                for child, multiplicity in
+                self._children.items()
+            ],
+            'type': self.__class__.__name__,
+        }
+
+    def __hash__(self) -> int:
+        return hash((self.__class__, self._children))
+
+    def __eq__(self, other: BaseNode) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._children == other._children
+        )
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self._children})'
+
+
+class CardboardNode(BaseNode):
 
     def __init__(
         self,
         children: t.Union[
-            t.Iterable[NodeChild],
-            t.Mapping[NodeChild, int]
+            t.Iterable[CardboardNodeChild],
+            t.Mapping[CardboardNodeChild, int]
         ],
     ):
         self._children = FrozenMultiset(children)
 
     @property
-    def children(self) -> FrozenMultiset[NodeChild]:
+    def children(self) -> FrozenMultiset[BaseNodeChild]:
         return self._children
+
+    @property
+    def name(self) -> str:
+        return 'Cardboard Node'
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('UTF-8')
+        for s in sorted(
+            child.persistent_hash()
+            if isinstance(child, BaseNode) else
+            str(child.id)
+                for child in
+                self._children
+        ):
+            yield s.encode('UTF-8')
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> CardboardNode:
+        return (
+            CardboardAnyNode
+            if value['type'] == AnyNode.__name__ else
+            CardboardAllNode
+        )(
+
+            {
+                (
+                    inflator.inflate(Printing, child)
+                    if isinstance(child, int) else
+                    cls.deserialize(child, inflator)
+                ):
+                    multiplicity
+                for child, multiplicity
+                in value['options']
+            }
+        )
+
+
+class NodeBranch(ABC):
+    _MINIMAL_STRING_CONNECTOR: str
+
+
+class NodeAll(NodeBranch):
+    _MINIMAL_STRING_CONNECTOR = '; '
+
+
+class NodeAny(NodeBranch):
+    _MINIMAL_STRING_CONNECTOR = ' || '
+
+
+class CardboardAllNode(CardboardNode, NodeAll):
+    pass
+
+
+class CardboardAnyNode(CardboardNode, NodeAny):
+    pass
+
+
+class PrintingNode(BaseNode):
+    _children: FrozenMultiset[PrintingNodeChild]
+    _CARDBOARD_EQUIVALENT = CardboardNode
+
+    def __init__(
+        self,
+        children: t.Union[
+            t.Iterable[PrintingNodeChild],
+            t.Mapping[PrintingNodeChild, int]
+        ],
+    ):
+        self._children = FrozenMultiset(children)
+
+    @property
+    def children(self) -> FrozenMultiset[PrintingNodeChild]:
+        return self._children
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('UTF-8')
+        for s in sorted(
+            child.persistent_hash()
+            if isinstance(child, BaseNode) else
+            str(child.id)
+                for child in
+                self._children
+        ):
+            yield s.encode('ASCII')
+
+    @property
+    def as_cardboards(self) -> CardboardNode:
+        return self._CARDBOARD_EQUIVALENT(
+            child.cardboard
+            if isinstance(child, Printing) else
+            child.as_cardboards
+                for child in
+                self._children
+        )
 
     def get_minimal_string(self, identified_by_id: bool = True) -> str:
         return self._MINIMAL_STRING_CONNECTOR.join(
@@ -72,19 +202,8 @@ class PrintingNode(Serializeable, PersistentHashable):
                 self.sorted_items
         )
 
-    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        yield self.__class__.__name__.encode('UTF-8')
-        for s in sorted(
-            str(child.id)
-            if isinstance(child, Printing)
-            else child.persistent_hash()
-                for child in
-                self._children
-        ):
-            yield s.encode('ASCII')
-
     @LazyProperty
-    def sorted_items(self) -> t.List[t.Tuple[NodeChild, int]]:
+    def sorted_items(self) -> t.List[t.Tuple[PrintingNodeChild, int]]:
         return sorted(
             self._children.items(),
             key = lambda p:
@@ -104,7 +223,7 @@ class PrintingNode(Serializeable, PersistentHashable):
         )
 
     @LazyProperty
-    def sorted_imaged(self) -> t.List[NodeChild]:
+    def sorted_imaged(self) -> t.List[PrintingNodeChild]:
         return sorted(
             list(self.imaged),
             key = lambda p:
@@ -114,7 +233,7 @@ class PrintingNode(Serializeable, PersistentHashable):
         )
 
     @LazyProperty
-    def sorted_uniques(self) -> t.List[NodeChild]:
+    def sorted_uniques(self) -> t.List[PrintingNodeChild]:
         return sorted(
             self._children.distinct_elements(),
             key = lambda p:
@@ -126,16 +245,6 @@ class PrintingNode(Serializeable, PersistentHashable):
     @abstractmethod
     def get_image(self, loader: ImageLoader, width: int, height: int, **kwargs) -> Image.Image:
         pass
-
-    def serialize(self) -> serialization_model:
-        return {
-            'options': [
-                (child, multiplicity)
-                for child, multiplicity in
-                self._children.items()
-            ],
-            'type': self.__class__.__name__,
-        }
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> PrintingNode:
@@ -203,17 +312,8 @@ class PrintingNode(Serializeable, PersistentHashable):
     def image_amount(self) -> int:
         return sum(
             1 if isinstance(child, Printing) else multiplicity * child.image_amount
-            for child, multiplicity in
-            self._children.items()
-        )
-
-    def __hash__(self):
-        return hash((self.__class__, self._children))
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, self.__class__)
-            and self._children == other._children
+                for child, multiplicity in
+                self._children.items()
         )
 
     def __iter__(self) -> t.Iterator[Printing]:
@@ -223,11 +323,10 @@ class PrintingNode(Serializeable, PersistentHashable):
             else:
                 yield from child
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}({self._children})'
 
-
-NodeChild = t.Union[PrintingNode, Printing]
+BaseNodeChild = t.Union[BaseNode, Printing]
+CardboardNodeChild = t.Union[CardboardNode, Printing]
+PrintingNodeChild = t.Union[PrintingNode, Printing]
 
 
 class BorderedNode(PrintingNode):
@@ -384,15 +483,15 @@ ALL_COLOR = (50, 50, 50)
 ANY_COLOR = (170, 170, 170)
 
 
-class AllNode(BorderedNode):
-    _MINIMAL_STRING_CONNECTOR = '; '
+class AllNode(BorderedNode, NodeAll):
+    _CARDBOARD_EQUIVALENT = CardboardAllNode
 
     _BORDER_COLOR = ALL_COLOR
     _BORDER_TRIANGLE_COLOR = ANY_COLOR
 
 
-class AnyNode(BorderedNode):
-    _MINIMAL_STRING_CONNECTOR = ' || '
+class AnyNode(BorderedNode, NodeAny):
+    _CARDBOARD_EQUIVALENT = CardboardAnyNode
 
     _BORDER_COLOR = ANY_COLOR
     _BORDER_TRIANGLE_COLOR = ALL_COLOR

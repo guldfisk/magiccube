@@ -1,5 +1,6 @@
-import typing as t
+from __future__ import annotations
 
+import typing as t
 import os
 
 from PIL import Image, ImageDraw
@@ -9,13 +10,12 @@ from mtgorp.models.serilization.serializeable import serialization_model, Inflat
 
 from mtgimg.interface import ImageLoader
 
-from magiccube.laps.lap import Lap
+from magiccube.laps.lap import Lap, BaseLap, CardboardLap
 from magiccube.laps import imageutils
 from magiccube import paths
 
 
-class Purple(Lap):
-
+class BasePurple(BaseLap):
     _FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
 
     def __init__(self, name: str, description: str = ''):
@@ -47,18 +47,16 @@ class Purple(Lap):
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Purple':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> BasePurple:
         return cls(value['name'], value.get('description', ''))
 
     def get_image(
         self,
         size: t.Tuple[int, int],
-        loader: 'ImageLoader',
+        loader: ImageLoader,
         back: bool = False,
         crop: bool = False,
     ) -> Image.Image:
-
-        # width, height = 560, 435 if crop else 784
         width, height = size
 
         background = Image.new('RGBA', (width, height), (71, 57, 74, 255))
@@ -71,7 +69,7 @@ class Purple(Lap):
 
         imageutils.rounded_corner_box(
             draw = agg_draw,
-            box= (0, 0, width, height),
+            box = (0, 0, width, height),
             corner_radius = corner_radius,
             line_width = border_line_width,
             line_color = (30, 30, 30),
@@ -110,7 +108,7 @@ class Purple(Lap):
 
     def get_image_name(self, back: bool = False, crop: bool = False) -> str:
         return self.persistent_hash()
-        
+
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self._name.encode('UTF-8')
 
@@ -124,3 +122,10 @@ class Purple(Lap):
     def __str__(self) -> str:
         return f'{self.__class__.__name__}({self._name})'
 
+
+class CardboardPurple(BasePurple, CardboardLap):
+    pass
+
+
+class Purple(BasePurple, Lap):
+    pass

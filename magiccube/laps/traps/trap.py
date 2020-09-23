@@ -1,36 +1,43 @@
 from __future__ import annotations
 
 import typing as t
-
 from enum import Enum
+from abc import abstractmethod
 
-from PIL import Image
 import aggdraw
+from PIL import Image
 
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 from mtgorp.models.persistent.printing import Printing
+
 from mtgimg.interface import ImageLoader
 
-from magiccube.laps.lap import Lap
-from magiccube.laps.traps.tree.printingtree import BorderedNode
+from magiccube.laps.lap import Lap, CardboardLap, BaseLap
+from magiccube.laps.traps.tree.printingtree import BorderedNode, CardboardNode, BaseNode
 from magiccube.laps import imageutils
 
 
-class Trap(Lap):
+N = t.TypeVar('N', bound = BaseNode)
 
-    class IntentionType(Enum):
-        SYNERGY = 'synergy'
-        OR = 'or'
-        GARBAGE = 'garbage'
-        LAND_GARBAGE = 'land_garbage'
-        NO_INTENTION = 'no_intention'
 
-    def __init__(self, node: BorderedNode, intention_type: IntentionType = IntentionType.NO_INTENTION):
+class IntentionType(Enum):
+    SYNERGY = 'synergy'
+    OR = 'or'
+    GARBAGE = 'garbage'
+    LAND_GARBAGE = 'land_garbage'
+    NO_INTENTION = 'no_intention'
+
+
+class BaseTrap(BaseLap, t.Generic[N]):
+    _node: N
+    _intention_type: IntentionType
+
+    def __init__(self, node: N, intention_type: IntentionType = IntentionType.NO_INTENTION):
         self._node = node
         self._intention_type = intention_type
 
     @property
-    def node(self) -> BorderedNode:
+    def node(self) -> N:
         return self._node
 
     @property
@@ -38,8 +45,9 @@ class Trap(Lap):
         return self._intention_type
 
     @property
+    @abstractmethod
     def description(self) -> str:
-        return self._node.get_minimal_string(identified_by_id = False)
+        pass
 
     def serialize(self) -> serialization_model:
         return {
@@ -49,20 +57,67 @@ class Trap(Lap):
         }
 
     @classmethod
+    @abstractmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> Trap:
-        if 'node' not in value:
-            return cls(
-                BorderedNode.deserialize(
-                    value,
-                    inflator,
-                ),
-            )
+        pass
+
+    def __hash__(self) -> int:
+        return hash((self._node, self._intention_type))
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self._node.persistent_hash().encode('ASCII')
+        yield self.__class__.__name__.encode('UTF-8')
+        yield self._intention_type.name.encode('UTF-8')
+
+    def __eq__(self, other: BaseTrap) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._node == other._node
+            and self._intention_type == other._intention_type
+        )
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self._intention_type.value}, {self._node})'
+
+
+class CardboardTrap(BaseTrap[CardboardNode], CardboardLap):
+
+    @property
+    def description(self) -> str:
+        return 'Cardboard trap description'
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> CardboardTrap:
+        return cls(
+            CardboardNode.deserialize(
+                value['node'],
+                inflator,
+            ),
+            IntentionType[value['intention_type']] if 'intention_type' in value else None,
+        )
+
+
+class Trap(BaseTrap[BorderedNode], Lap):
+
+    @property
+    def as_cardboards(self) -> CardboardLap:
+        return CardboardTrap(
+            node = self._node.as_cardboards,
+            intention_type = self._intention_type,
+        )
+
+    @property
+    def description(self) -> str:
+        return self._node.get_minimal_string(identified_by_id = False)
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> Trap:
         return cls(
             BorderedNode.deserialize(
                 value['node'],
                 inflator,
             ),
-            cls.IntentionType[value['intention_type']] if 'intention_type' in value else None,
+            IntentionType[value['intention_type']] if 'intention_type' in value else None,
         )
 
     def get_printing_at(self, x: float, y: float, width: float, height: float) -> Printing:
@@ -75,7 +130,6 @@ class Trap(Lap):
         back: bool = False,
         crop: bool = False,
     ) -> Image.Image:
-
         width, height = size
         corner_radius = max(2, height // 23)
 
@@ -93,10 +147,10 @@ class Trap(Lap):
         mask = Image.new('RGBA', (width, height), (0,) * 4)
         mask_agg_draw = aggdraw.Draw(mask)
         imageutils.filled_rounded_box(
-            draw=mask_agg_draw,
-            box=(0, 0, width, height),
-            corner_radius=corner_radius,
-            color=(255,) * 3,
+            draw = mask_agg_draw,
+            box = (0, 0, width, height),
+            corner_radius = corner_radius,
+            color = (255,) * 3,
         )
 
         return Image.composite(
@@ -115,26 +169,8 @@ class Trap(Lap):
     def has_back(self) -> bool:
         return False
 
-    def __hash__(self):
-        return hash((self._node, self._intention_type))
-
-    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        yield self._node.persistent_hash().encode('ASCII')
-        yield self.__class__.__name__.encode('UTF-8')
-        yield self._intention_type.name.encode('UTF-8')
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, self.__class__)
-            and self._node == other._node
-            and self._intention_type == other._intention_type
-        )
-
     def __iter__(self) -> t.Iterator[Printing]:
         return self._node.__iter__()
 
     def __contains__(self, item: Printing):
         return item in self.__iter__()
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self._intention_type.value}, {self._node})'

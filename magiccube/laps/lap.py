@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-import typing as t
-
 from abc import abstractmethod
 
-from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model
 
 from mtgimg.interface import Imageable
 
 
-class Lap(Serializeable, Imageable, PersistentHashable):
+class BaseLap(Serializeable, PersistentHashable):
 
     def serialize(self) -> serialization_model:
         return {'type': self.__class__.__name__}
 
     @property
-    def id(self):
+    def id(self) -> str:
         return self.persistent_hash()
 
     @property
@@ -32,21 +30,13 @@ class Lap(Serializeable, Imageable, PersistentHashable):
         pass
 
 
-class CardboardLap(Serializeable, PersistentHashable):
+class Lap(BaseLap, Imageable):
 
-    def serialize(self) -> serialization_model:
-        return {'type': self.__class__.__name__}
-
-    @classmethod
+    @property
     @abstractmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> CardboardLap:
+    def as_cardboards(self) -> CardboardLap:
         pass
 
-    def __hash__(self) -> int:
-        pass
 
-    def __eq__(self, other: object) -> bool:
-        pass
-
-    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        pass
+class CardboardLap(BaseLap):
+    pass

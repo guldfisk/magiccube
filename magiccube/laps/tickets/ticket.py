@@ -1,29 +1,35 @@
+from __future__ import annotations
+
 import typing as t
 import os
+from abc import abstractmethod
 
-from PIL import Image, ImageDraw
 import aggdraw
+from PIL import Image, ImageDraw
 from promise import Promise
-from lazy_property import LazyProperty
 
+from orp.database import Model
+
+from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
-
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator
 
 from mtgimg.interface import ImageLoader
 
-from magiccube.laps.lap import Lap
+from magiccube.laps.lap import Lap, BaseLap, CardboardLap
 from magiccube.laps import imageutils
 from magiccube import paths
 
 
-class Ticket(Lap):
+T = t.TypeVar('T', bound = Model)
 
+
+class BaseTicket(BaseLap, t.Generic[T]):
     FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
 
-    def __init__(self, printings: t.Iterable[Printing], name: str):
-        self._name  = name
-        self._options = frozenset(printings)
+    def __init__(self, options: t.Iterable[T], name: str):
+        self._name = name
+        self._options = frozenset(options)
 
     @property
     def name(self):
@@ -37,9 +43,10 @@ class Ticket(Lap):
     def description(self) -> str:
         return 'Ticket'
 
-    @LazyProperty
-    def sorted_options(self) -> t.List[Printing]:
-        return sorted(self._options, key=lambda p: p.cardboard.name)
+    @property
+    @abstractmethod
+    def sorted_options(self) -> t.List[T]:
+        pass
 
     def serialize(self) -> serialization_model:
         return {
@@ -48,8 +55,72 @@ class Ticket(Lap):
             **super().serialize(),
         }
 
+    def __hash__(self) -> int:
+        return hash((self._options, self._name))
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self._options == other.options
+            and self._name == other.name
+        )
+
+    def __iter__(self) -> t.Iterable[T]:
+        return self._options.__iter__()
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self._options})'
+
+
+class CardboardTicket(BaseTicket[Cardboard], CardboardLap):
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('UTF-8')
+        yield self._name.encode('UTF-8')
+        for s in sorted(
+            str(option.id)
+            for option in
+            self._options
+        ):
+            yield s.encode('UTF-8')
+
+    @property
+    def sorted_options(self) -> t.List[Cardboard]:
+        return sorted(self._options, key = lambda c: c.name)
+
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Ticket':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> CardboardTicket:
+        return cls(
+            inflator.inflate_all(Cardboard, value['options']),
+            value['name'],
+        )
+
+
+class Ticket(BaseTicket[Printing], Lap):
+
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self.__class__.__name__.encode('UTF-8')
+        yield self._name.encode('UTF-8')
+        for s in sorted(
+            str(option.id)
+            for option in
+            self._options
+        ):
+            yield s.encode('ASCII')
+
+    @property
+    def as_cardboards(self) -> CardboardTicket:
+        return CardboardTicket(
+            (option.cardboard for option in self._options),
+            self._name,
+        )
+
+    @property
+    def sorted_options(self) -> t.List[Printing]:
+        return sorted(self._options, key = lambda p: p.cardboard.name)
+
+    @classmethod
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> Ticket:
         return cls(
             inflator.inflate_all(Printing, value['options']),
             value['name'],
@@ -79,7 +150,7 @@ class Ticket(Lap):
             for image in
             Promise.all(
                 tuple(
-                    loader.get_image(option, crop=True)
+                    loader.get_image(option, crop = True)
                     for option in
                     self.sorted_options
                 )
@@ -116,10 +187,10 @@ class Ticket(Lap):
         mask = Image.new('RGBA', (width, height), (0,) * 4)
         mask_agg_draw = aggdraw.Draw(mask)
         imageutils.filled_rounded_box(
-            draw=mask_agg_draw,
-            box=(0, 0, width, height),
-            corner_radius=corner_radius,
-            color=(255,) * 3,
+            draw = mask_agg_draw,
+            box = (0, 0, width, height),
+            corner_radius = corner_radius,
+            color = (255,) * 3,
         )
 
         return Image.composite(
@@ -137,29 +208,3 @@ class Ticket(Lap):
 
     def has_back(self) -> bool:
         return False
-
-    def __hash__(self) -> int:
-        return hash((self._options, self._name))
-
-    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        yield self.__class__.__name__.encode('UTF-8')
-        yield self._name.encode('UTF-8')
-        for s in sorted(
-            str(option.id)
-            for option in
-            self._options
-        ):
-            yield s.encode('ASCII')
-
-    def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._options == other.options
-            and self._name == other.name
-        )
-
-    def __iter__(self) -> t.Iterable[Printing]:
-        return self._options.__iter__()
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self._options})'
