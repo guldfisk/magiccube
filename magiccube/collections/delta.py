@@ -12,7 +12,7 @@ from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
 
 from magiccube.collections.cube import Cube, Cubeable
-from magiccube.collections.cubeable import CubeableCollection
+from magiccube.collections.cubeable import CubeableCollection, BaseCubeable
 from magiccube.laps.lap import Lap
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
@@ -78,21 +78,21 @@ class CubeDelta(object):
     def _multiset_to_indented_string(ms: FrozenMultiset[t.Union[Cardboard, Printing]]) -> str:
         return '\n'.join(
             f'\t{multiplicity}x {printing}'
-                for printing, multiplicity in
-                sorted(
-                    ms.items(),
-                    key = lambda item: str(item[0])
-                )
+            for printing, multiplicity in
+            sorted(
+                ms.items(),
+                key = lambda item: str(item[0])
+            )
         )
 
     @property
     def report(self) -> str:
         return f'New cubeables ({len(self.new_cubeables)}):\n{self.new_cubeables.pp_string}\n------\n' \
-            f'Removed cubeables ({len(self.removed_cubeables)}):\n{self.removed_cubeables.pp_string}\n------\n' \
-            f'New cardboards ({len(self.new_cardboards)}):\n' \
-            f'{self._multiset_to_indented_string(self.new_cardboards)}\n' \
-            f'Removed cardboards ({len(self.removed_cardboards)}):\n' \
-            f'{self._multiset_to_indented_string(self.removed_cardboards)}'
+               f'Removed cubeables ({len(self.removed_cubeables)}):\n{self.removed_cubeables.pp_string}\n------\n' \
+               f'New cardboards ({len(self.new_cardboards)}):\n' \
+               f'{self._multiset_to_indented_string(self.new_cardboards)}\n' \
+               f'Removed cardboards ({len(self.removed_cardboards)}):\n' \
+               f'{self._multiset_to_indented_string(self.removed_cardboards)}'
 
     def as_operation(self) -> CubeDeltaOperation:
         return CubeDeltaOperation(
@@ -113,6 +113,10 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
             if cubeables is None else
             FrozenCounter(cubeables)
         )
+
+    @property
+    def items(self) -> t.Iterable[BaseCubeable]:
+        return self._cubeables
 
     @property
     def printings(self) -> t.Iterator[t.Tuple[Printing, int]]:

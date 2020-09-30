@@ -93,7 +93,7 @@ class BaseCubeableCollection(Serializeable):
         pass
 
 
-class CardboardCubeableCollection(Serializeable):
+class CardboardCubeableCollection(BaseCubeableCollection):
 
     @property
     @abstractmethod
@@ -101,7 +101,7 @@ class CardboardCubeableCollection(Serializeable):
         pass
 
 
-class CubeableCollection(Serializeable):
+class CubeableCollection(BaseCubeableCollection):
 
     @property
     @abstractmethod
