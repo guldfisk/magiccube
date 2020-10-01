@@ -50,6 +50,23 @@ class BasePurple(BaseLap):
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> BasePurple:
         return cls(value['name'], value.get('description', ''))
 
+    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
+        yield self._name.encode('UTF-8')
+
+    def __str__(self) -> str:
+        return f'{self.__class__.__name__}({self._name})'
+
+
+class CardboardPurple(BasePurple, CardboardLap):
+    pass
+
+
+class Purple(BasePurple, Lap):
+
+    @property
+    def as_cardboards(self) -> CardboardPurple:
+        return CardboardPurple(self._name, self._description)
+
     def get_image(
         self,
         size: t.Tuple[int, int],
@@ -109,23 +126,9 @@ class BasePurple(BaseLap):
     def get_image_name(self, back: bool = False, crop: bool = False) -> str:
         return self.persistent_hash()
 
-    def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        yield self._name.encode('UTF-8')
-
     @classmethod
     def get_image_dir_name(cls) -> str:
         return 'purples'
 
     def has_back(self) -> bool:
         return False
-
-    def __str__(self) -> str:
-        return f'{self.__class__.__name__}({self._name})'
-
-
-class CardboardPurple(BasePurple, CardboardLap):
-    pass
-
-
-class Purple(BasePurple, Lap):
-    pass
