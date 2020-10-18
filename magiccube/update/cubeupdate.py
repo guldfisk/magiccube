@@ -1450,7 +1450,7 @@ class CubeUpdater(object):
 
     @property
     def new_garbage_trap_amount(self):
-        return len(self.cube) - len(self.new_no_garbage_cube)
+        return max(len(self.cube) - len(self.new_no_garbage_cube), 0)
 
     def old_average_trap_size(self) -> float:
         return len(self.node_collection) / len(self.cube.garbage_traps)

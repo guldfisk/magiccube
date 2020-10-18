@@ -3,11 +3,13 @@ import typing as t
 import itertools
 from collections import defaultdict
 
-from magiccube.collections.cube import Cube
-from magiccube.laps.traps.tree.printingtree import AnyNode
+from yeetlong.multiset import Multiset, BaseMultiset, FrozenMultiset
+
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
-from yeetlong.multiset import Multiset, BaseMultiset, FrozenMultiset
+
+from magiccube.collections.cube import Cube
+from magiccube.laps.traps.tree.printingtree import AnyNode
 
 
 def _amount_printing_to_required_tickets(amount: int) -> int:
@@ -73,15 +75,15 @@ def check_deck_subset_pool(
     any_potential_option_uses = defaultdict(set)
 
     for unaccounted_printing in unaccounted_printings:
-        anys = printing_to_anys.get(unaccounted_printing)
+        _anys = printing_to_anys.get(unaccounted_printing)
 
-        if not anys:
+        if not _anys:
             if unaccounted_printing in ticket_printings:
                 printings_in_tickets.add(unaccounted_printing)
                 continue
             return False, f'Pool does not contain {unaccounted_printing}'
 
-        for _any in anys:
+        for _any in _anys:
             for option in flattened_anys[_any]:
                 if unaccounted_printing in option:
                     any_potential_option_uses[_any].add(option)
@@ -89,18 +91,19 @@ def check_deck_subset_pool(
     uncontested_options = Multiset()
     contested_options = []
     for _any, options in any_potential_option_uses.items():
-        if not options:
-            continue
-        if len(options) == 1:
-            uncontested_options.update(options.__iter__().__next__())
-        else:
-            contested_options.append(flattened_anys[_any])
+        for _ in range(anys.elements().get(_any, 0)):
+            if not options:
+                continue
+            if len(options) == 1:
+                uncontested_options.update(options.__iter__().__next__())
+            else:
+                contested_options.append(flattened_anys[_any])
 
     contested_printings = Multiset(
         printing
-            for printing in
-            unaccounted_printings - uncontested_options
-            if not printing in printings_in_tickets
+        for printing in
+        unaccounted_printings - uncontested_options
+        if not printing in printings_in_tickets
     )
 
     combination_printings = Multiset()
@@ -160,8 +163,8 @@ def check_deck_subset_pool(
             for printing, tickets in _printings_to_tickets.items():
                 if _amount_printing_to_required_tickets(unaccounted_printings[printing]) <= sum(
                     pool.tickets[ticket]
-                        for ticket in
-                        tickets
+                    for ticket in
+                    tickets
                 ):
                     solution_found = True
                     break

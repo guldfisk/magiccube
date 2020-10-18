@@ -175,7 +175,7 @@ class DistributionWorker(threading.Thread, t.Generic[E]):
                         {
                             'type': 'status',
                             'status': 'completed',
-                            'generations': len(self._distributor.logger.values)
+                            'generations': len(self._distributor.logger.values),
                         }
                     )
                     self.stop()
