@@ -1,6 +1,5 @@
-from mtgorp.db.create import CardDatabase
-from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.persistent.cardboard import Cardboard
+from mtgorp.db.database import CardDatabase
+from mtgorp.models.interfaces import Cardboard, Printing
 
 from magiccube.laps.traps.tree.gen.pt_grammarParser import pt_grammarParser
 from magiccube.laps.traps.tree.gen.pt_grammarVisitor import pt_grammarVisitor

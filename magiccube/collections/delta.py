@@ -4,11 +4,10 @@ import itertools
 import logging
 import typing as t
 
-from mtgorp.models.persistent.cardboard import Cardboard
 from yeetlong.counters import FrozenCounter
 from yeetlong.multiset import FrozenMultiset
 
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.interfaces import Cardboard, Printing
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
 
 from magiccube.collections.cube import Cube, Cubeable

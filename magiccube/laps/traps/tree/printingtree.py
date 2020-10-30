@@ -13,8 +13,9 @@ import aggdraw
 
 from yeetlong.multiset import FrozenMultiset
 
-from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
+from mtgorp.models.interfaces import Printing
+
 from mtgimg.interface import ImageLoader
 from mtgimg import crop
 

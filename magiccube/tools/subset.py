@@ -5,8 +5,7 @@ from collections import defaultdict
 
 from yeetlong.multiset import Multiset, BaseMultiset, FrozenMultiset
 
-from mtgorp.models.persistent.cardboard import Cardboard
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.interfaces import Printing, Cardboard
 
 from magiccube.collections.cube import Cube
 from magiccube.laps.traps.tree.printingtree import AnyNode

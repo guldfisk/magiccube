@@ -4,7 +4,7 @@ import typing as t
 
 from abc import ABCMeta
 
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.interfaces import Printing
 from mtgorp.tools.search.extraction import ExtractionStrategy, T, PrintingStrategy
 
 from magiccube.laps.lap import Lap

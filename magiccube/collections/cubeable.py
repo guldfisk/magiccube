@@ -6,8 +6,7 @@ import re
 
 from abc import abstractmethod
 
-from mtgorp.models.persistent.cardboard import Cardboard
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.interfaces import Printing, Cardboard
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy

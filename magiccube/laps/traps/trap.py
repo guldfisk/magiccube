@@ -8,7 +8,7 @@ import aggdraw
 from PIL import Image
 
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.interfaces import Printing
 
 from mtgimg.interface import ImageLoader
 

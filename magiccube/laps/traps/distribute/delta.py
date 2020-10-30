@@ -17,7 +17,7 @@ from magiccube.laps.traps.distribute.algorithm import (
 from magiccube.laps.traps.tree.printingtree import PrintingNode, AllNode
 from magiccube.collections.laps import TrapCollection
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
-from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.laps.traps.trap import IntentionType
 
 
 class DistributionDelta(TrapCollectionIndividual):

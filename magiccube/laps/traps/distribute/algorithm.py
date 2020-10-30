@@ -14,11 +14,12 @@ from evolution import logging, model
 from evolution import environment
 from evolution.environment import Environment, EvolutionModelBlueprint
 
+from mtgorp.models.interfaces import Printing
+
 from magiccube.collections.laps import TrapCollection
 from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
 from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.collections.nodecollection import ConstrainedNode
-from mtgorp.models.persistent.printing import Printing
 
 
 class DistributionNode(object):

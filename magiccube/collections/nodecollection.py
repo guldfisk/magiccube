@@ -5,11 +5,11 @@ from collections import defaultdict
 
 from frozendict import frozendict
 
-from mtgorp.models.persistent.printing import Printing
 from yeetlong.multiset import FrozenMultiset
 from yeetlong.counters import FrozenCounter
 
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
+from mtgorp.models.interfaces import Printing
 
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 

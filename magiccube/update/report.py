@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing as t
 import itertools
-
 from enum import Enum
 from abc import ABC, abstractmethod
 from collections import defaultdict

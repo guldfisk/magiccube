@@ -9,11 +9,10 @@ from numpy.random import choice
 
 from yeetlong.multiset import FrozenMultiset, Multiset
 
-from orp.database import Model
+from orp.models import OrpBase
 
-from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.interfaces import Printing, Cardboard
 from mtgorp.tools.search.pattern import Pattern
 
 from magiccube.laps.lap import Lap, BaseLap, CardboardLap
@@ -27,7 +26,7 @@ from magiccube.collections.cubeable import (
 
 
 C = t.TypeVar('C', bound = BaseCubeable)
-M = t.TypeVar('M', bound = Model)
+M = t.TypeVar('M', bound = OrpBase)
 T = t.TypeVar('T', bound = BaseTrap)
 I = t.TypeVar('I', bound = BaseTicket)
 P = t.TypeVar('P', bound = BasePurple)
@@ -58,9 +57,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._models is None:
             self._models = FrozenMultiset(
                 cubeable
-                for cubeable in
-                self._cubeables
-                if isinstance(cubeable, Model)
+                    for cubeable in
+                    self._cubeables
+                    if isinstance(cubeable, OrpBase)
             )
         return self._models
 
@@ -73,9 +72,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._traps is None:
             self._traps = FrozenMultiset(
                 cubeable
-                for cubeable in
-                self._cubeables
-                if isinstance(cubeable, BaseTrap)
+                    for cubeable in
+                    self._cubeables
+                    if isinstance(cubeable, BaseTrap)
             )
         return self._traps
 
@@ -84,10 +83,10 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._garbage_traps is None:
             self._garbage_traps = FrozenMultiset(
                 cubeable
-                for cubeable in
-                self._cubeables
-                if isinstance(cubeable, BaseTrap)
-                and cubeable.intention_type == IntentionType.GARBAGE
+                    for cubeable in
+                    self._cubeables
+                    if isinstance(cubeable, BaseTrap)
+                       and cubeable.intention_type == IntentionType.GARBAGE
             )
         return self._garbage_traps
 
@@ -96,9 +95,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._tickets is None:
             self._tickets = FrozenMultiset(
                 cubeable
-                for cubeable in
-                self._cubeables
-                if isinstance(cubeable, BaseTicket)
+                    for cubeable in
+                    self._cubeables
+                    if isinstance(cubeable, BaseTicket)
             )
         return self._tickets
 
@@ -107,9 +106,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._purples is None:
             self._purples = FrozenMultiset(
                 cubeable
-                for cubeable in
-                self._cubeables
-                if isinstance(cubeable, BasePurple)
+                    for cubeable in
+                    self._cubeables
+                    if isinstance(cubeable, BasePurple)
             )
         return self._purples
 
@@ -118,9 +117,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._laps is None:
             self._laps = FrozenMultiset(
                 cubeable
-                for cubeable in
-                self._cubeables
-                if isinstance(cubeable, BaseLap)
+                    for cubeable in
+                    self._cubeables
+                    if isinstance(cubeable, BaseLap)
             )
         return self._laps
 
@@ -137,14 +136,14 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         for ticket in self.tickets:
             yield from ticket
 
-    def filter(self, pattern: Pattern[M]) -> BaseCube:
+    def filter(self: B, pattern: Pattern[M]) -> B:
         return self.__class__(
             cubeables = (
                 cubeable
                 for cubeable in
                 self._cubeables
                 if (
-                       isinstance(cubeable, Model)
+                       isinstance(cubeable, OrpBase)
                        and pattern.match(cubeable)
                    ) or (
                        isinstance(cubeable, t.Iterable)
@@ -208,8 +207,8 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
             yield str(model.id).encode('ASCII')
         for persistent_hash in sorted(
             lap.persistent_hash()
-            for lap in
-            self.laps
+                for lap in
+                self.laps
         ):
             yield persistent_hash.encode('ASCII')
 
@@ -242,6 +241,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}({self.__hash__()})'
+
+
+B = t.TypeVar('B', bound = BaseCube)
 
 
 class CardboardCube(
@@ -324,27 +326,27 @@ class Cube(
     def _multiset_to_indented_string(ms: FrozenMultiset[Printing]) -> str:
         return '\n'.join(
             f'\t{multiplicity}x {printing}'
-            for printing, multiplicity in
-            sorted(
-                ms.items(),
-                key = lambda item: str(item[0])
-            )
+                for printing, multiplicity in
+                sorted(
+                    ms.items(),
+                    key = lambda item: str(item[0])
+                )
         )
 
     @property
     def pp_string(self) -> str:
         return '\n'.join(
             f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
-            for pickable_type, pickables in
-            filter(
-                lambda p: p[1],
-                (
-                    ('printings', self.printings),
-                    ('traps', self.traps),
-                    ('tickets', self.tickets),
-                    ('purples', self.purples)
+                for pickable_type, pickables in
+                filter(
+                    lambda p: p[1],
+                    (
+                        ('printings', self.printings),
+                        ('traps', self.traps),
+                        ('tickets', self.tickets),
+                        ('purples', self.purples)
+                    )
                 )
-            )
         )
 
     @property

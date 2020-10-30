@@ -3,7 +3,7 @@ import typing as t
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 
-from mtgorp.db.create import CardDatabase
+from mtgorp.db.database import CardDatabase
 from mtgorp.models.persistent.printing import Printing
 
 from magiccube.laps.traps.tree.printingtree import AllNode, AnyNode, BorderedNode

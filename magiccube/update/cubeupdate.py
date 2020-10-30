@@ -8,21 +8,16 @@ from collections import defaultdict
 from enum import Enum
 from abc import abstractmethod
 
-from magiccube.collections.infinites import InfinitesDeltaOperation
-from magiccube.collections.laps import TrapCollection
-from magiccube.collections.meta import MetaCube
-from mtgorp.models.collections.cardboardset import CardboardSet
-from mtgorp.models.persistent.cardboard import Cardboard
 from yeetlong.multiset import Multiset, FrozenMultiset
 
-from orp.database import Model
+from orp.models import OrpBase
 
+from mtgorp.models.collections.cardboardset import CardboardSet
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.interfaces import Printing, Cardboard
 
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
-
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.laps.lap import Lap
 from magiccube.laps.traps.trap import Trap
@@ -35,6 +30,9 @@ from magiccube.collections.nodecollection import (
     GroupMapDeltaOperation,
 )
 from magiccube.collections.delta import CubeDeltaOperation
+from magiccube.collections.infinites import InfinitesDeltaOperation
+from magiccube.collections.laps import TrapCollection
+from magiccube.collections.meta import MetaCube
 
 
 class CubeChange(Serializeable, PersistentHashable):
@@ -311,7 +309,7 @@ class CubeableCubeChange(CubeChange):
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('ASCII')
-        if isinstance(self._cubeable, Model):
+        if isinstance(self._cubeable, OrpBase):
             yield str(self._cubeable.primary_key).encode('ASCII')
         else:
             yield self._cubeable.persistent_hash().encode('ASCII')
@@ -1088,8 +1086,8 @@ class CubePatch(Serializeable, PersistentHashable):
                 new_nodes
                 if all(
                 isinstance(child, Printing)
-                    for child in
-                    node.node.children
+                for child in
+                node.node.children
             )
             ),
             key = lambda node: len(node.node.children),
@@ -1118,8 +1116,8 @@ class CubePatch(Serializeable, PersistentHashable):
                 removed_nodes
                 if all(
                 isinstance(child, Printing)
-                    for child in
-                    node.node.children
+                for child in
+                node.node.children
             )
             ),
             key = lambda node: len(node.node.children),

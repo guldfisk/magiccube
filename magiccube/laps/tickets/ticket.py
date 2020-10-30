@@ -10,9 +10,8 @@ from promise import Promise
 
 from orp.database import Model
 
-from mtgorp.models.persistent.cardboard import Cardboard
-from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator
+from mtgorp.models.interfaces import Printing, Cardboard
 
 from mtgimg.interface import ImageLoader
 
