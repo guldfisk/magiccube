@@ -20,6 +20,7 @@ from magiccube.laps.lap import Lap, CardboardLap
 Cubeable = t.Union[Lap, Printing]
 CardboardCubeable = t.Union[CardboardLap, Cardboard]
 BaseCubeable = t.Union[Cubeable, CardboardCubeable]
+FlatBaseCubeable = t.Union[Printing, Cardboard]
 
 LAP_NAME_MAP = {
     'Trap': Trap,

@@ -4,7 +4,7 @@ import itertools
 import typing as t
 import os
 
-from abc import abstractmethod, ABC
+from abc import abstractmethod
 
 from lazy_property import LazyProperty
 from PIL import Image, ImageDraw
@@ -14,7 +14,7 @@ import aggdraw
 from yeetlong.multiset import FrozenMultiset
 
 from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
-from mtgorp.models.interfaces import Printing
+from mtgorp.models.interfaces import Printing, Cardboard
 
 from mtgimg.interface import ImageLoader
 from mtgimg import crop
@@ -47,6 +47,48 @@ class BaseNode(Serializeable, PersistentHashable):
             'type': self.__class__.__name__,
         }
 
+    @property
+    def flattened(self) -> t.Iterator[t.Union[Printing, Cardboard, NodeAny]]:
+        if isinstance(self, NodeAny):
+            yield self
+        else:
+            for child in self._children:
+                if isinstance(child, BaseNode):
+                    yield from child.flattened
+                else:
+                    yield child
+
+    @property
+    def flattened_options(self) -> t.Iterator[FrozenMultiset[t.Union[Printing, Cardboard]]]:
+        if isinstance(self, NodeAny):
+            for child in self._children:
+                if isinstance(child, BaseNode):
+                    yield from child.flattened_options
+                else:
+                    yield FrozenMultiset((child,))
+        else:
+            accumulated = []
+            anys = []
+            for child in self.flattened:
+                if isinstance(child, BaseNode):
+                    anys.append(child)
+                else:
+                    accumulated.append(child)
+
+            for combination in itertools.product(
+                *(
+                    _any.flattened_options
+                    for _any in
+                    anys
+                )
+            ):
+                yield FrozenMultiset(
+                    itertools.chain(
+                        accumulated,
+                        *combination,
+                    )
+                )
+
     def __hash__(self) -> int:
         return hash((self.__class__, self._children))
 
@@ -61,6 +103,8 @@ class BaseNode(Serializeable, PersistentHashable):
 
 
 class CardboardNode(BaseNode):
+    flattened: t.Iterator[t.Union[Cardboard, CardboardAnyNode]]
+    flattened_options: t.Iterator[FrozenMultiset[Cardboard]]
 
     def __init__(
         self,
@@ -85,8 +129,8 @@ class CardboardNode(BaseNode):
             child.persistent_hash()
             if isinstance(child, BaseNode) else
             str(child.id)
-                for child in
-                self._children
+            for child in
+            self._children
         ):
             yield s.encode('UTF-8')
 
@@ -111,7 +155,7 @@ class CardboardNode(BaseNode):
         )
 
 
-class NodeBranch(ABC):
+class NodeBranch(BaseNode):
     _MINIMAL_STRING_CONNECTOR: str
 
 
@@ -135,6 +179,9 @@ class PrintingNode(BaseNode):
     _children: FrozenMultiset[PrintingNodeChild]
     _CARDBOARD_EQUIVALENT = CardboardNode
 
+    flattened: t.Iterator[t.Union[Printing, AnyNode]]
+    flattened_options: t.Iterator[FrozenMultiset[Printing]]
+
     def __init__(
         self,
         children: t.Union[
@@ -154,8 +201,8 @@ class PrintingNode(BaseNode):
             child.persistent_hash()
             if isinstance(child, BaseNode) else
             str(child.id)
-                for child in
-                self._children
+            for child in
+            self._children
         ):
             yield s.encode('ASCII')
 
@@ -165,8 +212,8 @@ class PrintingNode(BaseNode):
             child.cardboard
             if isinstance(child, Printing) else
             child.as_cardboards
-                for child in
-                self._children
+            for child in
+            self._children
         )
 
     def get_minimal_string(self, identified_by_id: bool = True) -> str:
@@ -199,8 +246,8 @@ class PrintingNode(BaseNode):
                     option.__class__.__name__,
                 )
             )
-                for option, multiplicity in
-                self.sorted_items
+            for option, multiplicity in
+            self.sorted_items
         )
 
     @LazyProperty
@@ -214,7 +261,7 @@ class PrintingNode(BaseNode):
         )
 
     @property
-    def imaged(self) -> t.Iterator[t.Union[Printing, PrintingNode]]:
+    def imageds(self) -> t.Iterator[t.Union[Printing, PrintingNode]]:
         return itertools.chain(
             *(
                 itertools.repeat(item, 1 if isinstance(item, Printing) else multiplicity)
@@ -224,9 +271,9 @@ class PrintingNode(BaseNode):
         )
 
     @LazyProperty
-    def sorted_imaged(self) -> t.List[PrintingNodeChild]:
+    def sorted_imageds(self) -> t.List[PrintingNodeChild]:
         return sorted(
-            list(self.imaged),
+            list(self.imageds),
             key = lambda p:
             p.cardboard.name
             if isinstance(p, Printing) else
@@ -268,53 +315,11 @@ class PrintingNode(BaseNode):
         )
 
     @property
-    def flattened(self) -> t.Iterator[t.Union[Printing, AnyNode]]:
-        if isinstance(self, AnyNode):
-            yield self
-        else:
-            for child in self._children:
-                if isinstance(child, Printing):
-                    yield child
-                else:
-                    yield from child.flattened
-
-    @property
-    def flattened_options(self) -> t.Iterator[FrozenMultiset[Printing]]:
-        if isinstance(self, AnyNode):
-            for child in self._children:
-                if isinstance(child, Printing):
-                    yield FrozenMultiset((child,))
-                else:
-                    yield from child.flattened_options
-        else:
-            accumulated = []
-            anys = []
-            for child in self.flattened:
-                if isinstance(child, Printing):
-                    accumulated.append(child)
-                else:
-                    anys.append(child)
-
-            for combination in itertools.product(
-                *(
-                    _any.flattened_options
-                    for _any in
-                    anys
-                )
-            ):
-                yield FrozenMultiset(
-                    itertools.chain(
-                        accumulated,
-                        *combination,
-                    )
-                )
-
-    @property
     def image_amount(self) -> int:
         return sum(
             1 if isinstance(child, Printing) else multiplicity * child.image_amount
-                for child, multiplicity in
-                self._children.items()
+            for child, multiplicity in
+            self._children.items()
         )
 
     def __iter__(self) -> t.Iterator[Printing]:
@@ -325,8 +330,8 @@ class PrintingNode(BaseNode):
                 yield from child
 
 
-BaseNodeChild = t.Union[BaseNode, Printing]
-CardboardNodeChild = t.Union[CardboardNode, Printing]
+BaseNodeChild = t.Union[BaseNode, Printing, Cardboard]
+CardboardNodeChild = t.Union[CardboardNode, Cardboard]
 PrintingNodeChild = t.Union[PrintingNode, Printing]
 
 
@@ -352,21 +357,21 @@ class BorderedNode(PrintingNode):
         bottom_offset = self._BORDER_WIDTH if bordered_sides & imageutils.BOTTOM_SIDE else 0
 
         content_height = height - top_offset - bottom_offset
-        item_height = content_height / len(self.sorted_imaged)
+        item_height = content_height / len(self.sorted_imageds)
 
         if y <= top_offset:
-            item = self.sorted_imaged[0]
+            item = self.sorted_imageds[0]
             remainder = 0
 
         elif y >= height - bottom_offset:
-            item = self.sorted_imaged[-1]
+            item = self.sorted_imageds[-1]
             remainder = item_height
 
         else:
-            floating_index = (y - top_offset) / content_height * len(self.sorted_imaged)
+            floating_index = (y - top_offset) / content_height * len(self.sorted_imageds)
             _index = int(floating_index)
             remainder = (floating_index - _index) * content_height
-            item = self.sorted_imaged[_index]
+            item = self.sorted_imageds[_index]
 
         if isinstance(item, Printing):
             return item
@@ -382,7 +387,7 @@ class BorderedNode(PrintingNode):
         triangled = True,
     ) -> Image.Image:
 
-        pictured_printings = self.sorted_imaged
+        pictured_printings = self.sorted_imageds
 
         images = [
             image.resize(
@@ -400,8 +405,8 @@ class BorderedNode(PrintingNode):
                     loader.get_image(option, crop = True)
                     if isinstance(option, Printing) else
                     Promise.resolve(option)
-                        for option in
-                        pictured_printings
+                    for option in
+                    pictured_printings
                 )
             ).get()
         ]

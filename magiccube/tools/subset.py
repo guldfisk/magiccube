@@ -4,6 +4,7 @@ import itertools
 from collections import defaultdict
 
 from yeetlong.multiset import Multiset, BaseMultiset, FrozenMultiset
+from yeetlong.errors import Errors
 
 from mtgorp.models.interfaces import Printing, Cardboard
 
@@ -19,7 +20,9 @@ def check_deck_subset_pool(
     pool: Cube,
     deck: BaseMultiset[Printing],
     exempt_cardboards: t.AbstractSet[Cardboard] = frozenset(),
-) -> t.Tuple[bool, str]:
+    *,
+    strict: bool = True,
+) -> Errors:
     """
     I am to lazy to make this work properly for cases that aren't required yet.
     This does not work properly if copies of the same printing are present in both tickets and traps.
@@ -27,7 +30,11 @@ def check_deck_subset_pool(
     should work)
     """
 
-    printings = Multiset(pool.printings)
+    if not strict:
+        pool = pool.as_cardboards
+        deck = FrozenMultiset(p.cardboard for p in deck)
+
+    printings = Multiset(pool.models)
     anys: Multiset[AnyNode] = Multiset()
 
     for child in itertools.chain(
@@ -53,7 +60,7 @@ def check_deck_subset_pool(
             printing: multiplicity
             for printing, multiplicity in
             deck.items()
-            if printing.cardboard not in exempt_cardboards
+            if ((printing.cardboard not in exempt_cardboards) if strict else (printing not in exempt_cardboards))
         }
     ) - printings
 
@@ -71,7 +78,7 @@ def check_deck_subset_pool(
             for printing in option:
                 printing_to_anys[printing].append(_any)
 
-    any_potential_option_uses = defaultdict(set)
+    any_potential_option_uses = defaultdict(Multiset)
 
     for unaccounted_printing in unaccounted_printings:
         _anys = printing_to_anys.get(unaccounted_printing)
@@ -80,7 +87,7 @@ def check_deck_subset_pool(
             if unaccounted_printing in ticket_printings:
                 printings_in_tickets.add(unaccounted_printing)
                 continue
-            return False, f'Pool does not contain {unaccounted_printing}'
+            return Errors([f'Pool does not contain {unaccounted_printing}'])
 
         for _any in _anys:
             for option in flattened_anys[_any]:
@@ -117,12 +124,12 @@ def check_deck_subset_pool(
         solution_found = True
 
     if not solution_found:
-        return False, 'No suitable combination of any choices'
+        return Errors(['No suitable combination of any choices'])
 
     unaccounted_printings -= combination_printings + uncontested_options
 
     if not unaccounted_printings:
-        return True, ''
+        return Errors()
 
     printings_to_tickets = defaultdict(set)
 
@@ -149,7 +156,7 @@ def check_deck_subset_pool(
 
     for ticket, printing in uncontested_tickets:
         if _amount_printing_to_required_tickets(unaccounted_printings[printing]) > pool.tickets[ticket]:
-            return False, f'Not enough tickets to pay for {printing}'
+            return Errors([f'Not enough tickets to pay for {printing}'])
 
     if contested_tickets_printings:
         solution_found = False
@@ -174,6 +181,6 @@ def check_deck_subset_pool(
         solution_found = True
 
     if not solution_found:
-        return False, 'No suitable combination of tickets'
+        return Errors(['No suitable combination of tickets'])
 
-    return True, ''
+    return Errors()
