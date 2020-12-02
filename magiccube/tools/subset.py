@@ -9,7 +9,7 @@ from yeetlong.errors import Errors
 from mtgorp.models.interfaces import Printing, Cardboard
 
 from magiccube.collections.cube import Cube
-from magiccube.laps.traps.tree.printingtree import AnyNode
+from magiccube.laps.traps.tree.printingtree import AnyNode, NodeAny
 
 
 def _amount_printing_to_required_tickets(amount: int) -> int:
@@ -44,10 +44,10 @@ def check_deck_subset_pool(
             pool.traps
         )
     ):
-        if isinstance(child, Printing):
-            printings.add(child)
-        else:
+        if isinstance(child, NodeAny):
             anys.add(child)
+        else:
+            printings.add(child)
 
     ticket_printings = set(
         itertools.chain(
