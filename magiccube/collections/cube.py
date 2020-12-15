@@ -37,7 +37,7 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
 
     def __init__(
         self,
-        cubeables: t.Union[t.Iterable[C], t.Mapping[C, int], None] = None,
+        cubeables: t.Union[t.Iterable[C], t.Iterable[t.Tuple[C, int]], t.Mapping[C, int], None] = None,
     ):
         self._cubeables = FrozenMultiset() if cubeables is None else FrozenMultiset(cubeables)
 
@@ -307,11 +307,11 @@ class Cube(
     @property
     def as_cardboards(self) -> CardboardCube:
         return CardboardCube(
-            {
-                cardboardize(cubeable): multiplicity
+            (
+                (cardboardize(cubeable), multiplicity)
                 for cubeable, multiplicity in
                 self._cubeables.items()
-            }
+            )
         )
 
     @property
