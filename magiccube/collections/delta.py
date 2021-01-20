@@ -105,7 +105,7 @@ class CubeDeltaOperation(CubeableCollection, PersistentHashable):
 
     def __init__(
         self,
-        cubeables: t.Optional[t.Mapping[Cubeable, int]] = None,
+        cubeables: t.Union[None, t.Mapping[Cubeable, int], t.Iterable[Cubeable]] = None,
     ):
         self._cubeables: FrozenCounter[Cubeable] = (
             FrozenCounter()
