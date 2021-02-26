@@ -43,7 +43,8 @@ def serialize_cubeable(cubeable: Cubeable) -> t.Any:
 
 def serialize_cardboard_cubeable(cardboard_cubeable: CardboardCubeable) -> t.Any:
     return cardboard_cubeable.name if isinstance(cardboard_cubeable, Cardboard) else RawStrategy.serialize(
-        cardboard_cubeable)
+        cardboard_cubeable
+    )
 
 
 def serialize_cubeable_string(cubeable: Cubeable) -> t.Any:
@@ -52,7 +53,8 @@ def serialize_cubeable_string(cubeable: Cubeable) -> t.Any:
 
 def serialize_cardboard_cubeable_string(cardboard_cubeable: CardboardCubeable) -> t.Any:
     return cardboard_cubeable.name if isinstance(cardboard_cubeable, Cardboard) else JsonId.serialize(
-        cardboard_cubeable)
+        cardboard_cubeable
+    )
 
 
 def deserialize_cubeable(cubeable: serialization_model, inflator: Inflator) -> Cubeable:

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import typing as t
 
-from magiccube.laps.traps.trap import Trap
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator, PersistentHashable
 from yeetlong.multiset import FrozenMultiset
+
+from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator, PersistentHashable
+
+from magiccube.laps.traps.trap import Trap
 
 
 class TrapCollection(Serializeable, PersistentHashable):
@@ -56,17 +58,17 @@ class TrapCollection(Serializeable, PersistentHashable):
             isinstance(other, self.__class__)
             and self._traps == other._traps
         )
-    
+
     def __sub__(self, other: TrapCollection) -> TrapCollection:
         return TrapCollection(
             self._traps - other._traps
         )
-    
+
     __rsub__ = __sub__
-    
+
     def __add__(self, other: TrapCollection) -> TrapCollection:
         return TrapCollection(
             self._traps + other._traps
         )
-    
+
     __radd__ = __add__

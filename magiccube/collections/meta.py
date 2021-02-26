@@ -3,8 +3,8 @@ from __future__ import annotations
 from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
 
 from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from magiccube.collections.infinites import Infinites
+from magiccube.collections.nodecollection import NodeCollection, GroupMap
 
 
 class MetaCube(Serializeable):

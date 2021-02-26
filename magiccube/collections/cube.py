@@ -11,8 +11,8 @@ from yeetlong.multiset import FrozenMultiset, Multiset
 
 from orp.models import OrpBase
 
-from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
 from mtgorp.models.interfaces import Printing, Cardboard
+from mtgorp.models.serilization.serializeable import serialization_model, Inflator, PersistentHashable
 from mtgorp.tools.search.pattern import Pattern
 
 from magiccube.laps.lap import Lap, BaseLap, CardboardLap
@@ -239,7 +239,7 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
             self._cubeables - other
         )
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.__hash__()})'
 
 

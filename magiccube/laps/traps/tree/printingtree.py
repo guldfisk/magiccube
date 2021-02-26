@@ -144,8 +144,8 @@ class CardboardNode(BaseNode):
 
             {
                 (
-                    inflator.inflate(Printing, child)
-                    if isinstance(child, int) else
+                    inflator.inflate(Cardboard, child)
+                    if isinstance(child, str) else
                     cls.deserialize(child, inflator)
                 ):
                     multiplicity

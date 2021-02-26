@@ -6,16 +6,16 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
-from yeetlong.multiset import FrozenMultiset, Multiset
 from yeetlong.counters import FrozenCounter
+from yeetlong.multiset import FrozenMultiset, Multiset
 
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
-from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.collections.nodecollection import ConstrainedNode
+from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.update.cubeupdate import CubeUpdater
 
 
@@ -255,11 +255,11 @@ class PrintingMismatch(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[PrintingMismatch]:
-        old_cardboard_map = defaultdict(lambda: set())
+        old_cardboard_map = defaultdict(set)
         for printing in updater.cube.all_printings:
             old_cardboard_map[printing.cardboard].add(printing)
 
-        new_cardboard_map = defaultdict(lambda: set())
+        new_cardboard_map = defaultdict(set)
         for printing in itertools.chain(
             updater.patch.cube_delta_operation.all_new_printings,
             updater.patch.node_delta_operation.all_new_printings,

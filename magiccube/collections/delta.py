@@ -21,7 +21,7 @@ from magiccube.laps.traps.trap import Trap
 class CubeDelta(object):
 
     def __init__(self, original: Cube, current: Cube):
-        logging.warn(f'{self.__class__.__name__} is deprecated')
+        logging.warning(f'{self.__class__.__name__} is deprecated')
 
         self._original = original
         self._current = current
