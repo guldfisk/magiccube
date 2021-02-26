@@ -37,6 +37,15 @@ class BaseNode(Serializeable, PersistentHashable):
     def name(self) -> str:
         pass
 
+    @abstractmethod
+    def get_minimal_string(self, **kwargs) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def sorted_items(self) -> t.List[t.Tuple[BaseNodeChild, int]]:
+        pass
+
     def serialize(self) -> serialization_model:
         return {
             'options': [
@@ -116,12 +125,49 @@ class CardboardNode(BaseNode):
         self._children = FrozenMultiset(children)
 
     @property
-    def children(self) -> FrozenMultiset[BaseNodeChild]:
+    def sorted_items(self) -> t.List[t.Tuple[CardboardNodeChild, int]]:
+        return sorted(
+            self._children.items(),
+            key = lambda p: p[0].name,
+        )
+
+    def get_minimal_string(self, **kwargs) -> str:
+        return self._MINIMAL_STRING_CONNECTOR.join(
+            (
+                '({})'.format(
+                    (f'{multiplicity}# ' if multiplicity > 1 else '')
+                    + child.name
+                    if isinstance(child, Cardboard) else
+                    f'{child.get_minimal_string()}'
+                )
+                for child, multiplicity in
+                self.sorted_items
+            )
+        )
+
+    @property
+    def children(self) -> FrozenMultiset[CardboardNodeChild]:
         return self._children
 
     @property
     def name(self) -> str:
-        return 'Cardboard Node'
+        return ''.join(
+            (
+                str(multiplicity) + 'x'
+                if multiplicity > 1 else
+                ''
+            )
+            + (
+                option.name
+                if isinstance(option, Cardboard) else
+                '{} {}'.format(
+                    option.name,
+                    option.__class__.__name__,
+                )
+            )
+            for option, multiplicity in
+            self.sorted_items
+        )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         yield self.__class__.__name__.encode('UTF-8')

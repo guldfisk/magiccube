@@ -100,7 +100,7 @@ class CardboardTrap(BaseTrap[CardboardNode], CardboardLap):
 class Trap(BaseTrap[BorderedNode], Lap):
 
     @property
-    def as_cardboards(self) -> CardboardLap:
+    def as_cardboards(self) -> CardboardTrap:
         return CardboardTrap(
             node = self._node.as_cardboards,
             intention_type = self._intention_type,
