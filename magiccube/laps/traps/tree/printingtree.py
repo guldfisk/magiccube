@@ -138,7 +138,7 @@ class CardboardNode(BaseNode):
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> CardboardNode:
         return (
             CardboardAnyNode
-            if value['type'] == AnyNode.__name__ else
+            if value['type'] == CardboardAnyNode.__name__ else
             CardboardAllNode
         )(
 
