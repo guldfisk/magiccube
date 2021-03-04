@@ -73,6 +73,13 @@ def deserialize_cubeable_string(cubeable: str, inflator: Inflator) -> Cubeable:
         return LAP_NAME_MAP[cubeable['type']].deserialize(cubeable, inflator)
 
 
+def deserialize_cardboard_cubeable(cardboard_cubeable: serialization_model, inflator: Inflator) -> CardboardCubeable:
+    if isinstance(cardboard_cubeable, str):
+        return inflator.inflate(Cardboard, cardboard_cubeable)
+
+    return CARDBOARD_LAP_NAME_MAP[cardboard_cubeable['type']].deserialize(cardboard_cubeable, inflator)
+
+
 def deserialize_cardboard_cubeable_string(cardboard_cubeable: str, inflator: Inflator) -> CardboardCubeable:
     if cardboard_cubeable.startswith('{'):
         cardboard_cubeable = json.loads(cardboard_cubeable)
