@@ -11,14 +11,14 @@ def cube_difference(
     return (
         (
             len(new_non_trap_cubeables - (from_meta.cube.cubeables - from_meta.cube.garbage_traps))
-            / len(new_non_trap_cubeables)
-            if new_non_trap_cubeables else
-            0.
+            / len(to_meta.cube.cubeables)
         )
         + (
             (
                 len(to_meta.node_collection.nodes - from_meta.node_collection.nodes)
                 / len(to_meta.node_collection.nodes)
+                * len(to_meta.cube.garbage_traps)
+                / len(to_meta.cube.cubeables)
                 if to_meta.node_collection.nodes else
                 0.
             )
