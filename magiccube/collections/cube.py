@@ -57,9 +57,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._models is None:
             self._models = FrozenMultiset(
                 cubeable
-                    for cubeable in
-                    self._cubeables
-                    if isinstance(cubeable, OrpBase)
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, OrpBase)
             )
         return self._models
 
@@ -72,9 +72,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._traps is None:
             self._traps = FrozenMultiset(
                 cubeable
-                    for cubeable in
-                    self._cubeables
-                    if isinstance(cubeable, BaseTrap)
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, BaseTrap)
             )
         return self._traps
 
@@ -83,10 +83,12 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._garbage_traps is None:
             self._garbage_traps = FrozenMultiset(
                 cubeable
-                    for cubeable in
-                    self._cubeables
-                    if isinstance(cubeable, BaseTrap)
-                       and cubeable.intention_type == IntentionType.GARBAGE
+                for cubeable in
+                self._cubeables
+                if (
+                    isinstance(cubeable, BaseTrap)
+                    and cubeable.intention_type == IntentionType.GARBAGE
+                )
             )
         return self._garbage_traps
 
@@ -95,9 +97,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._tickets is None:
             self._tickets = FrozenMultiset(
                 cubeable
-                    for cubeable in
-                    self._cubeables
-                    if isinstance(cubeable, BaseTicket)
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, BaseTicket)
             )
         return self._tickets
 
@@ -106,9 +108,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._purples is None:
             self._purples = FrozenMultiset(
                 cubeable
-                    for cubeable in
-                    self._cubeables
-                    if isinstance(cubeable, BasePurple)
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, BasePurple)
             )
         return self._purples
 
@@ -117,9 +119,9 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
         if self._laps is None:
             self._laps = FrozenMultiset(
                 cubeable
-                    for cubeable in
-                    self._cubeables
-                    if isinstance(cubeable, BaseLap)
+                for cubeable in
+                self._cubeables
+                if isinstance(cubeable, BaseLap)
             )
         return self._laps
 
@@ -207,8 +209,8 @@ class BaseCube(BaseCubeableCollection, PersistentHashable, t.Generic[C, M, T, I,
             yield str(model.id).encode('ASCII')
         for persistent_hash in sorted(
             lap.persistent_hash()
-                for lap in
-                self.laps
+            for lap in
+            self.laps
         ):
             yield persistent_hash.encode('ASCII')
 
@@ -326,27 +328,27 @@ class Cube(
     def _multiset_to_indented_string(ms: FrozenMultiset[Printing]) -> str:
         return '\n'.join(
             f'\t{multiplicity}x {printing}'
-                for printing, multiplicity in
-                sorted(
-                    ms.items(),
-                    key = lambda item: str(item[0])
-                )
+            for printing, multiplicity in
+            sorted(
+                ms.items(),
+                key = lambda item: str(item[0])
+            )
         )
 
     @property
     def pp_string(self) -> str:
         return '\n'.join(
             f'{pickable_type}:\n{self._multiset_to_indented_string(pickables)}'
-                for pickable_type, pickables in
-                filter(
-                    lambda p: p[1],
-                    (
-                        ('printings', self.printings),
-                        ('traps', self.traps),
-                        ('tickets', self.tickets),
-                        ('purples', self.purples)
-                    )
+            for pickable_type, pickables in
+            filter(
+                lambda p: p[1],
+                (
+                    ('printings', self.printings),
+                    ('traps', self.traps),
+                    ('tickets', self.tickets),
+                    ('purples', self.purples)
                 )
+            )
         )
 
     @property
