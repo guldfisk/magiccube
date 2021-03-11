@@ -7,6 +7,11 @@ def cube_difference(
     *,
     trap_redistribution_weighting: float = .25,
 ) -> float:
+    if not to_meta.cube.cubeables:
+        if not from_meta.cube.cubeables:
+            return 0.
+        return 1.
+
     new_non_trap_cubeables = to_meta.cube.cubeables - to_meta.cube.garbage_traps
     return (
         (
