@@ -8,16 +8,17 @@ import aggdraw
 from PIL import Image
 
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator
-from mtgorp.models.interfaces import Printing
+from mtgorp.models.interfaces import Printing, Cardboard
 
 from mtgimg.interface import ImageLoader
 
+from magiccube.laps import imageutils
 from magiccube.laps.lap import Lap, CardboardLap, BaseLap
 from magiccube.laps.traps.tree.printingtree import BorderedNode, CardboardNode, BaseNode
-from magiccube.laps import imageutils
 
 
 N = t.TypeVar('N', bound = BaseNode)
+T = t.TypeVar('T', bound = t.Union[Cardboard, Printing])
 
 
 class IntentionType(Enum):
@@ -28,7 +29,7 @@ class IntentionType(Enum):
     NO_INTENTION = 'no_intention'
 
 
-class BaseTrap(BaseLap, t.Generic[N]):
+class BaseTrap(BaseLap, t.Generic[N, T]):
     _node: N
     _intention_type: IntentionType
 
@@ -79,8 +80,14 @@ class BaseTrap(BaseLap, t.Generic[N]):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._intention_type.value}, {self._node})'
 
+    def __iter__(self) -> t.Iterator[T]:
+        return self._node.__iter__()
 
-class CardboardTrap(BaseTrap[CardboardNode], CardboardLap):
+    def __contains__(self, item: T) -> bool:
+        return item in self.__iter__()
+
+
+class CardboardTrap(BaseTrap[CardboardNode, Cardboard], CardboardLap):
 
     @property
     def description(self) -> str:
@@ -97,7 +104,7 @@ class CardboardTrap(BaseTrap[CardboardNode], CardboardLap):
         )
 
 
-class Trap(BaseTrap[BorderedNode], Lap):
+class Trap(BaseTrap[BorderedNode, Printing], Lap):
 
     @property
     def as_cardboards(self) -> CardboardTrap:
@@ -168,9 +175,3 @@ class Trap(BaseTrap[BorderedNode], Lap):
 
     def has_back(self) -> bool:
         return False
-
-    def __iter__(self) -> t.Iterator[Printing]:
-        return self._node.__iter__()
-
-    def __contains__(self, item: Printing):
-        return item in self.__iter__()

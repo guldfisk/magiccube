@@ -23,13 +23,17 @@ from magiccube import paths
 from magiccube.laps import imageutils
 
 
-class BaseNode(Serializeable, PersistentHashable):
+N = t.TypeVar('N')
+T = t.TypeVar('T', bound = t.Union[Cardboard, Printing])
+
+
+class BaseNode(Serializeable, PersistentHashable, t.Generic[N, T]):
     _MINIMAL_STRING_CONNECTOR: str
-    _children: FrozenMultiset[BaseNodeChild]
+    _children: FrozenMultiset[t.Union[N, T]]
 
     @property
     @abstractmethod
-    def children(self) -> FrozenMultiset[BaseNodeChild]:
+    def children(self) -> FrozenMultiset[t.Union[N, T]]:
         pass
 
     @property
@@ -43,7 +47,7 @@ class BaseNode(Serializeable, PersistentHashable):
 
     @property
     @abstractmethod
-    def sorted_items(self) -> t.List[t.Tuple[BaseNodeChild, int]]:
+    def sorted_items(self) -> t.List[t.Tuple[t.Union[N, T], int]]:
         pass
 
     def serialize(self) -> serialization_model:
@@ -57,7 +61,7 @@ class BaseNode(Serializeable, PersistentHashable):
         }
 
     @property
-    def flattened(self) -> t.Iterator[t.Union[Printing, Cardboard, NodeAny]]:
+    def flattened(self) -> t.Iterator[t.Union[T, NodeAny]]:
         if isinstance(self, NodeAny):
             yield self
         else:
@@ -68,7 +72,7 @@ class BaseNode(Serializeable, PersistentHashable):
                     yield child
 
     @property
-    def flattened_options(self) -> t.Iterator[FrozenMultiset[t.Union[Printing, Cardboard]]]:
+    def flattened_options(self) -> t.Iterator[FrozenMultiset[T]]:
         if isinstance(self, NodeAny):
             for child in self._children:
                 if isinstance(child, BaseNode):
@@ -110,8 +114,15 @@ class BaseNode(Serializeable, PersistentHashable):
     def __repr__(self):
         return f'{self.__class__.__name__}({self._children})'
 
+    def __iter__(self) -> t.Iterator[T]:
+        for child in self._children:
+            if isinstance(child, BaseNode):
+                yield from child
+            else:
+                yield child
 
-class CardboardNode(BaseNode):
+
+class CardboardNode(BaseNode['CardboardNode', Cardboard]):
     flattened: t.Iterator[t.Union[Cardboard, CardboardAnyNode]]
     flattened_options: t.Iterator[FrozenMultiset[Cardboard]]
 
@@ -221,7 +232,7 @@ class CardboardAnyNode(CardboardNode, NodeAny):
     pass
 
 
-class PrintingNode(BaseNode):
+class PrintingNode(BaseNode['PrintingNode', Printing]):
     _children: FrozenMultiset[PrintingNodeChild]
     _CARDBOARD_EQUIVALENT = CardboardNode
 
@@ -367,13 +378,6 @@ class PrintingNode(BaseNode):
             for child, multiplicity in
             self._children.items()
         )
-
-    def __iter__(self) -> t.Iterator[Printing]:
-        for child in self._children:
-            if isinstance(child, Printing):
-                yield child
-            else:
-                yield from child
 
 
 BaseNodeChild = t.Union[BaseNode, Printing, Cardboard]
