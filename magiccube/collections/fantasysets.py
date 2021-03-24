@@ -11,6 +11,7 @@ from mtgorp.models.limited.boostergen import BoosterMap, MapSlot
 from mtgorp.models.serilization.serializeable import serialization_model, Inflator, Serializeable, PersistentHashable
 
 from magiccube.collections.cube import BaseCube, Cube, CardboardCube
+from magiccube.collections.cubeable import Cubeable
 
 
 C = t.TypeVar('C', bound = BaseCube)
@@ -57,7 +58,11 @@ class BaseFantasySet(Serializeable, PersistentHashable, t.Generic[C]):
     def __repr__(self) -> str:
         return '{}({})'.format(
             self.__class__.__name__,
-            self._rarity_map,
+            ', '.join(
+                '{}: {}'.format(rarity, len(cube))
+                for rarity, cube in
+                self._rarity_map.items()
+            ),
         )
 
 
@@ -106,12 +111,12 @@ class FantasyBoosterKeySlot(Serializeable, PersistentHashable):
     def key_map(self) -> t.Mapping[str, int]:
         return self._key_map
 
-    def get_map_slot(self, fantasy_set: FantasySet) -> MapSlot:
+    def get_map_slot(self, fantasy_set: FantasySet) -> MapSlot[Cubeable]:
         return MapSlot(
             {
                 fantasy_set.rarity_map.get(key).cubeables or FrozenMultiset(): weight
                 for key, weight in
-                self._key_map
+                self._key_map.items()
             }
         )
 
@@ -142,7 +147,11 @@ class FantasyBoosterKeySlot(Serializeable, PersistentHashable):
     def __repr__(self) -> str:
         return '{}({})'.format(
             self.__class__.__name__,
-            self._key_map,
+            ', '.join(
+                '{}: {}'.format(key, weight)
+                for key, weight in
+                self._key_map.items()
+            ),
         )
 
 
@@ -155,7 +164,7 @@ class FantasyBoosterKey(Serializeable, PersistentHashable):
     def slots(self) -> FrozenMultiset[FantasyBoosterKeySlot]:
         return self._slots
 
-    def get_booster_map(self, fantasy_set: FantasySet) -> BoosterMap:
+    def get_booster_map(self, fantasy_set: FantasySet) -> BoosterMap[Cubeable]:
         return BoosterMap(
             {
                 slot.get_map_slot(fantasy_set): multiplicity
