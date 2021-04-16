@@ -32,8 +32,9 @@ class CardboardParseException(Exception):
 
 class PTVisitor(pt_grammarVisitor):
 
-    def __init__(self, db: CardDatabase) -> None:
+    def __init__(self, db: CardDatabase, *, allow_volatile: bool = False) -> None:
         self._db = db
+        self._allow_volatile = allow_volatile
 
     def _get_cardboard(self, name: str) -> Cardboard:
         try:
@@ -45,7 +46,7 @@ class PTVisitor(pt_grammarVisitor):
         cardboard = self._get_cardboard(name = name)
 
         try:
-            return cardboard.from_expansion(code)
+            return cardboard.from_expansion(code, allow_volatile = self._allow_volatile)
         except KeyError:
             raise CardboardParseException('bad expansion for cardboard: "{}", "{}"'.format(code, cardboard))
         except RuntimeError as e:

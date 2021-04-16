@@ -27,10 +27,10 @@ class PrintingTreeListener(ErrorListener):
 
 class PrintingTreeParser(object):
 
-    def __init__(self, db: CardDatabase):
+    def __init__(self, db: CardDatabase, *, allow_volatile: bool = False):
         self._db = db
 
-        self._visitor = PTVisitor(self._db)
+        self._visitor = PTVisitor(self._db, allow_volatile = allow_volatile)
 
     def _convert_to_printing_node(
         self,
