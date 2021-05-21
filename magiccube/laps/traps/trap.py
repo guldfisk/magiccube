@@ -91,7 +91,7 @@ class CardboardTrap(BaseTrap[CardboardNode, Cardboard], CardboardLap):
 
     @property
     def description(self) -> str:
-        return 'Cardboard trap description'
+        return self._node.get_minimal_string()
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> CardboardTrap:

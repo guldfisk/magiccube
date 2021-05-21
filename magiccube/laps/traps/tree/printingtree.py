@@ -32,6 +32,10 @@ class BaseNode(Serializeable, PersistentHashable, t.Generic[N, T]):
     _children: FrozenMultiset[t.Union[N, T]]
 
     @property
+    def id(self):
+        return self.persistent_hash()
+
+    @property
     @abstractmethod
     def children(self) -> FrozenMultiset[t.Union[N, T]]:
         pass
