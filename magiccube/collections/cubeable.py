@@ -11,10 +11,11 @@ from mtgorp.models.serilization.serializeable import Serializeable, serializatio
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 
+from magiccube.laps.lap import Lap, CardboardLap
 from magiccube.laps.purples.purple import Purple, CardboardPurple
 from magiccube.laps.tickets.ticket import Ticket, CardboardTicket
 from magiccube.laps.traps.trap import Trap, CardboardTrap
-from magiccube.laps.lap import Lap, CardboardLap
+from magiccube.laps.traps.tree.printingtree import CardboardNodeChild, CardboardNode
 
 
 Cubeable = t.Union[Lap, Printing]
@@ -86,6 +87,12 @@ def deserialize_cardboard_cubeable_string(cardboard_cubeable: str, inflator: Inf
         return CARDBOARD_LAP_NAME_MAP[cardboard_cubeable['type']].deserialize(cardboard_cubeable, inflator)
 
     return inflator.inflate(Cardboard, cardboard_cubeable)
+
+
+def deserialize_cardboard_node_child(node_child: t.Any, inflator: Inflator) -> CardboardNodeChild:
+    if isinstance(node_child, str):
+        return inflator.inflate(Cardboard, node_child)
+    return CardboardNode.deserialize(node_child, inflator)
 
 
 def cardboardize(cubeable: Cubeable) -> CardboardCubeable:
