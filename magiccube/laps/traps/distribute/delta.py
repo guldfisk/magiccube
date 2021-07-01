@@ -7,9 +7,9 @@ import typing as t
 
 from collections import defaultdict
 
-from evolution import model, logging
+from evolution import logging
+from evolution.constraints import ConstraintSet
 from evolution.environment import EvolutionModelBlueprint
-from evolution.model import ConstraintSet
 
 from magiccube.laps.traps.distribute.algorithm import (
     TrapDistribution, DistributionNode, TrapCollectionIndividual, BaseDistributor,
@@ -70,11 +70,6 @@ class DistributionDelta(TrapCollectionIndividual):
                 ),
                 1,
             )[0]
-
-    def score(self, constraints: ConstraintSet) -> t.Tuple[float, ...]:
-        return self.trap_distribution.score(
-            constraints
-        )
 
     @property
     def origin(self) -> TrapDistribution:
@@ -241,13 +236,20 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
         distribution_nodes: t.Iterable[DistributionNode],
         original_collection: TrapCollection,
         trap_amount: int,
-        constraints: model.ConstraintSet,
+        constraints: ConstraintSet,
         max_trap_delta: int,
         model_blue_print: t.Optional[EvolutionModelBlueprint] = None,
         logger: t.Optional[logging.Logger] = None,
         **kwargs
     ):
-        super().__init__(distribution_nodes, trap_amount, constraints, model_blue_print, logger, **kwargs)
+        super().__init__(
+            distribution_nodes,
+            trap_amount,
+            lambda i: constraints(i.trap_distribution),
+            model_blue_print,
+            logger,
+            **kwargs
+        )
 
         self._max_trap_delta = max_trap_delta
         self._original_collection = original_collection
@@ -256,8 +258,8 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
             original_collection,
             NodeCollection(
                 node.as_constrained_node
-                    for node in
-                    distribution_nodes
+                for node in
+                distribution_nodes
             ),
         )
         self._original_distribution = original_distribution
@@ -288,9 +290,9 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
                     ()
                 ) - frozenset(
                     _node_index
-                        for _trap_index, _node_index in
-                        delta.node_moves
-                        if _trap_index == from_trap_index
+                    for _trap_index, _node_index in
+                    delta.node_moves
+                    if _trap_index == from_trap_index
                 )
 
                 if not node_index_options:

@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 
 from evolution import logging, model
 from evolution import environment
-from evolution.environment import Environment, EvolutionModelBlueprint
+from evolution.constraints import Constraint
+from evolution.environment import Environment, EvolutionModelBlueprint, I
 
 from mtgorp.models.interfaces import Printing
 
@@ -165,7 +166,7 @@ def logistic(x: float, max_value: float, mid: float, slope: float) -> float:
         return 0
 
 
-class ValueDistributionHomogeneityConstraint(model.Constraint):
+class ValueDistributionHomogeneityConstraint(Constraint):
     description = 'Value distribution homogeneity'
 
     def __init__(
@@ -210,7 +211,7 @@ class ValueDistributionHomogeneityConstraint(model.Constraint):
         )
 
 
-class GroupExclusivityConstraint(model.Constraint):
+class GroupExclusivityConstraint(Constraint):
     description = 'Group exclusivity'
 
     def __init__(
@@ -274,7 +275,7 @@ class GroupExclusivityConstraint(model.Constraint):
         )
 
 
-class SizeHomogeneityConstraint(model.Constraint):
+class SizeHomogeneityConstraint(Constraint):
     description = 'Size homogeneity'
 
     def __init__(
@@ -303,7 +304,7 @@ class SizeHomogeneityConstraint(model.Constraint):
         )
 
 
-class ImageAmountHomogeneity(model.Constraint):
+class ImageAmountHomogeneity(Constraint):
     description = 'Image amount homogeneity'
 
     def __init__(
@@ -338,7 +339,7 @@ class BaseDistributor(Environment[T]):
         self,
         distribution_nodes: t.Iterable[DistributionNode],
         trap_amount: int,
-        constraints: model.ConstraintSet,
+        constraints: t.Callable[[I], t.Tuple[float, ...]],
         model_blue_print: t.Optional[EvolutionModelBlueprint] = None,
         logger: t.Optional[logging.Logger] = None,
         **kwargs,
@@ -353,7 +354,7 @@ class BaseDistributor(Environment[T]):
         super().__init__(
             self._model_blue_print.realise(
                 individual_factory = self.create_individual,
-                constraints = constraints,
+                fitness_evaluator = constraints,
                 mutate = lambda i, d: self.mutate(i),
                 mate = lambda f, s, d: self.mate(f, s),
             ),
