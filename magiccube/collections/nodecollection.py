@@ -229,7 +229,7 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         self._value = value
         self._node = node
 
-        self._groups = frozenset(group for group in groups if group)
+        self._groups = frozenset(group for group in (g.strip() for g in groups) if group)
 
     @property
     def value(self) -> float:
