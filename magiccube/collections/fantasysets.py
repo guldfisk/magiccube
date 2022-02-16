@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 from abc import abstractmethod
 
-from frozendict import frozendict
+from immutabledict import immutabledict
 
 from yeetlong.multiset import FrozenMultiset
 
@@ -20,7 +20,7 @@ C = t.TypeVar('C', bound = BaseCube)
 class BaseFantasySet(Serializeable, PersistentHashable, t.Generic[C]):
 
     def __init__(self, rarity_map: t.Mapping[str, C]):
-        self._rarity_map: t.Mapping[str, C] = frozendict(rarity_map)
+        self._rarity_map: t.Mapping[str, C] = immutabledict(rarity_map)
 
     @property
     def rarity_map(self) -> t.Mapping[str, C]:
@@ -105,7 +105,7 @@ class FantasySet(BaseFantasySet[Cube]):
 class FantasyBoosterKeySlot(Serializeable, PersistentHashable):
 
     def __init__(self, key_map: t.Mapping[str, int]):
-        self._key_map = frozendict(key_map)
+        self._key_map = immutabledict(key_map)
 
     @property
     def key_map(self) -> t.Mapping[str, int]:

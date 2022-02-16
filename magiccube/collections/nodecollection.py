@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 from collections import defaultdict
 
-from frozendict import frozendict
+from immutabledict import immutabledict
 
 from yeetlong.counters import FrozenCounter
 from yeetlong.multiset import FrozenMultiset
@@ -17,7 +17,7 @@ from magiccube.laps.traps.tree.printingtree import PrintingNode
 class GroupMap(Serializeable):
 
     def __init__(self, groups: t.Mapping[str, float]):
-        self._groups = groups if isinstance(groups, frozendict) else frozendict(groups)
+        self._groups = groups if isinstance(groups, immutabledict) else immutabledict(groups)
 
     @property
     def groups(self) -> t.Mapping[str, float]:
@@ -26,7 +26,7 @@ class GroupMap(Serializeable):
     def normalized(self) -> GroupMap:
         max_weight = max(self._groups.values())
         return self.__class__(
-            frozendict(
+            immutabledict(
                 (group, weight / max_weight)
                 for group, weight in
                 self._groups.items()
@@ -46,7 +46,7 @@ class GroupMap(Serializeable):
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupMap:
         return cls(
-            frozendict(
+            immutabledict(
                 [
                     (group, weight)
                     for group, weight in
@@ -121,12 +121,12 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
         groups: t.Optional[t.Mapping[str, t.Optional[float]]] = None,
     ):
         self._groups = (
-            frozendict()
+            immutabledict()
             if groups is None else
             (
                 groups
-                if isinstance(groups, frozendict) else
-                frozendict(groups)
+                if isinstance(groups, immutabledict) else
+                immutabledict(groups)
             )
         )
 
@@ -144,9 +144,9 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'Serializeable':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> Serializeable:
         return cls(
-            frozendict(
+            immutabledict(
                 [
                     (group, weight)
                     for group, weight in
