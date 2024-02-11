@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model
-
 from mtgimg.interface import Imageable
+from mtgorp.models.serilization.serializeable import (
+    PersistentHashable,
+    Serializeable,
+    serialization_model,
+)
 
 
 class BaseLap(Serializeable, PersistentHashable):
-
     def serialize(self) -> serialization_model:
-        return {'type': self.__class__.__name__}
+        return {"type": self.__class__.__name__}
 
     @property
     def id(self) -> str:
@@ -31,7 +33,6 @@ class BaseLap(Serializeable, PersistentHashable):
 
 
 class Lap(BaseLap, Imageable):
-
     @property
     @abstractmethod
     def as_cardboards(self) -> CardboardLap:

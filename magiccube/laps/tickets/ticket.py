@@ -1,30 +1,27 @@
 from __future__ import annotations
 
-import typing as t
 import os
+import typing as t
 from abc import abstractmethod
 
 import aggdraw
+from mtgimg.interface import ImageLoader
+from mtgorp.models.interfaces import Cardboard, Printing
+from mtgorp.models.serilization.serializeable import Inflator, serialization_model
+from orp.database import Model
 from PIL import Image, ImageDraw
 from promise import Promise
 
-from orp.database import Model
-
-from mtgorp.models.serilization.serializeable import serialization_model, Inflator
-from mtgorp.models.interfaces import Printing, Cardboard
-
-from mtgimg.interface import ImageLoader
-
-from magiccube.laps.lap import Lap, BaseLap, CardboardLap
-from magiccube.laps import imageutils
 from magiccube import paths
+from magiccube.laps import imageutils
+from magiccube.laps.lap import BaseLap, CardboardLap, Lap
 
 
-T = t.TypeVar('T', bound = Model)
+T = t.TypeVar("T", bound=Model)
 
 
 class BaseTicket(BaseLap, t.Generic[T]):
-    FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, 'Beleren-Bold.ttf')
+    FONT_PATH = os.path.join(paths.FONTS_DIRECTORY, "Beleren-Bold.ttf")
 
     def __init__(self, options: t.Iterable[T], name: str):
         self._name = name
@@ -40,7 +37,7 @@ class BaseTicket(BaseLap, t.Generic[T]):
 
     @property
     def description(self) -> str:
-        return 'Ticket'
+        return "Ticket"
 
     @property
     @abstractmethod
@@ -49,8 +46,8 @@ class BaseTicket(BaseLap, t.Generic[T]):
 
     def serialize(self) -> serialization_model:
         return {
-            'options': self._options,
-            'name': self._name,
+            "options": self._options,
+            "name": self._name,
             **super().serialize(),
         }
 
@@ -58,54 +55,40 @@ class BaseTicket(BaseLap, t.Generic[T]):
         return hash((self._options, self._name))
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._options == other.options
-            and self._name == other.name
-        )
+        return isinstance(other, self.__class__) and self._options == other.options and self._name == other.name
 
     def __iter__(self) -> t.Iterable[T]:
         return self._options.__iter__()
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self._options})'
+        return f"{self.__class__.__name__}({self._options})"
 
 
 class CardboardTicket(BaseTicket[Cardboard], CardboardLap):
-
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        yield self.__class__.__name__.encode('UTF-8')
-        yield self._name.encode('UTF-8')
-        for s in sorted(
-            str(option.id)
-            for option in
-            self._options
-        ):
-            yield s.encode('UTF-8')
+        yield self.__class__.__name__.encode("UTF-8")
+        yield self._name.encode("UTF-8")
+        for s in sorted(str(option.id) for option in self._options):
+            yield s.encode("UTF-8")
 
     @property
     def sorted_options(self) -> t.List[Cardboard]:
-        return sorted(self._options, key = lambda c: c.name)
+        return sorted(self._options, key=lambda c: c.name)
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> CardboardTicket:
         return cls(
-            inflator.inflate_all(Cardboard, value['options']),
-            value['name'],
+            inflator.inflate_all(Cardboard, value["options"]),
+            value["name"],
         )
 
 
 class Ticket(BaseTicket[Printing], Lap):
-
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        yield self.__class__.__name__.encode('UTF-8')
-        yield self._name.encode('UTF-8')
-        for s in sorted(
-            str(option.id)
-            for option in
-            self._options
-        ):
-            yield s.encode('ASCII')
+        yield self.__class__.__name__.encode("UTF-8")
+        yield self._name.encode("UTF-8")
+        for s in sorted(str(option.id) for option in self._options):
+            yield s.encode("ASCII")
 
     @property
     def as_cardboards(self) -> CardboardTicket:
@@ -116,13 +99,13 @@ class Ticket(BaseTicket[Printing], Lap):
 
     @property
     def sorted_options(self) -> t.List[Printing]:
-        return sorted(self._options, key = lambda p: p.cardboard.name)
+        return sorted(self._options, key=lambda p: p.cardboard.name)
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> Ticket:
         return cls(
-            inflator.inflate_all(Printing, value['options']),
-            value['name'],
+            inflator.inflate_all(Printing, value["options"]),
+            value["name"],
         )
 
     def get_image(
@@ -132,35 +115,33 @@ class Ticket(BaseTicket[Printing], Lap):
         back: bool = False,
         crop: bool = False,
     ) -> Image.Image:
-
         width, height = size
         corner_radius = max(2, height // 23)
 
         images = [
             image
-            if image.width == width else
-            image.resize(
+            if image.width == width
+            else image.resize(
                 (
                     width,
                     image.height * width // image.width,
                 ),
                 Image.LANCZOS,
             )
-            for image in
-            Promise.all(
-                tuple(
-                    loader.get_image(option, crop = True)
-                    for option in
-                    self.sorted_options
-                )
+            for image in Promise.all(
+                tuple(loader.get_image(option, crop=True) for option in self.sorted_options)
             ).get()
         ]
 
-        background = Image.new('RGBA', (width, height), (0, 0, 0, 255))
+        background = Image.new("RGBA", (width, height), (0, 0, 0, 255))
 
         draw = ImageDraw.Draw(background)
 
-        for span, option, image, in zip(
+        for (
+            span,
+            option,
+            image,
+        ) in zip(
             imageutils.section(height, len(self._options)),
             self._options,
             images,
@@ -173,28 +154,28 @@ class Ticket(BaseTicket[Printing], Lap):
                 )
 
         imageutils.draw_name(
-            draw = draw,
-            name = self._name,
-            box = (0, 0, width, height),
-            font_path = self.FONT_PATH,
-            font_size = 60,
+            draw=draw,
+            name=self._name,
+            box=(0, 0, width, height),
+            font_path=self.FONT_PATH,
+            font_size=60,
         )
 
         if crop:
             return background
 
-        mask = Image.new('RGBA', (width, height), (0,) * 4)
+        mask = Image.new("RGBA", (width, height), (0,) * 4)
         mask_agg_draw = aggdraw.Draw(mask)
         imageutils.filled_rounded_box(
-            draw = mask_agg_draw,
-            box = (0, 0, width, height),
-            corner_radius = corner_radius,
-            color = (255,) * 3,
+            draw=mask_agg_draw,
+            box=(0, 0, width, height),
+            corner_radius=corner_radius,
+            color=(255,) * 3,
         )
 
         return Image.composite(
             background,
-            Image.new('RGBA', (width, height), (0, 0, 0, 0)),
+            Image.new("RGBA", (width, height), (0, 0, 0, 0)),
             mask,
         )
 
@@ -203,7 +184,7 @@ class Ticket(BaseTicket[Printing], Lap):
 
     @classmethod
     def get_image_dir_name(cls) -> str:
-        return 'tickets'
+        return "tickets"
 
     def has_back(self) -> bool:
         return False

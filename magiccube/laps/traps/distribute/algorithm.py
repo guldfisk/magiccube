@@ -1,30 +1,24 @@
 from __future__ import annotations
 
-import typing as t
-
+import itertools
 import math
 import random
-import itertools
+import typing as t
 from abc import abstractmethod
 from collections import OrderedDict
 
-import matplotlib.pyplot as plt
-
-from evolution import logging, model
-from evolution import environment
+from evolution import environment, logging, model
 from evolution.constraints import Constraint
 from evolution.environment import Environment, EvolutionModelBlueprint, I
-
 from mtgorp.models.interfaces import Printing
 
 from magiccube.collections.laps import TrapCollection
-from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
-from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.collections.nodecollection import ConstrainedNode
+from magiccube.laps.traps.trap import IntentionType, Trap
+from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
 
 
 class DistributionNode(object):
-
     def __init__(self, node: ConstrainedNode, *, auto_add_color: bool = True):
         self._value = node.value
         self._node = node.node
@@ -59,13 +53,13 @@ class DistributionNode(object):
     @property
     def as_constrained_node(self):
         return ConstrainedNode(
-            value = self._value,
-            node = self._node,
-            groups = self._groups,
+            value=self._value,
+            node=self._node,
+            groups=self._groups,
         )
 
     def __repr__(self):
-        return f'DN({self.node}, {self.groups}, {self.value})'
+        return f"DN({self.node}, {self.groups}, {self.value})"
 
     def __copy__(self):
         return self
@@ -87,7 +81,7 @@ class TrapCollectionIndividual(model.Individual):
         pass
 
 
-T = t.TypeVar('T', bound = TrapCollectionIndividual)
+T = t.TypeVar("T", bound=TrapCollectionIndividual)
 
 
 class TrapDistribution(TrapCollectionIndividual):
@@ -98,7 +92,7 @@ class TrapDistribution(TrapCollectionIndividual):
         distribution_nodes: t.Iterable[DistributionNode] = (),
         trap_amount: int = 1,
         traps: t.Optional[t.List[t.List[DistributionNode]]] = None,
-        random_initialization: bool = False
+        random_initialization: bool = False,
     ):
         super().__init__()
 
@@ -112,10 +106,7 @@ class TrapDistribution(TrapCollectionIndividual):
                     random.choice(self.traps).append(constrained_node)
 
             else:
-                for constrained_node, trap in zip(
-                    distribution_nodes,
-                    itertools.cycle(self.traps)
-                ):
+                for constrained_node, trap in zip(distribution_nodes, itertools.cycle(self.traps)):
                     trap.append(constrained_node)
 
         else:
@@ -137,7 +128,7 @@ class TrapDistribution(TrapCollectionIndividual):
             cubeables = []
 
             if not trap:
-                raise self.InvalidDistribution('Empty trap')
+                raise self.InvalidDistribution("Empty trap")
 
             for constrained_node in trap:
                 cubeable = constrained_node.node
@@ -149,14 +140,14 @@ class TrapDistribution(TrapCollectionIndividual):
             traps.append(
                 Trap(
                     AllNode(cubeables),
-                    intention_type = intention_type,
+                    intention_type=intention_type,
                 )
             )
 
         return TrapCollection(traps)
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.traps})'
+        return f"{self.__class__.__name__}({self.traps})"
 
 
 def logistic(x: float, max_value: float, mid: float, slope: float) -> float:
@@ -167,52 +158,30 @@ def logistic(x: float, max_value: float, mid: float, slope: float) -> float:
 
 
 class ValueDistributionHomogeneityConstraint(Constraint):
-    description = 'Value distribution homogeneity'
+    description = "Value distribution homogeneity"
 
     def __init__(
         self,
         nodes: t.Iterable[DistributionNode],
         trap_amount: int,
     ):
-        self._average_trap_value = (
-            sum(
-                (
-                    node.value
-                    for node in
-                    nodes
-                )
-            ) / trap_amount
-        )
-        self._relator = self._average_trap_value ** 2 * trap_amount
+        self._average_trap_value = sum((node.value for node in nodes)) / trap_amount
+        self._relator = self._average_trap_value**2 * trap_amount
 
     def _value_distribution_heterogeneity_factor(self, distribution: TrapDistribution) -> float:
-        return sum(
-            (
-                (
-                    sum(
-                        node.value
-                            for node in
-                            trap
-                    ) - self._average_trap_value
-                ) ** 2
-                for trap in
-                distribution.traps
-            )
-        )
+        return sum(((sum(node.value for node in trap) - self._average_trap_value) ** 2 for trap in distribution.traps))
 
     def score(self, distribution: TrapDistribution) -> float:
         return logistic(
-            x = self._value_distribution_heterogeneity_factor(
-                distribution
-            ) / self._relator,
-            max_value = 2,
-            mid = 0,
-            slope = 7,
+            x=self._value_distribution_heterogeneity_factor(distribution) / self._relator,
+            max_value=2,
+            mid=0,
+            slope=7,
         )
 
 
 class GroupExclusivityConstraint(Constraint):
-    description = 'Group exclusivity'
+    description = "Group exclusivity"
 
     def __init__(
         self,
@@ -222,11 +191,7 @@ class GroupExclusivityConstraint(Constraint):
     ):
         self._group_weights = {} if group_weights is None else group_weights
 
-        self._relator = (
-                            self._get_nodes_collision_factor(
-                                nodes
-                            ) / trap_amount
-                        ) ** 2
+        self._relator = (self._get_nodes_collision_factor(nodes) / trap_amount) ** 2
 
     def _get_nodes_collision_factor(self, nodes: t.Iterable[DistributionNode]) -> float:
         groups: t.Dict[str, t.List[DistributionNode]] = {}
@@ -234,7 +199,6 @@ class GroupExclusivityConstraint(Constraint):
 
         for constrained_node in nodes:
             for group in constrained_node.groups:
-
                 if group in groups:
                     for other_node in groups[group]:
                         _collision_key = frozenset((constrained_node, other_node))
@@ -251,32 +215,25 @@ class GroupExclusivityConstraint(Constraint):
         return sum(
             (
                 (1 - 1 / (1 + sum(node.value for node in nodes)))
-                * max(self._group_weights.get(group, .1) for group in groups)
+                * max(self._group_weights.get(group, 0.1) for group in groups)
             )
-                for nodes, groups in
-                collisions.items()
+            for nodes, groups in collisions.items()
         )
 
     def group_collision_factor(self, distribution: TrapDistribution) -> int:
-        return sum(
-            self._get_nodes_collision_factor(trap) ** 2
-                for trap in
-                distribution.traps
-        )
+        return sum(self._get_nodes_collision_factor(trap) ** 2 for trap in distribution.traps)
 
     def score(self, distribution: TrapDistribution) -> float:
         return logistic(
-            x = self.group_collision_factor(
-                distribution
-            ) / self._relator,
-            max_value = 2,
-            mid = 0,
-            slope = 100,
+            x=self.group_collision_factor(distribution) / self._relator,
+            max_value=2,
+            mid=0,
+            slope=100,
         )
 
 
 class SizeHomogeneityConstraint(Constraint):
-    description = 'Size homogeneity'
+    description = "Size homogeneity"
 
     def __init__(
         self,
@@ -284,28 +241,22 @@ class SizeHomogeneityConstraint(Constraint):
         trap_amount: int,
     ):
         self._average_trap_size = len(nodes) / trap_amount
-        self._relator = self._average_trap_size ** 2 * trap_amount
+        self._relator = self._average_trap_size**2 * trap_amount
 
     def _size_heterogeneity_factor(self, distribution: TrapDistribution) -> float:
-        return sum(
-            (len(trap) - self._average_trap_size) ** 2
-            for trap in
-            distribution.traps
-        )
+        return sum((len(trap) - self._average_trap_size) ** 2 for trap in distribution.traps)
 
     def score(self, distribution: TrapDistribution) -> float:
         return logistic(
-            x = self._size_heterogeneity_factor(
-                distribution
-            ) / self._relator,
-            max_value = 2,
-            mid = 0,
-            slope = 5,
+            x=self._size_heterogeneity_factor(distribution) / self._relator,
+            max_value=2,
+            mid=0,
+            slope=5,
         )
 
 
 class ImageAmountHomogeneity(Constraint):
-    description = 'Image amount homogeneity'
+    description = "Image amount homogeneity"
 
     def __init__(
         self,
@@ -313,28 +264,24 @@ class ImageAmountHomogeneity(Constraint):
         trap_amount: int,
     ):
         self._average_trap_image_amount = sum(node.image_amount for node in nodes) / trap_amount
-        self._relator = self._average_trap_image_amount ** 2 * trap_amount
+        self._relator = self._average_trap_image_amount**2 * trap_amount
 
     def _image_amount_heterogeneity_factor(self, distribution: TrapDistribution) -> float:
         return sum(
             (sum(node.image_amount for node in trap) - self._average_trap_image_amount) ** 2
-            for trap in
-            distribution.traps
+            for trap in distribution.traps
         )
 
     def score(self, distribution: TrapDistribution) -> float:
         return logistic(
-            x = self._image_amount_heterogeneity_factor(
-                distribution
-            ) / self._relator,
-            max_value = 2,
-            mid = 0,
-            slope = 5,
+            x=self._image_amount_heterogeneity_factor(distribution) / self._relator,
+            max_value=2,
+            mid=0,
+            slope=5,
         )
 
 
 class BaseDistributor(Environment[T]):
-
     def __init__(
         self,
         distribution_nodes: t.Iterable[DistributionNode],
@@ -344,29 +291,29 @@ class BaseDistributor(Environment[T]):
         logger: t.Optional[logging.Logger] = None,
         **kwargs,
     ):
-        self._model_blue_print = (
-            model_blue_print or
-            EvolutionModelBlueprint(environment.SimpleModel, initial_population_size = 300)
+        self._model_blue_print = model_blue_print or EvolutionModelBlueprint(
+            environment.SimpleModel, initial_population_size=300
         )
         self._distribution_nodes: t.List[DistributionNode] = list(distribution_nodes)
         self._trap_amount = trap_amount
 
         super().__init__(
             self._model_blue_print.realise(
-                individual_factory = self.create_individual,
-                fitness_evaluator = constraints,
-                mutate = lambda i, d: self.mutate(i),
-                mate = lambda f, s, d: self.mate(f, s),
+                individual_factory=self.create_individual,
+                fitness_evaluator=constraints,
+                mutate=lambda i, d: self.mutate(i),
+                mate=lambda f, s, d: self.mate(f, s),
             ),
-            logger = logger or logging.Logger(
+            logger=logger
+            or logging.Logger(
                 OrderedDict(
                     (
                         (
-                            'max',
+                            "max",
                             logging.LogMax(),
                         ),
                         (
-                            'mean',
+                            "mean",
                             logging.LogAverage(),
                         ),
                     )
@@ -396,50 +343,37 @@ class BaseDistributor(Environment[T]):
         return self._trap_amount
 
     def show_plot(self) -> None:
+        import matplotlib.pyplot as plt
+
         generations = range(len(self._logger.values))
         fit_maxes = [frame[0] for frame in self._logger.values]
         fit_averages = [frame[1] for frame in self._logger.values]
 
         fig, ax1 = plt.subplots()
 
-        max_line = ax1.plot(generations, fit_maxes, 'k', label = 'Maximum Fitness')
-        average_line = ax1.plot(generations, fit_averages, '.75', label = 'Average Fitness')
+        max_line = ax1.plot(generations, fit_maxes, "k", label="Maximum Fitness")
+        average_line = ax1.plot(generations, fit_averages, ".75", label="Average Fitness")
 
         lns = max_line + average_line
         labs = [l.get_label() for l in lns]
-        ax1.legend(lns, labs, loc = "lower right")
+        ax1.legend(lns, labs, loc="lower right")
 
         plt.show()
 
 
 class Distributor(BaseDistributor[TrapDistribution]):
-
     def create_individual(self) -> TrapCollectionIndividual:
         return TrapDistribution(
-            distribution_nodes = self._distribution_nodes,
-            trap_amount = self._trap_amount,
-            random_initialization = True,
+            distribution_nodes=self._distribution_nodes,
+            trap_amount=self._trap_amount,
+            random_initialization=True,
         )
 
     def mutate(self, distribution: TrapDistribution) -> TrapDistribution:
-        if random.random() > .3:
+        if random.random() > 0.3:
             for i in range(random.randint(1, 5)):
-                selected_group = random.choice(
-                    [
-                        group
-                        for group in
-                        distribution.traps
-                        if group
-                    ]
-                )
-                target_group = random.choice(
-                    [
-                        group
-                        for group in
-                        distribution.traps
-                        if group != selected_group
-                    ]
-                )
+                selected_group = random.choice([group for group in distribution.traps if group])
+                target_group = random.choice([group for group in distribution.traps if group != selected_group])
                 target_group.append(
                     selected_group.pop(
                         random.randint(
@@ -450,25 +384,11 @@ class Distributor(BaseDistributor[TrapDistribution]):
                 )
         else:
             for i in range(random.randint(1, 2)):
-                first_group = random.choice(
-                    [
-                        group
-                        for group in
-                        distribution.traps
-                        if group
-                    ]
-                )
-                possible_second_groups = [
-                    group
-                    for group in
-                    distribution.traps
-                    if group != first_group and group
-                ]
+                first_group = random.choice([group for group in distribution.traps if group])
+                possible_second_groups = [group for group in distribution.traps if group != first_group and group]
                 if not possible_second_groups:
                     continue
-                second_group = random.choice(
-                    possible_second_groups
-                )
+                second_group = random.choice(possible_second_groups)
 
                 first = first_group.pop(
                     random.randint(
@@ -493,11 +413,7 @@ class Distributor(BaseDistributor[TrapDistribution]):
         first: TrapDistribution,
         second: TrapDistribution,
     ) -> t.Tuple[TrapDistribution, TrapDistribution]:
-        locations = {
-            node: []
-            for node in
-            self.distribution_nodes
-        }
+        locations = {node: [] for node in self.distribution_nodes}
 
         for distribution in (first, second):
             for i, traps in enumerate(distribution.traps):
@@ -505,11 +421,7 @@ class Distributor(BaseDistributor[TrapDistribution]):
                     locations[node].append(i)
 
         for distribution in (first, second):
-            traps = [
-                []
-                for _ in
-                range(self.trap_amount)
-            ]
+            traps = [[] for _ in range(self.trap_amount)]
 
             for node, possibilities in locations.items():
                 traps[random.choice(possibilities)].append(node)

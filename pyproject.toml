@@ -1,0 +1,35 @@
+[project]
+name = "magiccube"
+
+[tool.isort]
+profile = "black"
+lines_after_imports = 2
+honor_noqa = true
+
+[tool.black]
+line-length = 119
+
+[tool.poetry]
+name = "magiccube"
+version = "0.1.0"
+description = ""
+authors = ["None"]
+
+[tool.poetry.dependencies]
+python = "~3.9"
+Pillow = "~9.4"
+appdirs = "~1.4"
+immutabledict = "~3.0"
+lazy-property = "~0.0"
+multiset = "~3.0"
+numpy = "~1.26"
+promise = "~2.3"
+requests = "^2.31.0"
+antlr4-python3-runtime = "~4.9"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

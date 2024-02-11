@@ -1,12 +1,10 @@
-import typing as t
-
 import itertools
+import typing as t
 from collections import defaultdict
 
-from yeetlong.multiset import Multiset, BaseMultiset, FrozenMultiset
+from mtgorp.models.interfaces import Cardboard, Printing
 from yeetlong.errors import Errors
-
-from mtgorp.models.interfaces import Printing, Cardboard
+from yeetlong.multiset import BaseMultiset, FrozenMultiset, Multiset
 
 from magiccube.collections.cube import Cube
 from magiccube.laps.traps.tree.printingtree import AnyNode, NodeAny
@@ -37,41 +35,29 @@ def check_deck_subset_pool(
     printings = Multiset(pool.models)
     anys: Multiset[AnyNode] = Multiset()
 
-    for child in itertools.chain(
-        *(
-            trap.node.flattened
-            for trap in
-            pool.traps
-        )
-    ):
+    for child in itertools.chain(*(trap.node.flattened for trap in pool.traps)):
         if isinstance(child, NodeAny):
             anys.add(child)
         else:
             printings.add(child)
 
-    ticket_printings = set(
-        itertools.chain(
-            *pool.tickets
-        )
-    )
+    ticket_printings = set(itertools.chain(*pool.tickets))
 
-    unaccounted_printings = Multiset(
-        {
-            printing: multiplicity
-            for printing, multiplicity in
-            deck.items()
-            if ((printing.cardboard not in exempt_cardboards) if strict else (printing not in exempt_cardboards))
-        }
-    ) - printings
+    unaccounted_printings = (
+        Multiset(
+            {
+                printing: multiplicity
+                for printing, multiplicity in deck.items()
+                if ((printing.cardboard not in exempt_cardboards) if strict else (printing not in exempt_cardboards))
+            }
+        )
+        - printings
+    )
 
     printings_in_tickets = Multiset()
     printing_to_anys = defaultdict(list)
 
-    flattened_anys = {
-        _any: FrozenMultiset(_any.flattened_options)
-        for _any in
-        anys.distinct_elements()
-    }
+    flattened_anys = {_any: FrozenMultiset(_any.flattened_options) for _any in anys.distinct_elements()}
 
     for _any, options in flattened_anys.items():
         for option in options:
@@ -87,7 +73,7 @@ def check_deck_subset_pool(
             if unaccounted_printing in ticket_printings:
                 printings_in_tickets.add(unaccounted_printing)
                 continue
-            return Errors([f'Pool does not contain {unaccounted_printing}'])
+            return Errors([f"Pool does not contain {unaccounted_printing}"])
 
         for _any in _anys:
             for option in flattened_anys[_any]:
@@ -106,10 +92,7 @@ def check_deck_subset_pool(
                 contested_options.append(flattened_anys[_any])
 
     contested_printings = Multiset(
-        printing
-        for printing in
-        unaccounted_printings - uncontested_options
-        if not printing in printings_in_tickets
+        printing for printing in unaccounted_printings - uncontested_options if printing not in printings_in_tickets
     )
 
     combination_printings = Multiset()
@@ -124,7 +107,7 @@ def check_deck_subset_pool(
         solution_found = True
 
     if not solution_found:
-        return Errors(['No suitable combination of any choices'])
+        return Errors(["No suitable combination of any choices"])
 
     unaccounted_printings -= combination_printings + uncontested_options
 
@@ -156,7 +139,7 @@ def check_deck_subset_pool(
 
     for ticket, printing in uncontested_tickets:
         if _amount_printing_to_required_tickets(unaccounted_printings[printing]) > pool.tickets[ticket]:
-            return Errors([f'Not enough tickets to pay for {printing}'])
+            return Errors([f"Not enough tickets to pay for {printing}"])
 
     if contested_tickets_printings:
         solution_found = False
@@ -168,9 +151,7 @@ def check_deck_subset_pool(
 
             for printing, tickets in _printings_to_tickets.items():
                 if _amount_printing_to_required_tickets(unaccounted_printings[printing]) <= sum(
-                    pool.tickets[ticket]
-                    for ticket in
-                    tickets
+                    pool.tickets[ticket] for ticket in tickets
                 ):
                     solution_found = True
                     break
@@ -181,6 +162,6 @@ def check_deck_subset_pool(
         solution_found = True
 
     if not solution_found:
-        return Errors(['No suitable combination of tickets'])
+        return Errors(["No suitable combination of tickets"])
 
     return Errors()

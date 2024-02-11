@@ -4,18 +4,20 @@ import typing as t
 from collections import defaultdict
 
 from immutabledict import immutabledict
-
+from mtgorp.models.interfaces import Printing
+from mtgorp.models.serilization.serializeable import (
+    Inflator,
+    PersistentHashable,
+    Serializeable,
+    serialization_model,
+)
 from yeetlong.counters import FrozenCounter
 from yeetlong.multiset import FrozenMultiset
-
-from mtgorp.models.interfaces import Printing
-from mtgorp.models.serilization.serializeable import Serializeable, PersistentHashable, serialization_model, Inflator
 
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 
 
 class GroupMap(Serializeable):
-
     def __init__(self, groups: t.Mapping[str, float]):
         self._groups = groups if isinstance(groups, immutabledict) else immutabledict(groups)
 
@@ -26,34 +28,15 @@ class GroupMap(Serializeable):
     def normalized(self) -> GroupMap:
         max_weight = max(self._groups.values())
         return self.__class__(
-            immutabledict(
-                (group, weight / max_weight)
-                for group, weight in
-                self._groups.items()
-                if weight > 0
-            )
+            immutabledict((group, weight / max_weight) for group, weight in self._groups.items() if weight > 0)
         )
 
     def serialize(self) -> serialization_model:
-        return {
-            'groups': [
-                (group, weight)
-                for group, weight in
-                self._groups.items()
-            ]
-        }
+        return {"groups": [(group, weight) for group, weight in self._groups.items()]}
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> GroupMap:
-        return cls(
-            immutabledict(
-                [
-                    (group, weight)
-                    for group, weight in
-                    value['groups']
-                ]
-            )
-        )
+        return cls(immutabledict([(group, weight) for group, weight in value["groups"]]))
 
     def __iter__(self) -> t.Iterator[str]:
         return self._groups.__iter__()
@@ -83,11 +66,7 @@ class GroupMap(Serializeable):
     def __mul__(self, other: float):
         if other == 0:
             return self.__class__({})
-        return self.__class__(
-            (group, weight * other)
-            for group, weight in
-            self._groups.items()
-        )
+        return self.__class__((group, weight * other) for group, weight in self._groups.items())
 
     __rmul__ = __mul__
 
@@ -98,36 +77,23 @@ class GroupMap(Serializeable):
         return hash(self._groups)
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._groups == other._groups
-        )
+        return isinstance(other, self.__class__) and self._groups == other._groups
 
     def __repr__(self) -> str:
-        return '{}({})'.format(
-            self.__class__.__name__,
-            ', '.join(
-                group + ': ' + str(weight)
-                for group, weight in
-                self._groups.items()
-            )
+        return "{}({})".format(
+            self.__class__.__name__, ", ".join(group + ": " + str(weight) for group, weight in self._groups.items())
         )
 
 
 class GroupMapDeltaOperation(Serializeable, PersistentHashable):
-
     def __init__(
         self,
         groups: t.Optional[t.Mapping[str, t.Optional[float]]] = None,
     ):
         self._groups = (
             immutabledict()
-            if groups is None else
-            (
-                groups
-                if isinstance(groups, immutabledict) else
-                immutabledict(groups)
-            )
+            if groups is None
+            else (groups if isinstance(groups, immutabledict) else immutabledict(groups))
         )
 
     @property
@@ -135,37 +101,19 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
         return self._groups
 
     def serialize(self) -> serialization_model:
-        return {
-            'groups': [
-                (group, weight)
-                for group, weight in
-                self._groups.items()
-            ]
-        }
+        return {"groups": [(group, weight) for group, weight in self._groups.items()]}
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> Serializeable:
-        return cls(
-            immutabledict(
-                [
-                    (group, weight)
-                    for group, weight in
-                    value['groups']
-                ]
-            )
-        )
+        return cls(immutabledict([(group, weight) for group, weight in value["groups"]]))
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for group, weight in sorted(
-            (
-                (group, weight)
-                for group, weight in
-                self._groups.items()
-            ),
-            key = lambda pair: pair[0],
+            ((group, weight) for group, weight in self._groups.items()),
+            key=lambda pair: pair[0],
         ):
-            yield group.encode('ASCII')
-            yield str(weight).encode('ASCII')
+            yield group.encode("ASCII")
+            yield str(weight).encode("ASCII")
 
     def __add__(self, other: GroupMapDeltaOperation) -> GroupMapDeltaOperation:
         groups = defaultdict(lambda: 0, self._groups)
@@ -190,13 +138,7 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
     __rsub__ = __sub__
 
     def __mul__(self, other: float):
-        return self.__class__(
-            {
-                group: value * other
-                for group, value in
-                self._groups.items()
-            }
-        )
+        return self.__class__({group: value * other for group, value in self._groups.items()})
 
     __rmul__ = __mul__
 
@@ -207,24 +149,15 @@ class GroupMapDeltaOperation(Serializeable, PersistentHashable):
         return hash(self._groups)
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._groups == other._groups
-        )
+        return isinstance(other, self.__class__) and self._groups == other._groups
 
     def __repr__(self) -> str:
-        return '{}({})'.format(
-            self.__class__.__name__,
-            ', '.join(
-                group + ': ' + str(weight)
-                for group, weight in
-                self._groups.items()
-            )
+        return "{}({})".format(
+            self.__class__.__name__, ", ".join(group + ": " + str(weight) for group, weight in self._groups.items())
         )
 
 
 class ConstrainedNode(Serializeable, PersistentHashable):
-
     def __init__(self, value: float, node: PrintingNode, groups: t.Iterable[str] = ()):
         self._value = value
         self._node = node
@@ -244,35 +177,35 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         return self._groups
 
     def get_minimal_string(self) -> str:
-        return '({}, {} - {})'.format(
-            self._node.get_minimal_string(identified_by_id = False),
+        return "({}, {} - {})".format(
+            self._node.get_minimal_string(identified_by_id=False),
             self.value,
-            ', '.join(sorted(self._groups)),
+            ", ".join(sorted(self._groups)),
         )
 
     def serialize(self) -> serialization_model:
         return {
-            'node': self._node,
-            'value': self._value,
-            'groups': self._groups,
+            "node": self._node,
+            "value": self._value,
+            "groups": self._groups,
         }
 
     @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> 'ConstrainedNode':
+    def deserialize(cls, value: serialization_model, inflator: Inflator) -> "ConstrainedNode":
         return cls(
-            node = PrintingNode.deserialize(
-                value['node'],
+            node=PrintingNode.deserialize(
+                value["node"],
                 inflator,
             ),
-            value = value['value'],
-            groups = value['groups'],
+            value=value["value"],
+            groups=value["groups"],
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
-        yield self.node.persistent_hash().encode('ASCII')
-        yield str(self.value).encode('ASCII')
+        yield self.node.persistent_hash().encode("ASCII")
+        yield str(self.value).encode("ASCII")
         for group in sorted(self.groups):
-            yield group.encode('UTF-8')
+            yield group.encode("UTF-8")
 
     def __hash__(self) -> int:
         return hash((self._node, self._value, self._groups))
@@ -286,14 +219,13 @@ class ConstrainedNode(Serializeable, PersistentHashable):
         )
 
     def __repr__(self):
-        return f'CC({self.node}, {self.groups}, {self.value})'
+        return f"CC({self.node}, {self.groups}, {self.value})"
 
     def __deepcopy__(self, memodict: t.Dict):
         return self
 
 
 class NodeCollection(Serializeable):
-
     def __init__(self, nodes: t.Iterable[ConstrainedNode]):
         self._nodes = nodes if isinstance(nodes, FrozenMultiset) else FrozenMultiset(nodes)
         self._nodes_map: t.Optional[t.Mapping[PrintingNode, ConstrainedNode]] = None
@@ -305,34 +237,17 @@ class NodeCollection(Serializeable):
     def node_for_node(self, node: PrintingNode) -> t.Optional[ConstrainedNode]:
         if self._nodes_map is None:
             self._nodes_map = {
-                constrained_node.node: constrained_node
-                for constrained_node in
-                self._nodes.distinct_elements()
+                constrained_node.node: constrained_node for constrained_node in self._nodes.distinct_elements()
             }
 
         return self._nodes_map.get(node)
 
     def serialize(self) -> serialization_model:
-        return {
-            'nodes': [
-                node.serialize()
-                for node in
-                self._nodes
-            ]
-        }
+        return {"nodes": [node.serialize() for node in self._nodes]}
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> NodeCollection:
-        return cls(
-            nodes = (
-                ConstrainedNode.deserialize(
-                    node,
-                    inflator
-                )
-                for node in
-                value['nodes']
-            )
-        )
+        return cls(nodes=(ConstrainedNode.deserialize(node, inflator) for node in value["nodes"]))
 
     def items(self) -> t.Iterable[t.Tuple[ConstrainedNode, int]]:
         return self._nodes.items()
@@ -352,36 +267,24 @@ class NodeCollection(Serializeable):
         return hash(self._nodes)
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._nodes == other._nodes
-        )
+        return isinstance(other, self.__class__) and self._nodes == other._nodes
 
     def __add__(self, other: t.Union[NodeCollection, NodesDeltaOperation]) -> NodeCollection:
-        return self.__class__(
-            self._nodes + other.nodes
-        )
+        return self.__class__(self._nodes + other.nodes)
 
     def __sub__(self, other: t.Union[NodeCollection, NodesDeltaOperation]) -> NodeCollection:
-        return self.__class__(
-            self._nodes - other.nodes
-        )
+        return self.__class__(self._nodes - other.nodes)
 
     def __repr__(self) -> str:
         return self._nodes.__repr__()
 
 
 class NodesDeltaOperation(Serializeable, PersistentHashable):
-
     def __init__(
         self,
         nodes: t.Optional[t.Mapping[ConstrainedNode, int]] = None,
     ):
-        self._nodes = (
-            FrozenCounter()
-            if nodes is None else
-            FrozenCounter(nodes)
-        )
+        self._nodes = FrozenCounter() if nodes is None else FrozenCounter(nodes)
 
     @property
     def nodes(self) -> FrozenCounter[ConstrainedNode]:
@@ -400,76 +303,54 @@ class NodesDeltaOperation(Serializeable, PersistentHashable):
                 yield from node.node
 
     def serialize(self) -> serialization_model:
-        return {
-            'nodes': (
-                (node, multiplicity)
-                for node, multiplicity
-                in self._nodes.items()
-            )
-        }
+        return {"nodes": ((node, multiplicity) for node, multiplicity in self._nodes.items())}
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> NodesDeltaOperation:
         return cls(
-            nodes = {
+            nodes={
                 ConstrainedNode.deserialize(
                     node,
                     inflator,
                 ): multiplicity
-                for node, multiplicity in
-                value['nodes']
+                for node, multiplicity in value["nodes"]
             }
         )
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for persistent_hash, multiplicity in sorted(
-            (
-                (node.persistent_hash(), multiplicity)
-                for node, multiplicity in
-                self._nodes.items()
-            ),
-            key = lambda pair: pair[0],
+            ((node.persistent_hash(), multiplicity) for node, multiplicity in self._nodes.items()),
+            key=lambda pair: pair[0],
         ):
-            yield persistent_hash.encode('ASCII')
-            yield str(multiplicity).encode('ASCII')
+            yield persistent_hash.encode("ASCII")
+            yield str(multiplicity).encode("ASCII")
 
     def __hash__(self) -> int:
         return hash(self._nodes)
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._nodes == other._nodes
-        )
+        return isinstance(other, self.__class__) and self._nodes == other._nodes
 
     def __add__(self, other: t.Union[NodesDeltaOperation, NodeCollection]) -> NodesDeltaOperation:
-        return self.__class__(
-            self._nodes + other.nodes
-        )
+        return self.__class__(self._nodes + other.nodes)
 
     __radd__ = __add__
 
     def __sub__(self, other: t.Union[NodesDeltaOperation, NodeCollection]) -> NodesDeltaOperation:
-        return self.__class__(
-            self._nodes - other.nodes
-        )
+        return self.__class__(self._nodes - other.nodes)
 
     __rsub__ = __sub__
 
     def __mul__(self, other: int) -> NodesDeltaOperation:
-        return self.__class__(
-            self._nodes * other
-        )
+        return self.__class__(self._nodes * other)
 
     __rmul__ = __mul__
 
     def __invert__(self):
-        return self.__class__(
-            self._nodes * -1
-        )
+        return self.__class__(self._nodes * -1)
 
     def __repr__(self) -> str:
-        return '{}({})'.format(
+        return "{}({})".format(
             self.__class__.__name__,
             self._nodes,
         )

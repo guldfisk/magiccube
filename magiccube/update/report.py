@@ -1,27 +1,26 @@
 from __future__ import annotations
 
-import typing as t
 import itertools
-from enum import Enum
+import typing as t
 from abc import ABC, abstractmethod
 from collections import defaultdict
-
-from yeetlong.counters import FrozenCounter
-from yeetlong.multiset import FrozenMultiset, Multiset
+from enum import Enum
 
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
+from yeetlong.counters import FrozenCounter
+from yeetlong.multiset import FrozenMultiset, Multiset
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
 from magiccube.collections.nodecollection import ConstrainedNode
-from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.laps.traps.trap import IntentionType, Trap
 from magiccube.update.cubeupdate import CubeUpdater
 
 
 class ReportNotificationLevel(Enum):
-    INFO = 'info'
-    WARNING = 'warning'
+    INFO = "info"
+    WARNING = "warning"
 
 
 class ReportNotification(ABC):
@@ -65,14 +64,14 @@ class ChangedSize(ReportNotification):
 
     @property
     def title(self) -> str:
-        return 'Cube changed size'
+        return "Cube changed size"
 
     @property
     def content(self) -> str:
-        return 'Cube changed size from {} to {} ({})'.format(
+        return "Cube changed size from {} to {} ({})".format(
             self._original_size,
             self._original_size + self._size_delta,
-            ('+' if self._size_delta > 0 else '') + str(self._size_delta)
+            ("+" if self._size_delta > 0 else "") + str(self._size_delta),
         )
 
 
@@ -87,8 +86,7 @@ class NodesWithoutGroups(ReportNotification):
         nodes = FrozenMultiset(
             {
                 node: multiplicity
-                for node, multiplicity in
-                updater.patch.node_delta_operation.nodes.items()
+                for node, multiplicity in updater.patch.node_delta_operation.nodes.items()
                 if multiplicity > 0 and not node.groups
             }
         )
@@ -100,15 +98,14 @@ class NodesWithoutGroups(ReportNotification):
 
     @property
     def title(self) -> str:
-        return 'New nodes without groups'
+        return "New nodes without groups"
 
     @property
     def content(self) -> str:
-        return 'Added the following nodes without any groups:\n' + (
-            '\n'.join(
-                ((str(multiplicity) + 'x ') if multiplicity != 1 else '') + node.get_minimal_string()
-                for node, multiplicity in
-                self._nodes.items()
+        return "Added the following nodes without any groups:\n" + (
+            "\n".join(
+                ((str(multiplicity) + "x ") if multiplicity != 1 else "") + node.get_minimal_string()
+                for node, multiplicity in self._nodes.items()
             )
         )
 
@@ -131,12 +128,7 @@ class GroupsWithOneOrLessNodes(ReportNotification):
             for group in node.groups:
                 groups[group].add(node)
 
-        under_populated_groups = {
-            group: nodes
-            for group, nodes in
-            groups.items()
-            if len(nodes) <= 1
-        }
+        under_populated_groups = {group: nodes for group, nodes in groups.items() if len(nodes) <= 1}
 
         if not under_populated_groups:
             return None
@@ -144,35 +136,27 @@ class GroupsWithOneOrLessNodes(ReportNotification):
         return cls(
             {
                 key: under_populated_groups[key]
-                for key in
-                under_populated_groups.keys() - updater.group_map.groups.keys()
+                for key in under_populated_groups.keys() - updater.group_map.groups.keys()
             },
             {
                 key: under_populated_groups[key]
-                for key in
-                under_populated_groups.keys() & updater.group_map.groups.keys()
+                for key in under_populated_groups.keys() & updater.group_map.groups.keys()
             },
         )
 
     @property
     def title(self) -> str:
-        return 'Groups with one or less nodes'
+        return "Groups with one or less nodes"
 
     @classmethod
     def _format_groups(cls, groups: t.Mapping[str, Multiset[ConstrainedNode]]) -> str:
-        return '\n'.join(
-            group + ': ' + ', '.join(
-                node.get_minimal_string()
-                for node in
-                nodes
-            )
-            for group, nodes in
-            groups.items()
+        return "\n".join(
+            group + ": " + ", ".join(node.get_minimal_string() for node in nodes) for group, nodes in groups.items()
         )
 
     @property
     def content(self) -> str:
-        return 'New groups:\n{}\nOld groups:\n{}'.format(
+        return "New groups:\n{}\nOld groups:\n{}".format(
             self._format_groups(self._new_groups),
             self._format_groups(self._old_groups),
         )
@@ -192,7 +176,7 @@ class NodesWithUnknownGroups(ReportNotification):
         unknown_map = defaultdict(lambda: Multiset())
         for node in updater.new_nodes:
             for group in node.groups:
-                if not group in updater.new_groups.groups:
+                if group not in updater.new_groups.groups:
                     unknown_map[group].add(node)
 
         if not unknown_map:
@@ -202,18 +186,13 @@ class NodesWithUnknownGroups(ReportNotification):
 
     @property
     def title(self) -> str:
-        return 'Unknown groups'
+        return "Unknown groups"
 
     @property
     def content(self) -> str:
-        return '\n'.join(
-            group + ': ' + ', '.join(
-                node.get_minimal_string()
-                for node in
-                nodes
-            )
-            for group, nodes in
-            self._groups.items()
+        return "\n".join(
+            group + ": " + ", ".join(node.get_minimal_string() for node in nodes)
+            for group, nodes in self._groups.items()
         )
 
 
@@ -225,13 +204,15 @@ class RemoveNonExistentCubeables(ReportNotification):
 
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
-        non_existent_cuts = FrozenMultiset(
-            {
-                cubeable: multiplicity
-                for cubeable, multiplicity in
-                (~updater.patch.cube_delta_operation.cubeables).positive()
-            }
-        ) - updater.cube.cubeables
+        non_existent_cuts = (
+            FrozenMultiset(
+                {
+                    cubeable: multiplicity
+                    for cubeable, multiplicity in (~updater.patch.cube_delta_operation.cubeables).positive()
+                }
+            )
+            - updater.cube.cubeables
+        )
 
         if non_existent_cuts:
             return cls(non_existent_cuts)
@@ -240,7 +221,7 @@ class RemoveNonExistentCubeables(ReportNotification):
 
     @property
     def title(self) -> str:
-        return 'Remove non-existent cubeables'
+        return "Remove non-existent cubeables"
 
     @property
     def content(self) -> str:
@@ -271,35 +252,34 @@ class PrintingMismatch(ReportNotification):
                 new_cardboard_map[key] - old_cardboard_map[key],
                 old_cardboard_map[key],
             )
-            for key in
-            old_cardboard_map.keys() & new_cardboard_map.keys()
+            for key in old_cardboard_map.keys() & new_cardboard_map.keys()
             if new_cardboard_map[key] - old_cardboard_map[key]
         }
 
         if not mismatches:
             return None
 
-        return cls(
-            mismatches
-        )
+        return cls(mismatches)
 
     @property
     def title(self) -> str:
-        return 'New printings mismatch'
+        return "New printings mismatch"
 
     @property
     def content(self) -> str:
-        return 'The following is printings added that share cardboard, but not printing, with existing printings:\n' + (
-            '\n'.join(
-                '{}: {} : {}'.format(
-                    cardboard.name,
-                    ', '.join(sorted((printing.expansion.code for printing in values[0]))),
-                    ', '.join(sorted((printing.expansion.code for printing in values[1]))),
-                )
-                for cardboard, values in
-                sorted(
-                    self._mismatches.items(),
-                    key = lambda i: i[0].name,
+        return (
+            "The following is printings added that share cardboard, but not printing, with existing printings:\n"
+            + (
+                "\n".join(
+                    "{}: {} : {}".format(
+                        cardboard.name,
+                        ", ".join(sorted((printing.expansion.code for printing in values[0]))),
+                        ", ".join(sorted((printing.expansion.code for printing in values[1]))),
+                    )
+                    for cardboard, values in sorted(
+                        self._mismatches.items(),
+                        key=lambda i: i[0].name,
+                    )
                 )
             )
         )
@@ -317,27 +297,27 @@ class TrapSize(ReportNotification):
     @classmethod
     def check(cls, updater: CubeUpdater) -> t.Optional[ReportNotification]:
         return cls(
-            old_trap_amount = len(updater.cube.garbage_traps),
-            old_node_amount = len(updater.node_collection),
-            new_trap_amount = updater.new_garbage_trap_amount,
-            new_node_amount = len(updater.node_collection + updater.patch.node_delta_operation),
+            old_trap_amount=len(updater.cube.garbage_traps),
+            old_node_amount=len(updater.node_collection),
+            new_trap_amount=updater.new_garbage_trap_amount,
+            new_node_amount=len(updater.node_collection + updater.patch.node_delta_operation),
         )
 
     @property
     def title(self) -> str:
-        return 'Trap sizes'
+        return "Trap sizes"
 
     @property
     def content(self) -> str:
-        return 'Old average node pr trap: {} ({} / {})\nNew average node pr trap: {} ({} / {})'.format(
+        return "Old average node pr trap: {} ({} / {})\nNew average node pr trap: {} ({} / {})".format(
             round(self._old_node_amount / self._old_trap_amount, 2)
-            if self._old_node_amount else
-            '(previously no traps)',
+            if self._old_node_amount
+            else "(previously no traps)",
             self._old_node_amount,
             self._old_trap_amount,
             round(self._new_node_amount / self._new_trap_amount, 2)
-            if self._new_trap_amount else
-            '(no traps after update)',
+            if self._new_trap_amount
+            else "(no traps after update)",
             self._new_node_amount,
             self._new_trap_amount,
         )
@@ -354,31 +334,22 @@ class CardboardChange(ReportNotification):
         non_garbage_cube = Cube(
             (
                 cubeable
-                for cubeable in
-                updater.cube.cubeables
-                if not (
-                isinstance(cubeable, Trap)
-                and cubeable.intention_type == IntentionType.GARBAGE
-            )
+                for cubeable in updater.cube.cubeables
+                if not (isinstance(cubeable, Trap) and cubeable.intention_type == IntentionType.GARBAGE)
             )
         )
 
         new_no_garbage_cube = Cube(
             (
                 cubeable
-                for cubeable in
-                (updater.cube + updater.patch.cube_delta_operation).cubeables
-                if not (
-                isinstance(cubeable, Trap)
-                and cubeable.intention_type == IntentionType.GARBAGE
-            )
+                for cubeable in (updater.cube + updater.patch.cube_delta_operation).cubeables
+                if not (isinstance(cubeable, Trap) and cubeable.intention_type == IntentionType.GARBAGE)
             )
         )
 
         old_cardboards = FrozenMultiset(
             printing.cardboard
-            for printing in
-            itertools.chain(
+            for printing in itertools.chain(
                 non_garbage_cube.all_printings,
                 updater.node_collection.all_printings,
             )
@@ -386,50 +357,38 @@ class CardboardChange(ReportNotification):
 
         new_cardboards = FrozenMultiset(
             printing.cardboard
-            for printing in
-            itertools.chain(
+            for printing in itertools.chain(
                 new_no_garbage_cube.all_printings,
                 (updater.node_collection + updater.patch.node_delta_operation).all_printings,
             )
         )
 
-        return CardboardChange(
-            FrozenCounter(
-                new_cardboards.elements()
-            ) - FrozenCounter(
-                old_cardboards.elements()
-            )
-        )
+        return CardboardChange(FrozenCounter(new_cardboards.elements()) - FrozenCounter(old_cardboards.elements()))
 
     @property
     def title(self) -> str:
-        return 'Cardboard changes'
+        return "Cardboard changes"
 
     @property
     def content(self) -> str:
-        return 'Added:\n{}\n\nRemoved:\n{}'.format(
-            '\n'.join(
-                ((str(multiplicity) + 'x ') if multiplicity != 1 else '') + cardboard.name
-                for cardboard, multiplicity in
-                self._changes.items()
+        return "Added:\n{}\n\nRemoved:\n{}".format(
+            "\n".join(
+                ((str(multiplicity) + "x ") if multiplicity != 1 else "") + cardboard.name
+                for cardboard, multiplicity in self._changes.items()
                 if multiplicity > 0
             ),
-            '\n'.join(
-                str(multiplicity) + ' ' + cardboard.name
-                for cardboard, multiplicity in
-                self._changes.items()
+            "\n".join(
+                str(multiplicity) + " " + cardboard.name
+                for cardboard, multiplicity in self._changes.items()
                 if multiplicity < 0
             ),
         )
 
 
 class ReportBlueprint(object):
-
     def __init__(self, notification_checks: t.Iterable[t.Type[ReportNotification]]):
         self._notification_checks = (
-            notification_checks
-            if isinstance(notification_checks, set) else
-            set(notification_checks)
+            notification_checks if isinstance(notification_checks, set) else set(notification_checks)
         )
 
     @property
@@ -440,10 +399,7 @@ class ReportBlueprint(object):
         return hash(self._notification_checks)
 
     def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._notification_checks == other._notification_checks
-        )
+        return isinstance(other, self.__class__) and self._notification_checks == other._notification_checks
 
 
 DEFAULT_REPORT_BLUEPRINT = ReportBlueprint(
@@ -463,7 +419,6 @@ DEFAULT_REPORT_BLUEPRINT = ReportBlueprint(
 
 
 class UpdateReport(object):
-
     def __init__(self, updater: CubeUpdater, blueprint: ReportBlueprint = DEFAULT_REPORT_BLUEPRINT):
         self._updater = updater
         self._blueprint = blueprint
@@ -471,25 +426,22 @@ class UpdateReport(object):
         self._notifications = sorted(
             (
                 notification
-                for notification in
-                (
+                for notification in (
                     check.check(
                         self._updater,
                     )
-                    for check in
-                    self._blueprint.checks
+                    for check in self._blueprint.checks
                 )
                 if notification
             ),
-            key = lambda n: n.title,
+            key=lambda n: n.title,
         )
 
     @property
     def warnings(self) -> t.Iterator[ReportNotification]:
         return (
             notification
-            for notification in
-            self._notifications
+            for notification in self._notifications
             if notification.notification_level == ReportNotificationLevel.WARNING
         )
 
@@ -497,8 +449,7 @@ class UpdateReport(object):
     def infos(self) -> t.Iterator[ReportNotification]:
         return (
             notification
-            for notification in
-            self._notifications
+            for notification in self._notifications
             if notification.notification_level == ReportNotificationLevel.INFO
         )
 

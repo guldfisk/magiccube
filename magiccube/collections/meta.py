@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
+from mtgorp.models.serilization.serializeable import (
+    Inflator,
+    Serializeable,
+    serialization_model,
+)
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.infinites import Infinites
-from magiccube.collections.nodecollection import NodeCollection, GroupMap
+from magiccube.collections.nodecollection import GroupMap, NodeCollection
 
 
 class MetaCube(Serializeable):
-
     def __init__(self, cube: Cube, nodes: NodeCollection, groups: GroupMap, infinites: Infinites):
         self._cube = cube
         self._nodes = nodes
@@ -33,19 +36,19 @@ class MetaCube(Serializeable):
 
     def serialize(self) -> serialization_model:
         return {
-            'cube': self._cube,
-            'nodes': self._nodes,
-            'groups': self._groups,
-            'infinites': self._infinites,
+            "cube": self._cube,
+            "nodes": self._nodes,
+            "groups": self._groups,
+            "infinites": self._infinites,
         }
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> MetaCube:
         return cls(
-            Cube.deserialize(value['cube'], inflator),
-            NodeCollection.deserialize(value['nodes'], inflator),
-            GroupMap.deserialize(value['groups'], inflator),
-            Infinites.deserialize(value['infinites'], inflator),
+            Cube.deserialize(value["cube"], inflator),
+            NodeCollection.deserialize(value["nodes"], inflator),
+            GroupMap.deserialize(value["groups"], inflator),
+            Infinites.deserialize(value["infinites"], inflator),
         )
 
     def __hash__(self) -> int:

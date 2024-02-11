@@ -1,8 +1,8 @@
 import typing as t
 
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
 import aggdraw
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 
 def center_box(
@@ -53,34 +53,26 @@ def draw_text_with_outline(
     _xy = np.asarray(xy)
     offset_range = (-1, 0, 1)
 
-    for offset in (
-        (x, y)
-        for x in offset_range
-        for y in offset_range
-    ):
+    for offset in ((x, y) for x in offset_range for y in offset_range):
         draw.multiline_text(
-            xy = _xy+np.asarray(offset),
-            text = text,
-            font = font,
-            fill = background_color,
-            align = 'center',
+            xy=_xy + np.asarray(offset),
+            text=text,
+            font=font,
+            fill=background_color,
+            align="center",
         )
 
     draw.multiline_text(
-        xy = _xy,
-        text = text,
-        font = font,
-        fill = color,
-        align='center',
+        xy=_xy,
+        text=text,
+        font=font,
+        fill=color,
+        align="center",
     )
 
 
 def draw_name(
-    draw: ImageDraw.Draw,
-    name: str,
-    box: t.Tuple[int, int, int, int],
-    font_path: str,
-    font_size: int = 40
+    draw: ImageDraw.Draw, name: str, box: t.Tuple[int, int, int, int], font_path: str, font_size: int = 40
 ) -> None:
     """
     Draw outlined text on image centered in box, downscaling font if necessary to fit.
@@ -104,19 +96,19 @@ def draw_name(
         w / text_width,
         h / text_height,
     )
-    if downsize_factor < 1.:
+    if downsize_factor < 1.0:
         font = ImageFont.truetype(font_path, int(font_size * downsize_factor))
         text_width, text_height = draw.multiline_textsize(name, font)
 
     x_1, y_1, x_2, y_2 = center_box(w, h, text_width, text_height)
 
     draw_text_with_outline(
-        draw = draw,
-        xy = (x_1+x, y_1+y),
-        text = name,
-        font = font,
-        color = (255,) * 3,
-        background_color = (0,) * 3,
+        draw=draw,
+        xy=(x_1 + x, y_1 + y),
+        text=name,
+        font=font,
+        color=(255,) * 3,
+        background_color=(0,) * 3,
     )
 
 
@@ -132,7 +124,7 @@ ALL_SIDES = VERTICAL_SIDES + HORIZONTAL_SIDES
 
 
 def inline_box(
-    draw, #aggdraw draw
+    draw,  # aggdraw draw
     box: t.Tuple[int, int, int, int],
     width: int = 5,
     color: t.Tuple[int, int, int] = (0, 0, 0),
@@ -176,7 +168,7 @@ def inline_box(
 
 
 def triangled_inlined_box(
-    draw, #aggdraw draw
+    draw,  # aggdraw draw
     box: t.Tuple[int, int, int, int],
     width: int = 5,
     color: t.Tuple[int, int, int] = (0, 0, 0),
@@ -200,30 +192,36 @@ def triangled_inlined_box(
     x_1, y_1, x_2, y_2 = x, y, x + w, y + h
 
     triangle_brush = aggdraw.Brush(color=bar_color)
-    
+
     inline_box(
-        draw = draw,
-        box = box,
-        width = width,
-        color = color,
-        sides = sides,
+        draw=draw,
+        box=box,
+        width=width,
+        color=color,
+        sides=sides,
     )
-    
+
     if sides & 1:
         draw.polygon(
             (
-                x_1, y_2,
-                x_1 + width, y_2,
-                x_1 + hw, y_2 - triangle_length,
+                x_1,
+                y_2,
+                x_1 + width,
+                y_2,
+                x_1 + hw,
+                y_2 - triangle_length,
             ),
             None,
             triangle_brush,
         )
         draw.polygon(
             (
-                x_1, y_1,
-                x_1 + width, y_1,
-                x_1 + hw, y_1 + triangle_length,
+                x_1,
+                y_1,
+                x_1 + width,
+                y_1,
+                x_1 + hw,
+                y_1 + triangle_length,
             ),
             None,
             triangle_brush,
@@ -231,18 +229,24 @@ def triangled_inlined_box(
     if sides >> 1 & 1:
         draw.polygon(
             (
-                x_1, y_1,
-                x_1, y_1 + width,
-                x_1 + triangle_length, y_1 + hw,
+                x_1,
+                y_1,
+                x_1,
+                y_1 + width,
+                x_1 + triangle_length,
+                y_1 + hw,
             ),
             None,
             triangle_brush,
         )
         draw.polygon(
             (
-                x_2, y_1,
-                x_2, y_1 + width,
-                x_2 - triangle_length, y_1 + hw,
+                x_2,
+                y_1,
+                x_2,
+                y_1 + width,
+                x_2 - triangle_length,
+                y_1 + hw,
             ),
             None,
             triangle_brush,
@@ -250,18 +254,24 @@ def triangled_inlined_box(
     if sides >> 2 & 1:
         draw.polygon(
             (
-                x_2, y_1,
-                x_2 - width, y_1,
-                x_2 - hw, y_1 + triangle_length,
+                x_2,
+                y_1,
+                x_2 - width,
+                y_1,
+                x_2 - hw,
+                y_1 + triangle_length,
             ),
             None,
             triangle_brush,
         )
         draw.polygon(
             (
-                x_2, y_2,
-                x_2 - width, y_2,
-                x_2 - hw, y_2 - triangle_length,
+                x_2,
+                y_2,
+                x_2 - width,
+                y_2,
+                x_2 - hw,
+                y_2 - triangle_length,
             ),
             None,
             triangle_brush,
@@ -269,18 +279,24 @@ def triangled_inlined_box(
     if sides >> 3 & 1:
         draw.polygon(
             (
-                x_2, y_2,
-                x_2, y_2 - width,
-                x_2 - triangle_length, y_2 - hw,
+                x_2,
+                y_2,
+                x_2,
+                y_2 - width,
+                x_2 - triangle_length,
+                y_2 - hw,
             ),
             None,
             triangle_brush,
         )
         draw.polygon(
             (
-                x_1, y_2,
-                x_1, y_2 - width,
-                x_1 + triangle_length, y_2 - hw,
+                x_1,
+                y_2,
+                x_1,
+                y_2 - width,
+                x_1 + triangle_length,
+                y_2 - hw,
             ),
             None,
             triangle_brush,
@@ -370,7 +386,7 @@ def _rounded_corner_path(
 
 
 def rounded_corner_box(
-    draw, #aggdraw draw
+    draw,  # aggdraw draw
     box: t.Tuple[int, int, int, int],
     corner_radius: int,
     line_width: int = 1,
@@ -407,7 +423,6 @@ def filled_rounded_box(
     draw.flush()
 
 
-
 def section(value: int, partitions: int) -> t.Iterable[t.Tuple[int, int]]:
     """
     Divide length into n int partitions. The total length of the partitions
@@ -421,13 +436,13 @@ def section(value: int, partitions: int) -> t.Iterable[t.Tuple[int, int]]:
     previous_value = 0
 
     if partitions > 1:
-        for i in range(partitions-1):
+        for i in range(partitions - 1):
             span = offset
             if i < leftover:
                 span += 1
             yield previous_value, previous_value + span
             previous_value += span
-                
+
     yield previous_value, value
 
 
@@ -456,4 +471,3 @@ def fit_image(image: Image.Image, width: int, height: int) -> Image.Image:
         return image
 
     return _image.crop(center_box(_image.width, _image.height, width, height))
-

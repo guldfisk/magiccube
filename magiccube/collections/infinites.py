@@ -3,11 +3,15 @@ from __future__ import annotations
 import typing as t
 
 from mtgorp.models.collections.cardboardset import CardboardSet
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator, PersistentHashable
+from mtgorp.models.serilization.serializeable import (
+    Inflator,
+    PersistentHashable,
+    Serializeable,
+    serialization_model,
+)
 
 
 class Infinites(CardboardSet):
-
     def __or__(self, other: t.Union[Infinites, InfinitesDeltaOperation]) -> Infinites:
         if isinstance(other, InfinitesDeltaOperation):
             return self.__class__((self._cardboards | other.added.cardboards) - other.removed.cardboards)
@@ -22,7 +26,6 @@ class Infinites(CardboardSet):
 
 
 class InfinitesDeltaOperation(Serializeable, PersistentHashable):
-
     def __init__(
         self,
         added: t.Optional[CardboardSet] = None,
@@ -48,35 +51,31 @@ class InfinitesDeltaOperation(Serializeable, PersistentHashable):
 
     def serialize(self) -> serialization_model:
         return {
-            'added': self._added,
-            'removed': self._removed,
+            "added": self._added,
+            "removed": self._removed,
         }
 
     @classmethod
     def deserialize(cls, value: serialization_model, inflator: Inflator) -> InfinitesDeltaOperation:
         return cls(
-            CardboardSet.deserialize(value['added'], inflator),
-            CardboardSet.deserialize(value['removed'], inflator),
+            CardboardSet.deserialize(value["added"], inflator),
+            CardboardSet.deserialize(value["removed"], inflator),
         )
 
     def __hash__(self) -> int:
         return hash((self._added, self._removed))
 
     def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._added == other._added
-            and self._removed == other._removed
-        )
+        return isinstance(other, self.__class__) and self._added == other._added and self._removed == other._removed
 
     def _calc_persistent_hash(self) -> t.Iterable[t.ByteString]:
         for n in sorted((c.name for c in self._added)):
-            yield n.encode('UTF-8')
+            yield n.encode("UTF-8")
         for n in sorted((c.name for c in self._removed)):
-            yield n.encode('UTF-8')
+            yield n.encode("UTF-8")
 
     def __repr__(self) -> str:
-        return '{}({}, {})'.format(
+        return "{}({}, {})".format(
             self.__class__.__name__,
             self._added,
             self._removed,

@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-import typing as t
-
-import threading
-import queue
 import math
-
+import queue
+import threading
+import typing as t
 from abc import ABC, abstractmethod
 
 from evolution.environment import Environment
 from evolution.logging import FitnessLoggingOperation
 
 
-E = t.TypeVar('E', bound = Environment)
+E = t.TypeVar("E", bound=Environment)
 
 
 class AutoPauseCheck(ABC):
-
     @abstractmethod
     def check(self, worker: DistributionWorker) -> bool:
         pass
@@ -27,7 +24,6 @@ class AutoPauseCheck(ABC):
 
 
 class GenerationAmountAutoPause(AutoPauseCheck):
-
     def __init__(self, generations: int, backoff: t.Optional[int] = None):
         self._generations = generations
         self._backoff = int(math.ceil(generations / 10)) if backoff is None else backoff
@@ -40,12 +36,11 @@ class GenerationAmountAutoPause(AutoPauseCheck):
 
 
 class FitnessDifferentialAutoPause(AutoPauseCheck):
-
     def __init__(
         self,
         threshold: float,
         logging_operator: t.Type[FitnessLoggingOperation],
-        backoff: float = .7,
+        backoff: float = 0.7,
         *,
         generations_lookback: int = 100,
     ):
@@ -64,19 +59,18 @@ class FitnessDifferentialAutoPause(AutoPauseCheck):
                 operation_index = idx
                 break
         if operation_index is None:
-            raise ValueError('Invalid logging operator')
+            raise ValueError("Invalid logging operator")
 
         return (
-                   worker.distributor.logger.values[-1][operation_index]
-                   - worker.distributor.logger.values[-self._generations_lookback][operation_index]
-               ) / self._generations_lookback < self._threshold
+            worker.distributor.logger.values[-1][operation_index]
+            - worker.distributor.logger.values[-self._generations_lookback][operation_index]
+        ) / self._generations_lookback < self._threshold
 
     def resume(self, worker: DistributionWorker) -> None:
         self._threshold *= self._backoffgatherer
 
 
 class DistributionWorker(threading.Thread, t.Generic[E]):
-
     def __init__(
         self,
         distributor: E,
@@ -108,8 +102,8 @@ class DistributionWorker(threading.Thread, t.Generic[E]):
     def _notify_status(self, status: str) -> None:
         self._message_queue.put(
             {
-                'type': 'status',
-                'status': status,
+                "type": "status",
+                "status": status,
             }
         )
 
@@ -117,7 +111,7 @@ class DistributionWorker(threading.Thread, t.Generic[E]):
         if self._terminating.is_set():
             return
         with self._communication_lock:
-            self._notify_status('stopping')
+            self._notify_status("stopping")
             self._running = False
             self._terminating.set()
             try:
@@ -131,8 +125,8 @@ class DistributionWorker(threading.Thread, t.Generic[E]):
         with self._communication_lock:
             if not self._running:
                 return
-            self._notify_status('pausing')
-            self._pause_lock.acquire(blocking = False)
+            self._notify_status("pausing")
+            self._pause_lock.acquire(blocking=False)
             self._running = False
 
     def resume(self):
@@ -141,7 +135,7 @@ class DistributionWorker(threading.Thread, t.Generic[E]):
         with self._communication_lock:
             if self._running:
                 return
-            self._notify_status('resuming')
+            self._notify_status("resuming")
             try:
                 self._pause_lock.release()
             except RuntimeError:
@@ -157,25 +151,22 @@ class DistributionWorker(threading.Thread, t.Generic[E]):
             self._pause_lock.acquire()
 
             if self._running:
-                self._notify_status('running')
+                self._notify_status("running")
 
             while self._running:
                 self._message_queue.put(
                     {
-                        'type': 'frame',
-                        'frame': self._distributor.spawn_generation(),
+                        "type": "frame",
+                        "frame": self._distributor.spawn_generation(),
                     }
                 )
 
-                if (
-                    self._max_generations
-                    and len(self._distributor.logger.values) >= self._max_generations
-                ):
+                if self._max_generations and len(self._distributor.logger.values) >= self._max_generations:
                     self._message_queue.put(
                         {
-                            'type': 'status',
-                            'status': 'completed',
-                            'generations': len(self._distributor.logger.values),
+                            "type": "status",
+                            "status": "completed",
+                            "generations": len(self._distributor.logger.values),
                         }
                     )
                     self.stop()
@@ -184,6 +175,6 @@ class DistributionWorker(threading.Thread, t.Generic[E]):
                     self.pause()
 
             if not self._running and not self._terminating.is_set():
-                self._notify_status('paused')
+                self._notify_status("paused")
 
-        self._notify_status('stopped')
+        self._notify_status("stopped")

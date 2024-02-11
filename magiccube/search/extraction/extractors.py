@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import typing as t
-
 from abc import ABCMeta
 
 from mtgorp.models.interfaces import Printing
-from mtgorp.tools.search.extraction import ExtractionStrategy, T, PrintingStrategy, CardboardStrategy
+from mtgorp.tools.search.extraction import (
+    CardboardStrategy,
+    ExtractionStrategy,
+    PrintingStrategy,
+    T,
+)
 
-from magiccube.collections.cubeable import Cubeable, CardboardCubeable
+from magiccube.collections.cubeable import CardboardCubeable, Cubeable
 from magiccube.laps.traps.trap import Trap
 
 
 def _get_strategy_wrapper(base_strategy: t.Type[ExtractionStrategy]) -> t.Type:
     class _CubeableExtractionStrategyMeta(ABCMeta):
-
         @classmethod
         def _wrap(
             mcs,
@@ -32,10 +35,8 @@ def _get_strategy_wrapper(base_strategy: t.Type[ExtractionStrategy]) -> t.Type:
 
         def __new__(mcs, name, bases, namespace, **kwargs):
             for k in bases[-1].__dict__:
-                if k.startswith('extract'):
-                    namespace[k] = mcs._wrap(
-                        getattr(base_strategy, k)
-                    )
+                if k.startswith("extract"):
+                    namespace[k] = mcs._wrap(getattr(base_strategy, k))
             return super().__new__(mcs, name, bases, namespace, **kwargs)
 
     return _CubeableExtractionStrategyMeta
@@ -43,13 +44,13 @@ def _get_strategy_wrapper(base_strategy: t.Type[ExtractionStrategy]) -> t.Type:
 
 class CubeableStrategy(
     ExtractionStrategy[Cubeable],
-    metaclass = _get_strategy_wrapper(PrintingStrategy),
+    metaclass=_get_strategy_wrapper(PrintingStrategy),
 ):
     pass
 
 
 class CardboardCubeableStrategy(
     ExtractionStrategy[CardboardCubeable],
-    metaclass = _get_strategy_wrapper(CardboardStrategy),
+    metaclass=_get_strategy_wrapper(CardboardStrategy),
 ):
     pass

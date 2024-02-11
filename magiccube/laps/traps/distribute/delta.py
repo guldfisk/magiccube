@@ -4,24 +4,25 @@ import copy
 import itertools
 import random
 import typing as t
-
 from collections import defaultdict
 
 from evolution import logging
 from evolution.constraints import ConstraintSet
 from evolution.environment import EvolutionModelBlueprint
 
-from magiccube.laps.traps.distribute.algorithm import (
-    TrapDistribution, DistributionNode, TrapCollectionIndividual, BaseDistributor,
-)
-from magiccube.laps.traps.tree.printingtree import PrintingNode, AllNode
 from magiccube.collections.laps import TrapCollection
-from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
+from magiccube.collections.nodecollection import ConstrainedNode, NodeCollection
+from magiccube.laps.traps.distribute.algorithm import (
+    BaseDistributor,
+    DistributionNode,
+    TrapCollectionIndividual,
+    TrapDistribution,
+)
 from magiccube.laps.traps.trap import IntentionType
+from magiccube.laps.traps.tree.printingtree import AllNode, PrintingNode
 
 
 class DistributionDelta(TrapCollectionIndividual):
-
     def __init__(
         self,
         origin: TrapDistribution,
@@ -53,20 +54,18 @@ class DistributionDelta(TrapCollectionIndividual):
 
         for removed_index in self.removed_trap_redistributions:
             for _ in self._origin.traps[removed_index]:
-                self.removed_trap_redistributions[removed_index].append(
-                    self.get_available_trap_index()
-                )
+                self.removed_trap_redistributions[removed_index].append(self.get_available_trap_index())
 
         for index in itertools.chain(*self.removed_trap_redistributions.values()):
             if index in self.removed_trap_redistributions:
-                raise Exception('dude what')
+                raise Exception("dude what")
 
         for node in self._added_nodes:
             self.added_node_indexes[node] = random.sample(
                 (
                     self.valid_trap_indexes
-                    if len(self.modified_trap_indexes) < self._max_trap_difference else
-                    self.modified_trap_indexes - self.removed_trap_redistributions.keys()
+                    if len(self.modified_trap_indexes) < self._max_trap_difference
+                    else self.modified_trap_indexes - self.removed_trap_redistributions.keys()
                 ),
                 1,
             )[0]
@@ -104,8 +103,8 @@ class DistributionDelta(TrapCollectionIndividual):
         return random.sample(
             (
                 self.valid_trap_indexes
-                if len(modifications) < self.max_trap_difference else
-                modifications - self.removed_trap_redistributions.keys()
+                if len(modifications) < self.max_trap_difference
+                else modifications - self.removed_trap_redistributions.keys()
             ),
             1,
         )[0]
@@ -136,16 +135,19 @@ class DistributionDelta(TrapCollectionIndividual):
 
     @property
     def modified_trap_indexes(self) -> t.FrozenSet[int]:
-        return frozenset(
-            itertools.chain(
-                self._removed_node_indexes,
-                (index for index, _ in self.node_moves),
-                self.node_moves.values(),
-                self.added_node_indexes.values(),
-                range(self.origin.trap_amount, self.origin.trap_amount + self._trap_amount_delta),
-                *self.removed_trap_redistributions.values(),
+        return (
+            frozenset(
+                itertools.chain(
+                    self._removed_node_indexes,
+                    (index for index, _ in self.node_moves),
+                    self.node_moves.values(),
+                    self.added_node_indexes.values(),
+                    range(self.origin.trap_amount, self.origin.trap_amount + self._trap_amount_delta),
+                    *self.removed_trap_redistributions.values(),
+                )
             )
-        ) - self.removed_trap_redistributions.keys()
+            - self.removed_trap_redistributions.keys()
+        )
 
     @property
     def trap_distribution(self) -> TrapDistribution:
@@ -159,8 +161,8 @@ class DistributionDelta(TrapCollectionIndividual):
         for index, trap in enumerate(modified_distribution.traps):
             for from_indexes, to_index in sorted(
                 (item for item in self.node_moves.items() if item[0][0] == index),
-                key = lambda vs: vs[0][1],
-                reverse = True,
+                key=lambda vs: vs[0][1],
+                reverse=True,
             ):
                 moves.append(
                     (
@@ -177,11 +179,9 @@ class DistributionDelta(TrapCollectionIndividual):
 
         for from_index, target_indexes in self.removed_trap_redistributions.items():
             for target_index in target_indexes:
-                modified_distribution.traps[target_index].append(
-                    modified_distribution.traps[from_index].pop(0)
-                )
+                modified_distribution.traps[target_index].append(modified_distribution.traps[from_index].pop(0))
 
-        for index in sorted(self.removed_trap_redistributions, reverse = True):
+        for index in sorted(self.removed_trap_redistributions, reverse=True):
             del modified_distribution.traps[index]
 
         return modified_distribution
@@ -203,34 +203,20 @@ def trap_collection_to_trap_distribution(
     removed: t.List[t.Tuple[PrintingNode, int]] = []
 
     for index, trap in enumerate(traps):
-
         for child in trap.node.children:
             printing_node = child if isinstance(child, PrintingNode) else AllNode((child,))
 
             try:
-                distribution[index].append(
-                    DistributionNode(
-                        constraint_map[printing_node].pop()
-                    )
-                )
+                distribution[index].append(DistributionNode(constraint_map[printing_node].pop()))
             except (KeyError, IndexError):
                 removed.append((printing_node, index))
 
-    added = list(
-        itertools.chain(
-            *(
-                nodes
-                for nodes in
-                constraint_map.values()
-            )
-        )
-    )
+    added = list(itertools.chain(*(nodes for nodes in constraint_map.values())))
 
-    return TrapDistribution(traps = distribution), added, removed
+    return TrapDistribution(traps=distribution), added, removed
 
 
 class DeltaDistributor(BaseDistributor[DistributionDelta]):
-
     def __init__(
         self,
         distribution_nodes: t.Iterable[DistributionNode],
@@ -240,7 +226,7 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
         max_trap_delta: int,
         model_blue_print: t.Optional[EvolutionModelBlueprint] = None,
         logger: t.Optional[logging.Logger] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             distribution_nodes,
@@ -248,7 +234,7 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
             lambda i: constraints(i.trap_distribution),
             model_blue_print,
             logger,
-            **kwargs
+            **kwargs,
         )
 
         self._max_trap_delta = max_trap_delta
@@ -256,11 +242,7 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
         original_distribution, added, removed = trap_collection_to_trap_distribution(
             original_collection,
-            NodeCollection(
-                node.as_constrained_node
-                for node in
-                distribution_nodes
-            ),
+            NodeCollection(node.as_constrained_node for node in distribution_nodes),
         )
         self._original_distribution = original_distribution
         self._added = list(map(DistributionNode, added))
@@ -268,31 +250,24 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
     def mutate(self, delta: DistributionDelta) -> DistributionDelta:
         for i in range(5):
-
-            if random.random() < .8:
+            if random.random() < 0.8:
                 modified_indexes = delta.modified_trap_indexes
 
                 from_trap_index = random.sample(
                     (
                         delta.valid_trap_indexes
-                        if len(modified_indexes) < delta.max_trap_difference else
-                        modified_indexes - delta.removed_trap_redistributions.keys()
+                        if len(modified_indexes) < delta.max_trap_difference
+                        else modified_indexes - delta.removed_trap_redistributions.keys()
                     ),
-                    1
+                    1,
                 )[0]
 
                 node_index_options = frozenset(
-                    range(
-                        len(
-                            delta.origin.traps[from_trap_index]
-                        )
-                    ) if from_trap_index < len(delta.origin.traps) else
-                    ()
+                    range(len(delta.origin.traps[from_trap_index]))
+                    if from_trap_index < len(delta.origin.traps)
+                    else ()
                 ) - frozenset(
-                    _node_index
-                    for _trap_index, _node_index in
-                    delta.node_moves
-                    if _trap_index == from_trap_index
+                    _node_index for _trap_index, _node_index in delta.node_moves if _trap_index == from_trap_index
                 )
 
                 if not node_index_options:
@@ -304,8 +279,8 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
                 possible_trap_indexes_to = (
                     modified_indexes - delta.removed_trap_redistributions.keys() - from_trap_index_set
-                    if len(modified_indexes | from_trap_index_set) >= delta.max_trap_difference else
-                    delta.valid_trap_indexes - from_trap_index_set
+                    if len(modified_indexes | from_trap_index_set) >= delta.max_trap_difference
+                    else delta.valid_trap_indexes - from_trap_index_set
                 )
 
                 if not possible_trap_indexes_to:
@@ -314,7 +289,6 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
                 delta.node_moves[(from_trap_index, node_index)] = random.sample(possible_trap_indexes_to, 1)[0]
 
             else:
-
                 if not delta.node_moves:
                     continue
 
@@ -322,8 +296,7 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
         if delta.added_node_indexes:
             for i in range(2):
-
-                if random.random() < .2:
+                if random.random() < 0.2:
                     moved_node = random.choice(list(delta.added_node_indexes))
                     from_trap_index = delta.added_node_indexes[moved_node]
 
@@ -335,8 +308,8 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
                     possible_trap_indexes_to = (
                         modified_indexes - delta.removed_trap_redistributions.keys() - from_trap_index_set
-                        if len(modified_indexes) >= delta.max_trap_difference else
-                        delta.valid_trap_indexes - from_trap_index_set
+                        if len(modified_indexes) >= delta.max_trap_difference
+                        else delta.valid_trap_indexes - from_trap_index_set
                     )
 
                     if not possible_trap_indexes_to:
@@ -346,11 +319,11 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
         if delta.removed_trap_redistributions:
             for _ in range(2):
-                if random.random() < .05:
+                if random.random() < 0.05:
                     unremove_choices = list(
                         delta.removed_trap_redistributions
-                        if len(delta.modified_trap_indexes) < delta.max_trap_difference else
-                        delta.removed_trap_redistributions.keys() - delta.removed_node_indexes
+                        if len(delta.modified_trap_indexes) < delta.max_trap_difference
+                        else delta.removed_trap_redistributions.keys() - delta.removed_node_indexes
                     )
 
                     if not unremove_choices:
@@ -366,17 +339,13 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
                     delta.removed_trap_redistributions[new_removed_index] = []
 
                     for _ in delta.origin.traps[new_removed_index]:
-                        delta.removed_trap_redistributions[new_removed_index].append(
-                            delta.get_available_trap_index()
-                        )
+                        delta.removed_trap_redistributions[new_removed_index].append(delta.get_available_trap_index())
 
                     delta.evacuate_removed_trap(new_removed_index)
 
             for _ in range(5):
-                if random.random() < .1:
-                    trap = delta.removed_trap_redistributions[
-                        random.choice(list(delta.removed_trap_redistributions))
-                    ]
+                if random.random() < 0.1:
+                    trap = delta.removed_trap_redistributions[random.choice(list(delta.removed_trap_redistributions))]
                     trap[random.randint(0, len(trap) - 1)] = delta.get_available_trap_index()
 
         return delta
@@ -390,15 +359,13 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
         moves.update(second.node_moves)
 
         adds = {
-            node:
-                frozenset(
-                    (
-                        first.added_node_indexes[node],
-                        second.added_node_indexes[node],
-                    )
+            node: frozenset(
+                (
+                    first.added_node_indexes[node],
+                    second.added_node_indexes[node],
                 )
-            for node in
-            first.added_node_indexes
+            )
+            for node in first.added_node_indexes
         }
 
         move_amounts = (len(first.node_moves), len(second.node_moves))
@@ -414,7 +381,6 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
                 removed_distributions[index].append(indexes)
 
         for delta in deltas:
-
             modified = set()
             modified.update(delta.removed_node_indexes)
             delta.removed_trap_redistributions = {}
@@ -440,10 +406,7 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
                         if not moved:
                             delta.removed_trap_redistributions[index].append(
-                                random.sample(
-                                    delta.valid_trap_indexes & modified,
-                                    1
-                                )[0]
+                                random.sample(delta.valid_trap_indexes & modified, 1)[0]
                             )
 
             node_moves = {}
@@ -478,9 +441,9 @@ class DeltaDistributor(BaseDistributor[DistributionDelta]):
 
     def create_individual(self) -> DistributionDelta:
         return DistributionDelta(
-            origin = self._original_distribution,
-            added_nodes = self._added,
-            removed_node_indexes = frozenset(_index for _, _index in self._removed),
-            max_trap_difference = self._max_trap_delta,
-            trap_amount_delta = self._trap_amount - len(self._original_collection),
+            origin=self._original_distribution,
+            added_nodes=self._added,
+            removed_node_indexes=frozenset(_index for _, _index in self._removed),
+            max_trap_difference=self._max_trap_delta,
+            trap_amount_delta=self._trap_amount - len(self._original_collection),
         )

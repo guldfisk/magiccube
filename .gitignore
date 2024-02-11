@@ -4,3 +4,4 @@ test.py
 misccube/__pycache__/
 misccube/cubeload/__pycache__/
 misccube/trapification/__pycache__/
+/venv/

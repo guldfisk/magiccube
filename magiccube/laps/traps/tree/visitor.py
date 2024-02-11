@@ -6,13 +6,12 @@ from magiccube.laps.traps.tree.gen.pt_grammarVisitor import pt_grammarVisitor
 
 
 class PrintingCollection(list):
-
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.locked = False
 
     def __repr__(self):
-        return '{}({})'.format(
+        return "{}({})".format(
             self.__class__.__name__,
             super().__repr__(),
         )
@@ -31,7 +30,6 @@ class CardboardParseException(Exception):
 
 
 class PTVisitor(pt_grammarVisitor):
-
     def __init__(self, db: CardDatabase, *, allow_volatile: bool = False) -> None:
         self._db = db
         self._allow_volatile = allow_volatile
@@ -43,10 +41,10 @@ class PTVisitor(pt_grammarVisitor):
             raise CardboardParseException('bad cardboard: "{}"'.format(name))
 
     def _get_printing(self, name: str, code: str) -> Printing:
-        cardboard = self._get_cardboard(name = name)
+        cardboard = self._get_cardboard(name=name)
 
         try:
-            return cardboard.from_expansion(code, allow_volatile = self._allow_volatile)
+            return cardboard.from_expansion(code, allow_volatile=self._allow_volatile)
         except KeyError:
             raise CardboardParseException('bad expansion for cardboard: "{}", "{}"'.format(code, cardboard))
         except RuntimeError as e:
