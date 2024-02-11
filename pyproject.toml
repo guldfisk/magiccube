@@ -17,7 +17,7 @@ authors = ["None"]
 
 [tool.poetry.dependencies]
 python = "~3.9"
-Pillow = "~9.4"
+Pillow = "~10.2"
 appdirs = "~1.4"
 immutabledict = "~3.0"
 lazy-property = "~0.0"
