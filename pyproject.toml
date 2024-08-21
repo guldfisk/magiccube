@@ -17,15 +17,19 @@ authors = ["None"]
 
 [tool.poetry.dependencies]
 python = "~3.9"
-Pillow = "~9.4"
-appdirs = "~1.4"
-immutabledict = "~3.0"
-lazy-property = "~0.0"
-multiset = "~3.0"
 numpy = "~1.26"
+immutabledict = "~3.0"
+Pillow = "~9.4"
+aggdraw = "~1.3"
 promise = "~2.3"
-requests = "^2.31.0"
 antlr4-python3-runtime = "~4.9"
+yeetlong = { git = "https://github.com/guldfisk/yeetlong.git" }
+orp = { git = "https://github.com/guldfisk/orp.git" }
+mtgorp = { git = "https://github.com/guldfisk/mtgorp.git" }
+mtgimg = { git = "https://github.com/guldfisk/mtgimg.git" }
+evolution = { git = "https://github.com/guldfisk/evolution.git" }
+proxypdf = { git = "https://github.com/guldfisk/proxypdf.git" }
+
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.6.1"

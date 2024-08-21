@@ -4,9 +4,9 @@ import itertools
 import os
 import typing as t
 from abc import abstractmethod
+from functools import cached_property
 
 import aggdraw
-from lazy_property import LazyProperty
 from mtgimg import crop
 from mtgimg.interface import ImageLoader
 from mtgorp.models.interfaces import Cardboard, Printing
@@ -244,7 +244,7 @@ class PrintingNode(BaseNode["PrintingNode", Printing]):
             )
         )
 
-    @LazyProperty
+    @cached_property
     def name(self):
         return "".join(
             (str(multiplicity) + "x" if multiplicity > 1 else "")
@@ -259,7 +259,7 @@ class PrintingNode(BaseNode["PrintingNode", Printing]):
             for option, multiplicity in self.sorted_items
         )
 
-    @LazyProperty
+    @cached_property
     def sorted_items(self) -> t.List[t.Tuple[PrintingNodeChild, int]]:
         return sorted(
             self._children.items(), key=lambda p: p[0].cardboard.name if isinstance(p[0], Printing) else p[0].name
@@ -274,11 +274,11 @@ class PrintingNode(BaseNode["PrintingNode", Printing]):
             )
         )
 
-    @LazyProperty
+    @cached_property
     def sorted_imageds(self) -> t.List[PrintingNodeChild]:
         return sorted(list(self.imageds), key=lambda p: p.cardboard.name if isinstance(p, Printing) else p.name)
 
-    @LazyProperty
+    @cached_property
     def sorted_uniques(self) -> t.List[PrintingNodeChild]:
         return sorted(
             self._children.distinct_elements(), key=lambda p: p.cardboard.name if isinstance(p, Printing) else p.name
